@@ -1,0 +1,20 @@
+# Binaries
+*.exe
+*.exe~
+
+# Collected data (generated, not committed)
+topology-collected.json
+topology.json
+
+# TLS certificate cache
+.certs/
+
+# IDE / OS
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

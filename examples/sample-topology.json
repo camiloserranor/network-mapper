@@ -1,0 +1,327 @@
+{
+  "schema_version": "1.0",
+  "collected_at": "2026-04-24T15:30:00Z",
+  "source_switches": ["tor-1", "tor-2"],
+  "partial_failures": [],
+  "devices": [
+    {
+      "id": "tor-1",
+      "type": "switch",
+      "chassis_id": "aa:bb:cc:dd:ee:01",
+      "system_name": "TOR-1",
+      "system_description": "Dell Enterprise SONiC OS 4.1.5",
+      "management_address": "10.0.0.1",
+      "software_version": "SONiC.4.1.5-Enterprise_Advanced",
+      "uptime": "47d 12h 33m",
+      "interfaces": [
+        { "name": "Ethernet1",  "oper_status": "UP",   "speed": "25G", "mtu": 9100 },
+        { "name": "Ethernet2",  "oper_status": "UP",   "speed": "25G", "mtu": 9100 },
+        { "name": "Ethernet3",  "oper_status": "UP",   "speed": "25G", "mtu": 9100 },
+        { "name": "Ethernet4",  "oper_status": "UP",   "speed": "25G", "mtu": 9100 },
+        { "name": "Ethernet5",  "oper_status": "UP",   "speed": "25G", "mtu": 9100 },
+        { "name": "Ethernet6",  "oper_status": "UP",   "speed": "25G", "mtu": 9100 },
+        { "name": "Ethernet7",  "oper_status": "UP",   "speed": "1G",  "mtu": 1500 },
+        { "name": "Ethernet8",  "oper_status": "UP",   "speed": "1G",  "mtu": 1500 },
+        { "name": "Ethernet48", "oper_status": "UP",   "speed": "100G","mtu": 9100 },
+        { "name": "Ethernet49", "oper_status": "DOWN", "speed": "100G","mtu": 9100 }
+      ]
+    },
+    {
+      "id": "tor-2",
+      "type": "switch",
+      "chassis_id": "aa:bb:cc:dd:ee:02",
+      "system_name": "TOR-2",
+      "system_description": "Dell Enterprise SONiC OS 4.1.5",
+      "management_address": "10.0.0.2",
+      "software_version": "SONiC.4.1.5-Enterprise_Advanced",
+      "uptime": "47d 12h 31m",
+      "interfaces": [
+        { "name": "Ethernet1",  "oper_status": "UP",   "speed": "25G", "mtu": 9100 },
+        { "name": "Ethernet2",  "oper_status": "UP",   "speed": "25G", "mtu": 9100 },
+        { "name": "Ethernet3",  "oper_status": "UP",   "speed": "25G", "mtu": 9100 },
+        { "name": "Ethernet4",  "oper_status": "UP",   "speed": "25G", "mtu": 9100 },
+        { "name": "Ethernet5",  "oper_status": "UP",   "speed": "25G", "mtu": 9100 },
+        { "name": "Ethernet6",  "oper_status": "UP",   "speed": "25G", "mtu": 9100 },
+        { "name": "Ethernet7",  "oper_status": "UP",   "speed": "1G",  "mtu": 1500 },
+        { "name": "Ethernet8",  "oper_status": "DOWN", "speed": "1G",  "mtu": 1500 },
+        { "name": "Ethernet48", "oper_status": "UP",   "speed": "100G","mtu": 9100 },
+        { "name": "Ethernet49", "oper_status": "UP",   "speed": "100G","mtu": 9100 }
+      ]
+    },
+    {
+      "id": "host-01",
+      "type": "host",
+      "chassis_id": "11:22:33:44:55:01",
+      "system_name": "host-01",
+      "system_description": "Ubuntu 22.04.3 LTS",
+      "management_address": "10.0.1.1",
+      "interfaces": [
+        { "name": "NIC1-Port1", "oper_status": "UP", "speed": "25G", "mtu": 9000 },
+        { "name": "NIC1-Port2", "oper_status": "UP", "speed": "25G", "mtu": 9000 },
+        { "name": "NIC2-Port1", "oper_status": "UP", "speed": "25G", "mtu": 9000 },
+        { "name": "NIC2-Port2", "oper_status": "UP", "speed": "25G", "mtu": 9000 }
+      ],
+      "annotations": {
+        "azure_local_node": "node-01",
+        "cluster_role": "Compute + Storage"
+      }
+    },
+    {
+      "id": "host-02",
+      "type": "host",
+      "chassis_id": "11:22:33:44:55:02",
+      "system_name": "host-02",
+      "system_description": "Ubuntu 22.04.3 LTS",
+      "management_address": "10.0.1.2",
+      "interfaces": [
+        { "name": "NIC1-Port1", "oper_status": "UP", "speed": "25G", "mtu": 9000 },
+        { "name": "NIC1-Port2", "oper_status": "UP", "speed": "25G", "mtu": 9000 },
+        { "name": "NIC2-Port1", "oper_status": "UP", "speed": "25G", "mtu": 9000 },
+        { "name": "NIC2-Port2", "oper_status": "UP", "speed": "25G", "mtu": 9000 }
+      ],
+      "annotations": {
+        "azure_local_node": "node-02",
+        "cluster_role": "Compute + Storage"
+      }
+    },
+    {
+      "id": "host-03",
+      "type": "host",
+      "chassis_id": "11:22:33:44:55:03",
+      "system_name": "host-03",
+      "system_description": "Windows Server 2025 Datacenter",
+      "management_address": "10.0.1.3",
+      "interfaces": [
+        { "name": "NIC1-Port1", "oper_status": "UP",   "speed": "25G", "mtu": 9000 },
+        { "name": "NIC1-Port2", "oper_status": "UP",   "speed": "25G", "mtu": 9000 }
+      ],
+      "annotations": {
+        "azure_local_node": "node-03",
+        "cluster_role": "Compute"
+      }
+    },
+    {
+      "id": "host-04",
+      "type": "host",
+      "chassis_id": "11:22:33:44:55:04",
+      "system_name": "host-04",
+      "system_description": "Windows Server 2025 Datacenter",
+      "management_address": "10.0.1.4",
+      "interfaces": [
+        { "name": "NIC1-Port1", "oper_status": "UP",   "speed": "25G", "mtu": 9000 },
+        { "name": "NIC1-Port2", "oper_status": "DOWN", "speed": "25G", "mtu": 9000 }
+      ],
+      "annotations": {
+        "azure_local_node": "node-04",
+        "cluster_role": "Compute",
+        "nic_warning": "NIC1-Port2 down — cable fault suspected"
+      }
+    },
+    {
+      "id": "bmc-01",
+      "type": "bmc",
+      "chassis_id": "cc:dd:ee:ff:00:01",
+      "system_name": "bmc-host-01",
+      "system_description": "iDRAC 9 Enterprise 7.10.50.00",
+      "management_address": "10.0.2.1",
+      "interfaces": [
+        { "name": "iDRAC", "oper_status": "UP", "speed": "1G", "mtu": 1500 }
+      ]
+    },
+    {
+      "id": "bmc-02",
+      "type": "bmc",
+      "chassis_id": "cc:dd:ee:ff:00:02",
+      "system_name": "bmc-host-02",
+      "system_description": "iDRAC 9 Enterprise 7.10.50.00",
+      "management_address": "10.0.2.2",
+      "interfaces": [
+        { "name": "iDRAC", "oper_status": "UP", "speed": "1G", "mtu": 1500 }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "local_device": "tor-1",
+      "local_port": "Ethernet1",
+      "remote_device": "host-01",
+      "remote_port": "NIC1-Port1",
+      "remote_chassis_id": "11:22:33:44:55:01",
+      "source": "lldp",
+      "discovered_at": "2026-04-24T15:30:00Z",
+      "oper_status": "UP",
+      "speed": "25G",
+      "mtu": "9100",
+      "counters": { "in_octets": 874239182374, "out_octets": 712384712384, "in_pkts": 582312843, "out_pkts": 498234782, "in_errors": 0, "out_errors": 0, "in_discards": 0, "out_discards": 0 }
+    },
+    {
+      "local_device": "tor-1",
+      "local_port": "Ethernet2",
+      "remote_device": "host-01",
+      "remote_port": "NIC2-Port1",
+      "remote_chassis_id": "11:22:33:44:55:01",
+      "source": "lldp",
+      "discovered_at": "2026-04-24T15:30:00Z",
+      "oper_status": "UP",
+      "speed": "25G",
+      "mtu": "9100",
+      "counters": { "in_octets": 432871623847, "out_octets": 387261238746, "in_pkts": 312847231, "out_pkts": 289374128, "in_errors": 0, "out_errors": 0, "in_discards": 12, "out_discards": 0 }
+    },
+    {
+      "local_device": "tor-2",
+      "local_port": "Ethernet1",
+      "remote_device": "host-01",
+      "remote_port": "NIC1-Port2",
+      "remote_chassis_id": "11:22:33:44:55:01",
+      "source": "lldp",
+      "discovered_at": "2026-04-24T15:30:00Z",
+      "oper_status": "UP",
+      "speed": "25G",
+      "mtu": "9100",
+      "counters": { "in_octets": 812734981273, "out_octets": 698123712384, "in_pkts": 543218723, "out_pkts": 478231283, "in_errors": 0, "out_errors": 0, "in_discards": 0, "out_discards": 0 }
+    },
+    {
+      "local_device": "tor-2",
+      "local_port": "Ethernet2",
+      "remote_device": "host-01",
+      "remote_port": "NIC2-Port2",
+      "remote_chassis_id": "11:22:33:44:55:01",
+      "source": "lldp",
+      "discovered_at": "2026-04-24T15:30:00Z",
+      "oper_status": "UP",
+      "speed": "25G",
+      "mtu": "9100",
+      "counters": { "in_octets": 498712348712, "out_octets": 423847123847, "in_pkts": 298471238, "out_pkts": 267348912, "in_errors": 0, "out_errors": 0, "in_discards": 0, "out_discards": 0 }
+    },
+    {
+      "local_device": "tor-1",
+      "local_port": "Ethernet3",
+      "remote_device": "host-02",
+      "remote_port": "NIC1-Port1",
+      "remote_chassis_id": "11:22:33:44:55:02",
+      "source": "lldp",
+      "discovered_at": "2026-04-24T15:30:00Z",
+      "oper_status": "UP",
+      "speed": "25G",
+      "mtu": "9100",
+      "counters": { "in_octets": 723847123847, "out_octets": 612384712384, "in_pkts": 498237128, "out_pkts": 423871283, "in_errors": 0, "out_errors": 0, "in_discards": 0, "out_discards": 0 }
+    },
+    {
+      "local_device": "tor-1",
+      "local_port": "Ethernet4",
+      "remote_device": "host-02",
+      "remote_port": "NIC2-Port1",
+      "remote_chassis_id": "11:22:33:44:55:02",
+      "source": "lldp",
+      "discovered_at": "2026-04-24T15:30:00Z",
+      "oper_status": "UP",
+      "speed": "25G",
+      "mtu": "9100",
+      "counters": { "in_octets": 387261238746, "out_octets": 312847612384, "in_pkts": 267348912, "out_pkts": 234871283, "in_errors": 3, "out_errors": 0, "in_discards": 0, "out_discards": 0 }
+    },
+    {
+      "local_device": "tor-2",
+      "local_port": "Ethernet3",
+      "remote_device": "host-02",
+      "remote_port": "NIC1-Port2",
+      "remote_chassis_id": "11:22:33:44:55:02",
+      "source": "lldp",
+      "discovered_at": "2026-04-24T15:30:00Z",
+      "oper_status": "UP",
+      "speed": "25G",
+      "mtu": "9100",
+      "counters": { "in_octets": 698172384712, "out_octets": 587231847123, "in_pkts": 462187234, "out_pkts": 398712384, "in_errors": 0, "out_errors": 0, "in_discards": 0, "out_discards": 0 }
+    },
+    {
+      "local_device": "tor-2",
+      "local_port": "Ethernet4",
+      "remote_device": "host-02",
+      "remote_port": "NIC2-Port2",
+      "remote_chassis_id": "11:22:33:44:55:02",
+      "source": "lldp",
+      "discovered_at": "2026-04-24T15:30:00Z",
+      "oper_status": "UP",
+      "speed": "25G",
+      "mtu": "9100",
+      "counters": { "in_octets": 412384712384, "out_octets": 378123847123, "in_pkts": 287348123, "out_pkts": 256123847, "in_errors": 0, "out_errors": 0, "in_discards": 0, "out_discards": 0 }
+    },
+    {
+      "local_device": "tor-1",
+      "local_port": "Ethernet5",
+      "remote_device": "host-03",
+      "remote_port": "NIC1-Port1",
+      "remote_chassis_id": "11:22:33:44:55:03",
+      "source": "lldp",
+      "discovered_at": "2026-04-24T15:30:00Z",
+      "oper_status": "UP",
+      "speed": "25G",
+      "mtu": "9100",
+      "counters": { "in_octets": 312847123847, "out_octets": 267348912384, "in_pkts": 198471283, "out_pkts": 172384712, "in_errors": 0, "out_errors": 0, "in_discards": 0, "out_discards": 0 }
+    },
+    {
+      "local_device": "tor-2",
+      "local_port": "Ethernet5",
+      "remote_device": "host-03",
+      "remote_port": "NIC1-Port2",
+      "remote_chassis_id": "11:22:33:44:55:03",
+      "source": "lldp",
+      "discovered_at": "2026-04-24T15:30:00Z",
+      "oper_status": "UP",
+      "speed": "25G",
+      "mtu": "9100",
+      "counters": { "in_octets": 298471238712, "out_octets": 256123847123, "in_pkts": 187348912, "out_pkts": 162384712, "in_errors": 0, "out_errors": 0, "in_discards": 0, "out_discards": 0 }
+    },
+    {
+      "local_device": "tor-1",
+      "local_port": "Ethernet6",
+      "remote_device": "host-04",
+      "remote_port": "NIC1-Port1",
+      "remote_chassis_id": "11:22:33:44:55:04",
+      "source": "lldp",
+      "discovered_at": "2026-04-24T15:30:00Z",
+      "oper_status": "UP",
+      "speed": "25G",
+      "mtu": "9100",
+      "counters": { "in_octets": 198471283712, "out_octets": 172384712384, "in_pkts": 132847123, "out_pkts": 112384712, "in_errors": 0, "out_errors": 0, "in_discards": 0, "out_discards": 0 }
+    },
+    {
+      "local_device": "tor-2",
+      "local_port": "Ethernet6",
+      "remote_device": "host-04",
+      "remote_port": "NIC1-Port2",
+      "remote_chassis_id": "11:22:33:44:55:04",
+      "source": "lldp",
+      "discovered_at": "2026-04-24T15:30:00Z",
+      "oper_status": "DOWN",
+      "speed": "25G",
+      "mtu": "9100",
+      "counters": { "in_octets": 0, "out_octets": 0, "in_pkts": 0, "out_pkts": 0, "in_errors": 0, "out_errors": 0, "in_discards": 0, "out_discards": 0 }
+    },
+    {
+      "local_device": "tor-1",
+      "local_port": "Ethernet7",
+      "remote_device": "bmc-01",
+      "remote_port": "iDRAC",
+      "remote_chassis_id": "cc:dd:ee:ff:00:01",
+      "source": "lldp",
+      "discovered_at": "2026-04-24T15:30:00Z",
+      "oper_status": "UP",
+      "speed": "1G",
+      "mtu": "1500",
+      "counters": { "in_octets": 1284712384, "out_octets": 987234123, "in_pkts": 8471283, "out_pkts": 6234712, "in_errors": 0, "out_errors": 0, "in_discards": 0, "out_discards": 0 }
+    },
+    {
+      "local_device": "tor-1",
+      "local_port": "Ethernet8",
+      "remote_device": "bmc-02",
+      "remote_port": "iDRAC",
+      "remote_chassis_id": "cc:dd:ee:ff:00:02",
+      "source": "lldp",
+      "discovered_at": "2026-04-24T15:30:00Z",
+      "oper_status": "UP",
+      "speed": "1G",
+      "mtu": "1500",
+      "counters": { "in_octets": 1123847123, "out_octets": 898712384, "in_pkts": 7348912, "out_pkts": 5871238, "in_errors": 0, "out_errors": 0, "in_discards": 0, "out_discards": 0 }
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+# Network Mapper Configuration
+# Defines TOR switches to query for topology discovery.
+
+switches:
+  - name: TOR-1
+    address: "100.71.34.149:50051"
+    platform: nxos
+    auth:
+      username: "${CISCO_SWITCH_USER}"
+      password: "${CISCO_SWITCH_PASS}"
+tls:
+  # Trust-On-First-Use: fetch and cache switch certs on first connection
+  # tofu: true
+  # cert_dir: ".certs"
+  skip_verify: true   # Use instead of TOFU to skip all TLS verification
+  # ca_cert: /path/to/ca.pem   # Use for explicit CA trust
+
+collect:
+  timeout_sec: 30     # Per-switch timeout
+  parallel: 2         # Max concurrent switch connections
+  skip_counters: false # Set true to skip interface counter collection
