@@ -213,9 +213,20 @@ This project builds on patterns from [arc-switch](../arc-switch), specifically:
 - [x] v0.1 — CLI `collect` command with JSON topology output
 - [x] v0.2 — Embedded web UI with interactive graph visualization
 - [ ] v0.3 — Topology diff / drift detection
+
+
+
 - [ ] v0.4 — Real-time streaming / auto-refresh
 - [ ] v1.0 — Production hardening, comprehensive tests, CI/CD
+
+
+
 
 ## License
 
 MIT
+
+# Demo
+
+https://github.com/user-attachments/assets/5892ba64-68d3-4ea7-93a3-a4b0e99845b2
+
