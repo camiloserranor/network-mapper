@@ -16,14 +16,14 @@ Azure Local deployments rely on physical cabling between hosts and TOR switches.
 ## How It Works
 
 ```
-┌─────────────┐     gNMI Get/Subscribe      ┌──────────────┐
+┌─────────────┐     gNMI Get/Subscribe       ┌──────────────┐
 │  TOR Switch  │ ◄────────────────────────── │              │
-│  (SONiC/NX-OS)│  LLDP · Interfaces · Sys  │   Network    │
+│ (SONiC/NX-OS)│  LLDP · Interfaces · Sys    │   Network    │
 └─────────────┘                              │   Mapper     │ ──► topology.json
                                              │              │
-┌─────────────┐     gNMI Get/Subscribe      │              │ ──► Web UI (localhost)
+┌─────────────┐     gNMI Get/Subscribe       │              │ ──► Web UI (localhost)
 │  TOR Switch  │ ◄────────────────────────── │              │
-│  (SONiC/NX-OS)│  LLDP · Interfaces · Sys  │              │
+│ (SONiC/NX-OS)│  LLDP · Interfaces · Sys    │              │
 └─────────────┘                              └──────────────┘
 ```
 
