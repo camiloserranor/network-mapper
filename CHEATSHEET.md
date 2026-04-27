@@ -79,6 +79,42 @@ Serve the rich demo file (19 devices, 44 links, DOWN links, counters):
 
 Press `Ctrl+C` in the terminal running the server.
 
+## Profiling
+
+Start with profiling endpoints enabled:
+
+```powershell
+.\network-mapper.exe serve -c examples/config.test.yaml --profile -p 8085 --no-open
+```
+
+| Endpoint | Description |
+|---|---|
+| `/api/metrics` | Runtime stats (heap, goroutines, GC, uptime) |
+| `/debug/pprof/` | pprof index (requires `--profile`) |
+| `/debug/pprof/heap` | Heap profile |
+| `/debug/pprof/profile?seconds=30` | CPU profile |
+
+```powershell
+# Quick metrics check
+curl -s http://localhost:8085/api/metrics | jq
+
+# CPU profile analysis
+go tool pprof http://localhost:8085/debug/pprof/profile?seconds=30
+```
+
+## Docker
+
+```powershell
+# Build image
+docker build -t network-mapper .
+
+# Run with config
+docker run -p 8080:8080 -v ${PWD}/config.yaml:/etc/network-mapper/config.yaml:ro network-mapper
+
+# Or use docker-compose
+docker compose up
+```
+
 ## Environment Variables
 
 ```powershell

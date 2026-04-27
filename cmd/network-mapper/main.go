@@ -40,6 +40,7 @@ func main() {
 	serveCmd.Flags().Bool("no-open", false, "Don't auto-open browser")
 	serveCmd.Flags().StringP("config", "c", "", "Config file for live mode (enables periodic gNMI collection)")
 	serveCmd.Flags().Int("interval", 30, "Collection interval in seconds for live mode")
+	serveCmd.Flags().Bool("profile", false, "Enable /debug/pprof/* profiling endpoints")
 
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(collectCmd())
@@ -56,9 +57,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 	noOpen, _ := cmd.Flags().GetBool("no-open")
 	cfgPath, _ := cmd.Flags().GetString("config")
 	intervalSec, _ := cmd.Flags().GetInt("interval")
+	enableProfile, _ := cmd.Flags().GetBool("profile")
 
 	srv := server.New(topologyPath, port, webFS())
-
+	srv.SetPprof(enableProfile)
 	addr := fmt.Sprintf("http://localhost:%d", port)
 	fmt.Printf("Network Mapper UI starting at %s\n", addr)
 

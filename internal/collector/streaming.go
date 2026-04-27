@@ -61,6 +61,7 @@ func (sc *StreamingCollector) GetTopology() *topology.Topology {
 }
 
 func (sc *StreamingCollector) recollect(ctx context.Context) {
+	start := time.Now()
 	log.Println("[streaming] Starting collection cycle...")
 
 	topo, err := Collect(ctx, sc.cfg)
@@ -68,6 +69,9 @@ func (sc *StreamingCollector) recollect(ctx context.Context) {
 		log.Printf("[streaming] Collection error: %v", err)
 		return
 	}
+
+	elapsed := time.Since(start)
+	log.Printf("[streaming] Collection cycle completed in %s", elapsed)
 
 	newSnapshot, err := json.Marshal(topo)
 	if err != nil {
@@ -82,11 +86,11 @@ func (sc *StreamingCollector) recollect(ctx context.Context) {
 	sc.mu.Unlock()
 
 	if changed {
-		log.Printf("[streaming] Topology changed: %d devices, %d links", len(topo.Devices), len(topo.Links))
+		log.Printf("[streaming] Topology changed: %d devices, %d links (collected in %s)", len(topo.Devices), len(topo.Links), elapsed)
 		if sc.onChange != nil {
 			sc.onChange(topo)
 		}
 	} else {
-		log.Println("[streaming] No topology changes detected")
+		log.Printf("[streaming] No topology changes detected (collected in %s)", elapsed)
 	}
 }
