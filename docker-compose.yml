@@ -1,0 +1,26 @@
+services:
+  network-mapper:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config.yaml:/etc/network-mapper/config.yaml:ro
+    environment:
+      # Key Vault auth (DefaultAzureCredential picks these up)
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID:-}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID:-}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:-}
+      # Or use env-var credentials directly (non-KV fallback)
+      - GNMI_USER=${GNMI_USER:-}
+      - GNMI_PASS=${GNMI_PASS:-}
+    restart: unless-stopped
+
+  # Optional: serve a static topology file instead of live mode
+  # Uncomment and adjust as needed:
+  # network-mapper-static:
+  #   build: .
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - ./topology.json:/data/topology.json:ro
+  #   command: ["serve", "--topology", "/data/topology.json", "--port", "8080", "--no-open"]

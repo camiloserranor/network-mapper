@@ -70,6 +70,7 @@ func Collect(ctx context.Context, cfg *config.Config) (*topology.Topology, error
 }
 
 func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Config, now time.Time) switchResult {
+	start := time.Now()
 	result := switchResult{
 		SwitchName: sw.Name,
 		SwitchID:   sw.Name,
@@ -128,6 +129,11 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 	// 3. Collect interface state
 	collectInterfaces(ctx, client, sw, cfg, &result)
 
+	// 4. Collect switch resource utilization (CPU/memory)
+	collectResources(ctx, client, sw, &result)
+
+	log.Printf("  %s: collection completed in %s", sw.Name, time.Since(start))
+
 	return result
 }
 
@@ -185,6 +191,33 @@ func collectInterfaces(ctx context.Context, client *gnmi.Client, sw config.Switc
 
 	result.Interfaces = transform.ParseInterfacesOpenConfig(notifs)
 	log.Printf("  %s: %d interfaces", sw.Name, len(result.Interfaces))
+}
+
+func collectResources(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
+	cpuPath := transform.CPUPathOpenConfig
+	memPath := transform.MemoryPathOpenConfig
+	if sw.Platform == "nxos" {
+		cpuPath = transform.CPUPathNXOS
+		memPath = transform.MemoryPathNXOS
+	}
+
+	cpuNotifs, cpuErr := client.GetWithFallback(ctx, cpuPath)
+	memNotifs, memErr := client.GetWithFallback(ctx, memPath)
+
+	if cpuErr != nil && memErr != nil {
+		log.Printf("  %s: resource stats unavailable (CPU: %v, Memory: %v)", sw.Name, cpuErr, memErr)
+		return
+	}
+
+	stats := transform.ParseResourceStatsNXOS(cpuNotifs, memNotifs)
+	result.Device.CPUUtilization = stats.CPUUtilization
+	result.Device.MemoryUsed = stats.MemoryUsed
+	result.Device.MemoryTotal = stats.MemoryTotal
+
+	if stats.MemoryTotal > 0 {
+		memPct := float64(stats.MemoryUsed) / float64(stats.MemoryTotal) * 100
+		log.Printf("  %s: CPU %.1f%%, Memory %.1f%% (%d/%d bytes)", sw.Name, stats.CPUUtilization, memPct, stats.MemoryUsed, stats.MemoryTotal)
+	}
 }
 
 func buildTopology(results []switchResult, now time.Time) *topology.Topology {

@@ -2,11 +2,15 @@
 package config
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/camiloserranor/network-mapper/internal/secrets"
 	"gopkg.in/yaml.v3"
 )
 
@@ -29,8 +33,9 @@ type SwitchConfig struct {
 
 // AuthConfig defines authentication credentials for a switch.
 type AuthConfig struct {
-	Username string `yaml:"username"`
-	Password string `yaml:"password"` // supports ${ENV_VAR} syntax
+	Username         string `yaml:"username"`
+	Password         string `yaml:"password"`          // supports ${ENV_VAR} syntax
+	PasswordKeyvault string `yaml:"password_keyvault"` // Key Vault secret URI (takes precedence over password)
 }
 
 // TLSConfig defines TLS settings for gNMI connections.
@@ -70,7 +75,53 @@ func Load(path string) (*Config, error) {
 	}
 
 	cfg.applyDefaults()
+
+	// Resolve Key Vault secrets for switches that use password_keyvault
+	if err := cfg.resolveKeyVaultSecrets(); err != nil {
+		return nil, fmt.Errorf("resolving Key Vault secrets: %w", err)
+	}
+
 	return &cfg, nil
+}
+
+// resolveKeyVaultSecrets fetches passwords from Azure Key Vault for switches that have password_keyvault set.
+func (c *Config) resolveKeyVaultSecrets() error {
+	var needsKV bool
+	for _, sw := range c.Switches {
+		if sw.Auth.PasswordKeyvault != "" {
+			needsKV = true
+			break
+		}
+	}
+
+	if !needsKV {
+		return nil
+	}
+
+	resolver, err := secrets.NewResolver()
+	if err != nil {
+		return fmt.Errorf("initializing Key Vault resolver: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	for i := range c.Switches {
+		kvURI := c.Switches[i].Auth.PasswordKeyvault
+		if kvURI == "" {
+			continue
+		}
+
+		log.Printf("[config] Resolving password from Key Vault for switch %q", c.Switches[i].Name)
+		secret, err := resolver.Resolve(ctx, kvURI)
+		if err != nil {
+			return fmt.Errorf("switch %q: %w", c.Switches[i].Name, err)
+		}
+
+		c.Switches[i].Auth.Password = secret
+	}
+
+	return nil
 }
 
 // resolveEnvVars replaces ${VAR_NAME} with the environment variable value.

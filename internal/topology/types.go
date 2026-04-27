@@ -23,6 +23,9 @@ type Device struct {
 	ManagementAddress string            `json:"management_address,omitempty"`
 	SoftwareVersion   string            `json:"software_version,omitempty"`
 	Uptime            string            `json:"uptime,omitempty"`
+	CPUUtilization    float64           `json:"cpu_utilization,omitempty"`    // percentage (0-100)
+	MemoryUsed        uint64            `json:"memory_used,omitempty"`       // bytes
+	MemoryTotal       uint64            `json:"memory_total,omitempty"`      // bytes
 	Interfaces        []Interface       `json:"interfaces,omitempty"`
 	Annotations       map[string]string `json:"annotations,omitempty"`
 }
