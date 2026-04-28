@@ -23,63 +23,30 @@ const NetworkGraph = (() => {
         unknown: 'ellipse',
     };
 
-    // SVG icon data URIs — clean Fluent-style line icons
+    // Official Microsoft Fluent UI System Icons (MIT licensed)
+    // Source: https://github.com/microsoft/fluentui-system-icons
+    // Recolored per device type using our Azure-inspired palette
+    function fluentIcon(svgPath, color) {
+        return 'data:image/svg+xml,' + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">' +
+            '<path d="' + svgPath + '" fill="' + color + '"/></svg>'
+        );
+    }
+    const fluentPaths = {
+        // ic_fluent_router_20_regular
+        router: 'M3.5 9.5C3.5 5.91015 6.41015 3 10 3C13.5899 3 16.5 5.91015 16.5 9.5C16.5 9.77614 16.7239 10 17 10C17.2761 10 17.5 9.77614 17.5 9.5C17.5 5.35786 14.1421 2 10 2C5.85786 2 2.5 5.35786 2.5 9.5C2.5 9.77614 2.72386 10 3 10C3.27614 10 3.5 9.77614 3.5 9.5ZM10 5.5C7.79086 5.5 6 7.29086 6 9.5C6 9.77614 5.77614 10 5.5 10C5.22386 10 5 9.77614 5 9.5C5 6.73858 7.23858 4.5 10 4.5C12.7614 4.5 15 6.73858 15 9.5C15 9.77614 14.7761 10 14.5 10C14.2239 10 14 9.77614 14 9.5C14 7.29086 12.2091 5.5 10 5.5ZM7.75 9.25C7.75 8.00736 8.75736 7 10 7C11.2426 7 12.25 8.00736 12.25 9.25C12.25 10.3208 11.502 11.2169 10.5 11.4442V13H14.5C15.8807 13 17 14.1193 17 15.5C17 16.8807 15.8807 18 14.5 18H5.5C4.11929 18 3 16.8807 3 15.5C3 14.1193 4.11929 13 5.5 13H9.5V11.4442C8.49801 11.2169 7.75 10.3208 7.75 9.25ZM10 8C9.30964 8 8.75 8.55964 8.75 9.25C8.75 9.94036 9.30964 10.5 10 10.5C10.6904 10.5 11.25 9.94036 11.25 9.25C11.25 8.55964 10.6904 8 10 8ZM5.5 14C4.67157 14 4 14.6716 4 15.5C4 16.3284 4.67157 17 5.5 17H14.5C15.3284 17 16 16.3284 16 15.5C16 14.6716 15.3284 14 14.5 14H5.5Z',
+        // ic_fluent_server_20_filled
+        server: 'M7.5 2C6.11929 2 5 3.11929 5 4.5V15.5C5 16.8807 6.11929 18 7.5 18H12.5C13.8807 18 15 16.8807 15 15.5V4.5C15 3.11929 13.8807 2 12.5 2H7.5ZM7 5.5C7 5.22386 7.22386 5 7.5 5H12.5C12.7761 5 13 5.22386 13 5.5C13 5.77614 12.7761 6 12.5 6H7.5C7.22386 6 7 5.77614 7 5.5ZM7 12.5C7 12.2239 7.22386 12 7.5 12H12.5C12.7761 12 13 12.2239 13 12.5C13 12.7761 12.7761 13 12.5 13H7.5C7.22386 13 7 12.7761 7 12.5ZM7 14.5C7 14.2239 7.22386 14 7.5 14H12.5C12.7761 14 13 14.2239 13 14.5C13 14.7761 12.7761 15 12.5 15H7.5C7.22386 15 7 14.7761 7 14.5Z',
+        // ic_fluent_desktop_20_regular
+        desktop: 'M4 2C2.89543 2 2 2.89543 2 4V13C2 14.1046 2.89543 15 4 15H7V17H5.5C5.22386 17 5 17.2239 5 17.5C5 17.7761 5.22386 18 5.5 18H14.5C14.7761 18 15 17.7761 15 17.5C15 17.2239 14.7761 17 14.5 17H13V15H16C17.1046 15 18 14.1046 18 13V4C18 2.89543 17.1046 2 16 2H4ZM12 15V17H8V15H12ZM3 4C3 3.44772 3.44772 3 4 3H16C16.5523 3 17 3.44772 17 4V13C17 13.5523 16.5523 14 16 14H4C3.44772 14 3 13.5523 3 13V4Z',
+        // ic_fluent_developer_board_20_regular
+        developerBoard: 'M10 7C8.34315 7 7 8.34315 7 10C7 11.6569 8.34315 13 10 13C11.6569 13 13 11.6569 13 10C13 8.34315 11.6569 7 10 7ZM8 10C8 8.89543 8.89543 8 10 8C11.1046 8 12 8.89543 12 10C12 11.1046 11.1046 12 10 12C8.89543 12 8 11.1046 8 10ZM7.5 2C7.77614 2 8 2.22386 8 2.5V4H9.5V2.5C9.5 2.22386 9.72386 2 10 2C10.2761 2 10.5 2.22386 10.5 2.5V4H12V2.5C12 2.22386 12.2239 2 12.5 2C12.7761 2 13 2.22386 13 2.5V4H13.5C14.8807 4 16 5.11929 16 6.5V7H17.5C17.7761 7 18 7.22386 18 7.5C18 7.77614 17.7761 8 17.5 8H16V9.5H17.5C17.7761 9.5 18 9.72386 18 10C18 10.2761 17.7761 10.5 17.5 10.5H16V12H17.5C17.7761 12 18 12.2239 18 12.5C18 12.7761 17.7761 13 17.5 13H16V13.5C16 14.8807 14.8807 16 13.5 16H13V17.5C13 17.7761 12.7761 18 12.5 18C12.2239 18 12 17.7761 12 17.5V16H10.5V17.5C10.5 17.7761 10.2761 18 10 18C9.72386 18 9.5 17.7761 9.5 17.5V16H8V17.5C8 17.7761 7.77614 18 7.5 18C7.22386 18 7 17.7761 7 17.5V16H6.5C5.11929 16 4 14.8807 4 13.5V13H2.5C2.22386 13 2 12.7761 2 12.5C2 12.2239 2.22386 12 2.5 12H4V10.5H2.5C2.22386 10.5 2 10.2761 2 10C2 9.72386 2.22386 9.5 2.5 9.5H4V8H2.5C2.22386 8 2 7.77614 2 7.5C2 7.22386 2.22386 7 2.5 7H4V6.5C4 5.11929 5.11929 4 6.5 4H7V2.5C7 2.22386 7.22386 2 7.5 2ZM15 6.5C15 5.67157 14.3284 5 13.5 5H6.5C5.67157 5 5 5.67157 5 6.5V13.5C5 14.3284 5.67157 15 6.5 15H13.5C14.3284 15 15 14.3284 15 13.5V6.5Z',
+    };
     const typeIcons = {
-        // Network switch: rectangle with 4 port indicators
-        switch: 'data:image/svg+xml,' + encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">' +
-            '<rect x="4" y="12" width="40" height="24" rx="3" stroke="#0078d4" stroke-width="2.5" fill="none"/>' +
-            '<circle cx="13" cy="21" r="2.5" fill="#0078d4"/>' +
-            '<circle cx="22" cy="21" r="2.5" fill="#0078d4"/>' +
-            '<circle cx="31" cy="21" r="2.5" fill="#0078d4"/>' +
-            '<circle cx="40" cy="21" r="2.5" fill="none" stroke="#0078d4" stroke-width="1.5"/>' +
-            '<line x1="10" y1="30" x2="38" y2="30" stroke="#0078d4" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 3"/>' +
-            '</svg>'
-        ),
-        // Server / Arc machine: server tower with status light
-        host: 'data:image/svg+xml,' + encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">' +
-            '<rect x="8" y="4" width="32" height="40" rx="3" stroke="#44b700" stroke-width="2.5" fill="none"/>' +
-            '<line x1="8" y1="18" x2="40" y2="18" stroke="#44b700" stroke-width="1.5"/>' +
-            '<line x1="8" y1="32" x2="40" y2="32" stroke="#44b700" stroke-width="1.5"/>' +
-            '<circle cx="14" cy="11" r="2" fill="#44b700"/>' +
-            '<line x1="20" y1="11" x2="34" y2="11" stroke="#44b700" stroke-width="2" stroke-linecap="round"/>' +
-            '<circle cx="14" cy="25" r="2" fill="#44b700"/>' +
-            '<line x1="20" y1="25" x2="34" y2="25" stroke="#44b700" stroke-width="2" stroke-linecap="round"/>' +
-            '<circle cx="14" cy="39" r="2" fill="#44b700" opacity="0.4"/>' +
-            '<line x1="20" y1="39" x2="34" y2="39" stroke="#44b700" stroke-width="2" stroke-linecap="round" opacity="0.4"/>' +
-            '</svg>'
-        ),
-        // Virtual machine: monitor with VM badge
-        vm: 'data:image/svg+xml,' + encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">' +
-            '<rect x="6" y="6" width="36" height="26" rx="3" stroke="#a36efd" stroke-width="2.5" fill="none"/>' +
-            '<line x1="18" y1="32" x2="30" y2="32" stroke="#a36efd" stroke-width="2.5" stroke-linecap="round"/>' +
-            '<line x1="24" y1="32" x2="24" y2="38" stroke="#a36efd" stroke-width="2.5"/>' +
-            '<line x1="16" y1="38" x2="32" y2="38" stroke="#a36efd" stroke-width="2.5" stroke-linecap="round"/>' +
-            '<path d="M16 15 L21 23 L26 15" stroke="#a36efd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>' +
-            '<path d="M26 15 L29 23 L32 15" stroke="#a36efd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>' +
-            '</svg>'
-        ),
-        // BMC: chip/board management icon
-        bmc: 'data:image/svg+xml,' + encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">' +
-            '<rect x="12" y="12" width="24" height="24" rx="3" stroke="#f7630c" stroke-width="2.5" fill="none"/>' +
-            '<rect x="18" y="18" width="12" height="12" rx="1.5" stroke="#f7630c" stroke-width="1.5" fill="#f7630c" fill-opacity="0.15"/>' +
-            '<line x1="16" y1="8" x2="16" y2="12" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
-            '<line x1="24" y1="8" x2="24" y2="12" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
-            '<line x1="32" y1="8" x2="32" y2="12" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
-            '<line x1="16" y1="36" x2="16" y2="40" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
-            '<line x1="24" y1="36" x2="24" y2="40" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
-            '<line x1="32" y1="36" x2="32" y2="40" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
-            '<line x1="8" y1="16" x2="12" y2="16" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
-            '<line x1="8" y1="24" x2="12" y2="24" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
-            '<line x1="8" y1="32" x2="12" y2="32" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
-            '<line x1="36" y1="16" x2="40" y2="16" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
-            '<line x1="36" y1="24" x2="40" y2="24" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
-            '<line x1="36" y1="32" x2="40" y2="32" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
-            '</svg>'
-        ),
+        switch: fluentIcon(fluentPaths.router, typeColors.switch),
+        host:   fluentIcon(fluentPaths.server, typeColors.host),
+        vm:     fluentIcon(fluentPaths.desktop, typeColors.vm),
+        bmc:    fluentIcon(fluentPaths.developerBoard, typeColors.bmc),
     };
 
     // Cytoscape style definitions — Azure portal dark theme
