@@ -72,7 +72,7 @@ const Toolbar = (() => {
                 const vlanId = e.target.value;
                 if (vlanId === '') {
                     // Show all
-                    NetworkGraph.filterByType('');
+                    NetworkGraph.filterByType('all');
                 } else {
                     filterByVLAN(parseInt(vlanId));
                 }
