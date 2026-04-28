@@ -6,42 +6,51 @@ const NetworkGraph = (() => {
     let cy = null;
     let currentLayout = 'dagre';
 
-    // Color map for device types
+    // Azure portal-inspired color map for device types
     const typeColors = {
-        switch:  '#2196F3',
-        host:    '#4CAF50',
-        bmc:     '#FF9800',
-        vm:      '#AB47BC',
-        unknown: '#9E9E9E',
+        switch:  '#0078d4',
+        host:    '#44b700',
+        bmc:     '#f7630c',
+        vm:      '#a36efd',
+        unknown: '#8a8886',
     };
 
     const typeShapes = {
         switch:  'round-rectangle',
-        host:    'ellipse',
-        bmc:     'diamond',
-        vm:      'ellipse',
+        host:    'round-rectangle',
+        bmc:     'round-rectangle',
+        vm:      'round-rectangle',
         unknown: 'ellipse',
     };
 
-    // Cytoscape style definitions
+    // SVG icon paths (served from /img/)
+    const typeIcons = {
+        switch:  '/img/icon-switch.svg',
+        host:    '/img/icon-host.svg',
+        bmc:     '/img/icon-bmc.svg',
+        vm:      '/img/icon-vm.svg',
+    };
+
+    // Cytoscape style definitions — Azure portal dark theme
     const graphStyle = [
         // Default node style
         {
             selector: 'node',
             style: {
                 'label': 'data(label)',
-                'width': 50,
-                'height': 50,
+                'width': 48,
+                'height': 48,
                 'font-size': '11px',
-                'color': '#e6e6e6',
+                'font-family': 'Segoe UI, sans-serif',
+                'color': '#d2d0ce',
                 'text-valign': 'bottom',
                 'text-halign': 'center',
                 'text-margin-y': 8,
                 'text-outline-width': 2,
-                'text-outline-color': '#0d1117',
-                'background-color': '#9E9E9E',
-                'border-width': 2,
-                'border-color': 'rgba(255, 255, 255, 0.1)',
+                'text-outline-color': '#1b1a19',
+                'background-color': '#323130',
+                'border-width': 1.5,
+                'border-color': '#605e5c',
                 'overlay-padding': 6,
                 'transition-property': 'background-color, border-color, width, height, opacity',
                 'transition-duration': '0.2s',
@@ -51,11 +60,16 @@ const NetworkGraph = (() => {
         {
             selector: 'node[type="switch"]',
             style: {
-                'background-color': typeColors.switch,
+                'background-color': '#252423',
+                'background-image': typeIcons.switch,
+                'background-fit': 'contain',
+                'background-clip': 'none',
+                'background-image-containment': 'over',
                 'shape': typeShapes.switch,
-                'width': 60,
-                'height': 40,
-                'border-color': 'rgba(33, 150, 243, 0.4)',
+                'width': 56,
+                'height': 42,
+                'border-color': typeColors.switch,
+                'border-width': 2,
             },
         },
         // Spine switch nodes (larger, bolder border)
@@ -72,40 +86,57 @@ const NetworkGraph = (() => {
         {
             selector: 'node[type="host"]',
             style: {
-                'background-color': typeColors.host,
+                'background-color': '#252423',
+                'background-image': typeIcons.host,
+                'background-fit': 'contain',
+                'background-clip': 'none',
+                'background-image-containment': 'over',
                 'shape': typeShapes.host,
-                'border-color': 'rgba(76, 175, 80, 0.4)',
+                'width': 48,
+                'height': 48,
+                'border-color': typeColors.host,
+                'border-width': 2,
             },
         },
         // BMC nodes
         {
             selector: 'node[type="bmc"]',
             style: {
-                'background-color': typeColors.bmc,
+                'background-color': '#252423',
+                'background-image': typeIcons.bmc,
+                'background-fit': 'contain',
+                'background-clip': 'none',
+                'background-image-containment': 'over',
                 'shape': typeShapes.bmc,
-                'width': 35,
-                'height': 35,
-                'border-color': 'rgba(255, 152, 0, 0.4)',
+                'width': 36,
+                'height': 36,
+                'border-color': typeColors.bmc,
+                'border-width': 1.5,
             },
         },
         // Unknown nodes
         {
             selector: 'node[type="unknown"]',
             style: {
-                'background-color': typeColors.unknown,
-                'border-color': 'rgba(158, 158, 158, 0.3)',
+                'background-color': '#323130',
+                'border-color': typeColors.unknown,
             },
         },
         // VM endpoint nodes
         {
             selector: 'node[type="vm"]',
             style: {
-                'background-color': typeColors.vm,
+                'background-color': '#252423',
+                'background-image': typeIcons.vm,
+                'background-fit': 'contain',
+                'background-clip': 'none',
+                'background-image-containment': 'over',
                 'shape': typeShapes.vm,
-                'width': 30,
-                'height': 30,
+                'width': 32,
+                'height': 32,
                 'font-size': '9px',
-                'border-color': 'rgba(171, 71, 188, 0.4)',
+                'border-color': typeColors.vm,
+                'border-width': 1.5,
             },
         },
         // VLAN compound node style
@@ -113,38 +144,40 @@ const NetworkGraph = (() => {
             selector: 'node.vlan-group',
             style: {
                 'background-color': 'data(vlanColor)',
-                'background-opacity': 0.15,
-                'border-width': 2,
+                'background-opacity': 0.08,
+                'border-width': 1.5,
                 'border-color': 'data(vlanColor)',
-                'border-opacity': 0.5,
+                'border-opacity': 0.4,
                 'border-style': 'solid',
                 'shape': 'round-rectangle',
                 'padding': '30px',
                 'label': 'data(label)',
                 'font-size': '12px',
-                'font-weight': 'bold',
+                'font-family': 'Segoe UI, sans-serif',
+                'font-weight': '600',
                 'color': 'data(vlanColor)',
                 'text-valign': 'top',
                 'text-halign': 'center',
                 'text-margin-y': -8,
                 'text-outline-width': 2,
-                'text-outline-color': '#0d1117',
+                'text-outline-color': '#1b1a19',
                 'events': 'no',
             },
         },
-        // Compound parent node style
+        // Compound parent node style (TOR grouping)
         {
             selector: 'node:parent',
             style: {
-                'background-color': 'rgba(42, 45, 62, 0.5)',
+                'background-color': 'rgba(50, 49, 48, 0.5)',
                 'border-width': 1,
-                'border-color': 'rgba(255, 255, 255, 0.08)',
+                'border-color': 'rgba(96, 94, 92, 0.3)',
                 'border-style': 'dashed',
                 'shape': 'round-rectangle',
                 'padding': '30px',
                 'label': 'data(label)',
                 'font-size': '10px',
-                'color': 'rgba(139, 143, 163, 0.7)',
+                'font-family': 'Segoe UI, sans-serif',
+                'color': 'rgba(161, 159, 157, 0.7)',
                 'text-valign': 'top',
                 'text-halign': 'center',
                 'text-margin-y': -6,
@@ -156,8 +189,8 @@ const NetworkGraph = (() => {
             selector: 'node:selected',
             style: {
                 'border-width': 3,
-                'border-color': '#e94560',
-                'overlay-color': '#e94560',
+                'border-color': '#0078d4',
+                'overlay-color': '#0078d4',
                 'overlay-opacity': 0.15,
             },
         },
@@ -166,8 +199,8 @@ const NetworkGraph = (() => {
             selector: 'node.highlight',
             style: {
                 'border-width': 3,
-                'border-color': '#e94560',
-                'overlay-color': '#e94560',
+                'border-color': '#0078d4',
+                'overlay-color': '#0078d4',
                 'overlay-opacity': 0.1,
             },
         },
@@ -182,10 +215,10 @@ const NetworkGraph = (() => {
         {
             selector: 'edge',
             style: {
-                'width': 2,
-                'line-color': '#3a3d52',
+                'width': 1.5,
+                'line-color': '#605e5c',
                 'curve-style': 'bezier',
-                'opacity': 0.7,
+                'opacity': 0.6,
                 'transition-property': 'line-color, width, opacity',
                 'transition-duration': '0.2s',
             },
@@ -194,8 +227,8 @@ const NetworkGraph = (() => {
         {
             selector: 'edge.highlight',
             style: {
-                'line-color': '#e94560',
-                'width': 3,
+                'line-color': '#0078d4',
+                'width': 2.5,
                 'opacity': 1,
             },
         },
@@ -212,10 +245,11 @@ const NetworkGraph = (() => {
             style: {
                 'label': 'data(edgeLabel)',
                 'font-size': '9px',
-                'color': '#8b8fa3',
+                'font-family': 'Segoe UI, sans-serif',
+                'color': '#a19f9d',
                 'text-rotation': 'autorotate',
                 'text-outline-width': 1,
-                'text-outline-color': '#0d1117',
+                'text-outline-color': '#1b1a19',
             },
         },
         // Search match
@@ -223,8 +257,8 @@ const NetworkGraph = (() => {
             selector: 'node.search-match',
             style: {
                 'border-width': 3,
-                'border-color': '#FFD600',
-                'overlay-color': '#FFD600',
+                'border-color': '#fce100',
+                'overlay-color': '#fce100',
                 'overlay-opacity': 0.2,
             },
         },
@@ -232,7 +266,7 @@ const NetworkGraph = (() => {
         {
             selector: 'edge[oper_status="DOWN"]',
             style: {
-                'line-color': '#e94560',
+                'line-color': '#d13438',
                 'line-style': 'dashed',
                 'opacity': 0.9,
             },
@@ -531,11 +565,11 @@ const NetworkGraph = (() => {
         }
     }
 
-    // VLAN color palette — generates distinct colors for VLAN compound nodes
+    // VLAN color palette — muted tones consistent with Azure portal
     const vlanPalette = [
-        '#E91E63', '#00BCD4', '#8BC34A', '#FF5722', '#3F51B5',
-        '#FFEB3B', '#009688', '#F44336', '#2196F3', '#FF9800',
-        '#9C27B0', '#4CAF50', '#795548', '#607D8B', '#CDDC39',
+        '#0078d4', '#00b7c3', '#57a300', '#e3008c', '#8764b8',
+        '#f7630c', '#107c10', '#ca5010', '#005b70', '#4f6bed',
+        '#c239b3', '#498205', '#005a9e', '#d13438', '#7a7574',
     ];
 
     function getVLANColor(vlanId) {
