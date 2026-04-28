@@ -44,98 +44,142 @@ const Sidebar = (() => {
 
         let html = '';
 
-        // Device info section
-        html += '<div class="detail-section">';
-        html += '<h3>Device Info</h3>';
-        html += detailRow('ID', nodeData.id);
-        if (nodeData.chassis_id) html += detailRow('Chassis ID', nodeData.chassis_id);
-        if (nodeData.system_name) html += detailRow('System Name', nodeData.system_name);
-        if (nodeData.system_description) html += detailRow('Description', nodeData.system_description);
-        if (nodeData.mgmt_addr) html += detailRow('Management IP', nodeData.mgmt_addr);
-        if (nodeData.software_version) html += detailRow('Software Version', nodeData.software_version);
-        if (nodeData.uptime) html += detailRow('Uptime', nodeData.uptime);
-        html += '</div>';
-
-        // Interface health summary
-        if (nodeData.interfaces_total > 0) {
+        if (type === 'vm') {
+            // VM endpoint details
             html += '<div class="detail-section">';
-            html += '<h3>Interface Health</h3>';
-            const pct = Math.round((nodeData.interfaces_up / nodeData.interfaces_total) * 100);
-            html += detailRow('Up / Total', `${nodeData.interfaces_up} / ${nodeData.interfaces_total}`);
-            html += detailRow('Health', `${pct}%`);
-            html += '</div>';
-        }
-
-        // Interface details from topology data
-        if (topology) {
-            const device = (topology.devices || []).find(d => d.id === nodeData.id);
-            if (device && device.interfaces && device.interfaces.length > 0) {
-                html += '<div class="detail-section">';
-                html += `<h3>Interfaces (${device.interfaces.length})</h3>`;
-                html += '<ul class="interface-list">';
-                for (const iface of device.interfaces) {
-                    const statusColor = iface.oper_status === 'UP' ? '#4CAF50' : (iface.oper_status === 'DOWN' ? '#e94560' : '#9E9E9E');
-                    const statusDot = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${statusColor};margin-right:4px;vertical-align:middle;"></span>`;
-                    let detail = iface.speed || '';
-                    if (iface.mtu) detail += detail ? ` · MTU ${iface.mtu}` : `MTU ${iface.mtu}`;
-                    html += `<li>
-                        <span class="port">${statusDot}${escapeHtml(iface.name)}</span>
-                        <span class="remote">${escapeHtml(detail)}</span>
-                    </li>`;
-                }
-                html += '</ul>';
-                html += '</div>';
+            html += '<h3>VM Endpoint</h3>';
+            if (nodeData.mac) html += detailRow('MAC Address', nodeData.mac);
+            if (nodeData.ips && nodeData.ips.length > 0) {
+                html += detailRow('IP Addresses', nodeData.ips.join(', '));
             }
-        }
+            if (nodeData.host_device) html += detailRow('Host Device', nodeData.host_device);
+            if (nodeData.host_port) html += detailRow('Host Port', nodeData.host_port);
+            if (nodeData.switch_id) html += detailRow('Switch', nodeData.switch_id);
+            if (nodeData.vlans && nodeData.vlans.length > 0) {
+                html += detailRow('VLANs', nodeData.vlans.join(', '));
+            }
+            html += '</div>';
+        } else {
+            // Device info section
+            html += '<div class="detail-section">';
+            html += '<h3>Device Info</h3>';
+            html += detailRow('ID', nodeData.id);
+            if (nodeData.chassis_id) html += detailRow('Chassis ID', nodeData.chassis_id);
+            if (nodeData.system_name) html += detailRow('System Name', nodeData.system_name);
+            if (nodeData.system_description) html += detailRow('Description', nodeData.system_description);
+            if (nodeData.mgmt_addr) html += detailRow('Management IP', nodeData.mgmt_addr);
+            if (nodeData.software_version) html += detailRow('Software Version', nodeData.software_version);
+            if (nodeData.uptime) html += detailRow('Uptime', nodeData.uptime);
+            html += '</div>';
 
-        // Find connections for this device
-        if (topology && topology.links) {
-            const connections = topology.links.filter(
-                (l) => l.local_device === nodeData.id || l.remote_device === nodeData.id
-            );
-
-            if (connections.length > 0) {
+            // VLAN membership
+            if (nodeData.vlans && nodeData.vlans.length > 0) {
                 html += '<div class="detail-section">';
-                html += `<h3>Connections (${connections.length})</h3>`;
-                html += '<ul class="interface-list">';
-
-                for (const link of connections) {
-                    const isLocal = link.local_device === nodeData.id;
-                    const localPort = isLocal ? link.local_port : link.remote_port;
-                    const remoteDevice = isLocal ? link.remote_device : link.local_device;
-                    const remotePort = isLocal ? link.remote_port : link.local_port;
-
-                    html += `<li>
-                        <span class="port">${escapeHtml(localPort)}</span>
-                        <span class="remote">→ ${escapeHtml(remoteDevice)} (${escapeHtml(remotePort)})</span>
-                    </li>`;
-                }
-
-                html += '</ul>';
+                html += '<h3>VLAN Membership</h3>';
+                html += detailRow('VLANs', nodeData.vlans.join(', '));
                 html += '</div>';
             }
 
-            // Stats
-            const connectedDevices = new Set();
-            connections.forEach((l) => {
-                connectedDevices.add(l.local_device === nodeData.id ? l.remote_device : l.local_device);
-            });
-
-            html += '<div class="detail-section">';
-            html += '<h3>Statistics</h3>';
-            html += detailRow('Links', connections.length);
-            html += detailRow('Connected Devices', connectedDevices.size);
-            html += '</div>';
-        }
-
-        // Annotations
-        if (nodeData.annotations && Object.keys(nodeData.annotations).length > 0) {
-            html += '<div class="detail-section">';
-            html += '<h3>Annotations</h3>';
-            for (const [key, value] of Object.entries(nodeData.annotations)) {
-                html += detailRow(key, value);
+            // Interface health summary
+            if (nodeData.interfaces_total > 0) {
+                html += '<div class="detail-section">';
+                html += '<h3>Interface Health</h3>';
+                const pct = Math.round((nodeData.interfaces_up / nodeData.interfaces_total) * 100);
+                html += detailRow('Up / Total', `${nodeData.interfaces_up} / ${nodeData.interfaces_total}`);
+                html += detailRow('Health', `${pct}%`);
+                html += '</div>';
             }
-            html += '</div>';
+
+            // Interface details from topology data
+            if (topology) {
+                const device = (topology.devices || []).find(d => d.id === nodeData.id);
+                if (device && device.interfaces && device.interfaces.length > 0) {
+                    html += '<div class="detail-section">';
+                    html += `<h3>Interfaces (${device.interfaces.length})</h3>`;
+                    html += '<ul class="interface-list">';
+                    for (const iface of device.interfaces) {
+                        const statusColor = iface.oper_status === 'UP' ? '#4CAF50' : (iface.oper_status === 'DOWN' ? '#e94560' : '#9E9E9E');
+                        const statusDot = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${statusColor};margin-right:4px;vertical-align:middle;"></span>`;
+                        let detail = iface.speed || '';
+                        if (iface.mtu) detail += detail ? ` · MTU ${iface.mtu}` : `MTU ${iface.mtu}`;
+                        html += `<li>
+                            <span class="port">${statusDot}${escapeHtml(iface.name)}</span>
+                            <span class="remote">${escapeHtml(detail)}</span>
+                        </li>`;
+                    }
+                    html += '</ul>';
+                    html += '</div>';
+                }
+
+                // Show VM endpoints behind this host
+                if (device && topology.endpoints) {
+                    const eps = topology.endpoints.filter(ep => ep.host_device === nodeData.id);
+                    if (eps.length > 0) {
+                        html += '<div class="detail-section">';
+                        html += `<h3>VM Endpoints (${eps.length})</h3>`;
+                        html += '<ul class="interface-list">';
+                        for (const ep of eps) {
+                            const ipStr = (ep.ips && ep.ips.length > 0) ? ep.ips.join(', ') : 'no IP';
+                            html += `<li>
+                                <span class="port">${escapeHtml(ep.mac)}</span>
+                                <span class="remote">${escapeHtml(ipStr)}</span>
+                            </li>`;
+                        }
+                        html += '</ul>';
+                        html += '</div>';
+                    }
+                }
+            }
+
+            // Find connections for this device
+            if (topology && topology.links) {
+                const connections = topology.links.filter(
+                    (l) => l.local_device === nodeData.id || l.remote_device === nodeData.id
+                );
+
+                if (connections.length > 0) {
+                    html += '<div class="detail-section">';
+                    html += `<h3>Connections (${connections.length})</h3>`;
+                    html += '<ul class="interface-list">';
+
+                    for (const link of connections) {
+                        const isLocal = link.local_device === nodeData.id;
+                        const localPort = isLocal ? link.local_port : link.remote_port;
+                        const remoteDevice = isLocal ? link.remote_device : link.local_device;
+                        const remotePort = isLocal ? link.remote_port : link.local_port;
+
+                        html += `<li>
+                            <span class="port">${escapeHtml(localPort)}</span>
+                            <span class="remote">→ ${escapeHtml(remoteDevice)} (${escapeHtml(remotePort)})</span>
+                        </li>`;
+                    }
+
+                    html += '</ul>';
+                    html += '</div>';
+                }
+
+                // Stats
+                const connectedDevices = new Set();
+                connections.forEach((l) => {
+                    connectedDevices.add(l.local_device === nodeData.id ? l.remote_device : l.local_device);
+                });
+
+                html += '<div class="detail-section">';
+                html += '<h3>Statistics</h3>';
+                html += detailRow('Links', connections.length);
+                html += detailRow('Connected Devices', connectedDevices.size);
+                html += '</div>';
+            }
+
+            // Annotations
+            if (nodeData.annotations && Object.keys(nodeData.annotations).length > 0) {
+                html += '<div class="detail-section">';
+                html += '<h3>Annotations</h3>';
+                for (const [key, value] of Object.entries(nodeData.annotations)) {
+                    html += detailRow(key, value);
+                }
+                html += '</div>';
+            }
         }
 
         content().innerHTML = html;

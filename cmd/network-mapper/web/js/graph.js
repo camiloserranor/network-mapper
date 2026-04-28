@@ -11,6 +11,7 @@ const NetworkGraph = (() => {
         switch:  '#2196F3',
         host:    '#4CAF50',
         bmc:     '#FF9800',
+        vm:      '#AB47BC',
         unknown: '#9E9E9E',
     };
 
@@ -18,6 +19,7 @@ const NetworkGraph = (() => {
         switch:  'round-rectangle',
         host:    'ellipse',
         bmc:     'diamond',
+        vm:      'ellipse',
         unknown: 'ellipse',
     };
 
@@ -82,6 +84,41 @@ const NetworkGraph = (() => {
             style: {
                 'background-color': typeColors.unknown,
                 'border-color': 'rgba(158, 158, 158, 0.3)',
+            },
+        },
+        // VM endpoint nodes
+        {
+            selector: 'node[type="vm"]',
+            style: {
+                'background-color': typeColors.vm,
+                'shape': typeShapes.vm,
+                'width': 30,
+                'height': 30,
+                'font-size': '9px',
+                'border-color': 'rgba(171, 71, 188, 0.4)',
+            },
+        },
+        // VLAN compound node style
+        {
+            selector: 'node.vlan-group',
+            style: {
+                'background-color': 'data(vlanColor)',
+                'background-opacity': 0.15,
+                'border-width': 2,
+                'border-color': 'data(vlanColor)',
+                'border-opacity': 0.5,
+                'border-style': 'solid',
+                'shape': 'round-rectangle',
+                'padding': '30px',
+                'label': 'data(label)',
+                'font-size': '12px',
+                'font-weight': 'bold',
+                'color': 'data(vlanColor)',
+                'text-valign': 'top',
+                'text-halign': 'center',
+                'text-margin-y': -8,
+                'text-outline-width': 2,
+                'text-outline-color': '#0d1117',
             },
         },
         // Compound parent node style
@@ -192,7 +229,7 @@ const NetworkGraph = (() => {
     ];
 
     // Rank tiers: BMC on top (0), switches middle (1), hosts bottom (2)
-    const typeRank = { bmc: 0, switch: 1, host: 2, unknown: 2 };
+    const typeRank = { bmc: 0, switch: 1, host: 2, vm: 2, unknown: 2 };
 
     // Layout configurations
     const layouts = {
@@ -476,6 +513,113 @@ const NetworkGraph = (() => {
         }
     }
 
+    // VLAN color palette — generates distinct colors for VLAN compound nodes
+    const vlanPalette = [
+        '#E91E63', '#00BCD4', '#8BC34A', '#FF5722', '#3F51B5',
+        '#FFEB3B', '#009688', '#F44336', '#2196F3', '#FF9800',
+        '#9C27B0', '#4CAF50', '#795548', '#607D8B', '#CDDC39',
+    ];
+
+    function getVLANColor(vlanId) {
+        return vlanPalette[vlanId % vlanPalette.length];
+    }
+
+    let vlanGrouped = false;
+
+    function toggleGroupByVLAN(topology) {
+        if (!cy || !topology) return;
+
+        if (vlanGrouped) {
+            // Ungroup: move all nodes back to root and remove VLAN group nodes
+            cy.nodes().forEach(n => {
+                if (n.isChild()) {
+                    n.move({ parent: null });
+                }
+            });
+            cy.nodes('.vlan-group').remove();
+            vlanGrouped = false;
+            grouped = false;
+            runLayout(currentLayout);
+            return;
+        }
+
+        // First, undo any TOR grouping
+        if (grouped) {
+            cy.nodes().forEach(n => {
+                if (n.isChild()) n.move({ parent: null });
+            });
+            cy.nodes(':parent').remove();
+            grouped = false;
+        }
+
+        // Build VLAN membership from topology data
+        const deviceVLANs = {};
+        if (topology.devices) {
+            topology.devices.forEach(d => {
+                if (d.vlans && d.vlans.length > 0) {
+                    deviceVLANs[d.id] = d.vlans;
+                }
+            });
+        }
+        // Also include VM endpoints
+        if (topology.endpoints) {
+            topology.endpoints.forEach(ep => {
+                const epId = 'vm-' + ep.mac.replace(/:/g, '');
+                if (ep.vlans && ep.vlans.length > 0) {
+                    deviceVLANs[epId] = ep.vlans;
+                }
+            });
+        }
+
+        // Get all VLAN IDs
+        const allVLANs = new Set();
+        const vlanNames = {};
+        if (topology.vlans) {
+            topology.vlans.forEach(v => {
+                allVLANs.add(v.id);
+                vlanNames[v.id] = v.name || `VLAN ${v.id}`;
+            });
+        }
+        Object.values(deviceVLANs).forEach(vlans => {
+            vlans.forEach(v => allVLANs.add(v));
+        });
+
+        if (allVLANs.size === 0) return;
+
+        // Create VLAN compound nodes
+        const vlanNodes = [];
+        allVLANs.forEach(vid => {
+            const label = vlanNames[vid] || `VLAN ${vid}`;
+            vlanNodes.push({
+                group: 'nodes',
+                data: {
+                    id: `vlan-${vid}`,
+                    label: label,
+                    vlanColor: getVLANColor(vid),
+                },
+                classes: 'vlan-group',
+            });
+        });
+        cy.add(vlanNodes);
+
+        // Move devices into their primary VLAN (first VLAN in their list)
+        cy.nodes().forEach(n => {
+            if (n.hasClass('vlan-group')) return;
+            const vlans = deviceVLANs[n.id()];
+            if (vlans && vlans.length > 0) {
+                n.move({ parent: `vlan-${vlans[0]}` });
+            }
+        });
+
+        vlanGrouped = true;
+        grouped = true;
+        runLayout(currentLayout);
+    }
+
+    function isVLANGrouped() {
+        return vlanGrouped;
+    }
+
     return {
         init,
         runLayout,
@@ -484,7 +628,9 @@ const NetworkGraph = (() => {
         searchNodes,
         exportPNG,
         toggleGroupByTOR,
+        toggleGroupByVLAN,
         isGrouped,
+        isVLANGrouped,
         getInstance,
         getCurrentLayout,
         updateElements,

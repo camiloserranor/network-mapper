@@ -341,6 +341,7 @@ select.btn {
 .type-badge.host { background: rgba(76, 175, 80, 0.2); color: var(--node-host); }
 .type-badge.bmc { background: rgba(255, 152, 0, 0.2); color: var(--node-bmc); }
 .type-badge.unknown { background: rgba(158, 158, 158, 0.2); color: var(--node-unknown); }
+.type-badge.vm { background: rgba(156, 39, 176, 0.2); color: #CE93D8; }
 
 /* ---- Error overlay ---- */
 #error-overlay {

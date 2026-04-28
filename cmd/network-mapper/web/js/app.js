@@ -94,9 +94,44 @@ function topologyToCytoscape(topology) {
                 uptime: device.uptime || '',
                 interfaces_up: ifacesUp,
                 interfaces_total: ifaces.length,
+                vlans: device.vlans || [],
                 annotations: device.annotations || {},
             },
         });
+    }
+
+    // Endpoints → VM nodes
+    for (const ep of (topology.endpoints || [])) {
+        const epId = 'vm-' + ep.mac.replace(/:/g, '');
+        const label = (ep.ips && ep.ips.length > 0) ? ep.ips[0] : ep.mac;
+
+        elements.push({
+            data: {
+                id: epId,
+                label: label,
+                type: 'vm',
+                mac: ep.mac,
+                ips: ep.ips || [],
+                vlans: ep.vlans || [],
+                host_device: ep.host_device || '',
+                host_port: ep.host_port || '',
+                switch_id: ep.switch_id || '',
+            },
+        });
+
+        // Link VM to its parent host (if known)
+        if (ep.host_device) {
+            elements.push({
+                data: {
+                    id: `${ep.host_device}::vm::${epId}`,
+                    source: ep.host_device,
+                    target: epId,
+                    source_type: 'mac-table',
+                    edgeLabel: ep.host_port || '',
+                    oper_status: 'UP',
+                },
+            });
+        }
     }
 
     // Links → edges

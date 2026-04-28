@@ -3,8 +3,10 @@
 
 switches:
   - name: TOR-1
-    address: "100.71.34.149:50051"
-    platform: nxos
+    #address: "100.71.34.149:50051"
+    # address: "10.218.191.143:50051"
+    address: "100.100.81.129:50051" #-> 
+    platform: sonic
     auth:
       username: "${CISCO_SWITCH_USER}"
       password: "${CISCO_SWITCH_PASS}"
