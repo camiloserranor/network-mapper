@@ -9,8 +9,8 @@
 #   username: "${GNMI_USER}"
 #   password: "${GNMI_PASS}"
 auth:
-  username: "${CISCO_SWITCH_USER}"
-  password: "${CISCO_SWITCH_PASS}"
+  username: "administrator"
+  password_keyvault: https://azurestack-network.vault.azure.net/secrets/Net-Admin/222d9bb58f644b78b1670caef1ac7358
 
 switches:
   - name: TOR-1
