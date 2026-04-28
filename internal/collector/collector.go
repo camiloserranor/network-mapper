@@ -427,7 +427,7 @@ func buildTopology(results []switchResult, now time.Time) *topology.Topology {
 }
 
 func classifyDevice(nbr transform.LLDPNeighbor) string {
-	return transform.ClassifyDevice(nbr.SystemDescription, nbr.SystemName)
+	return transform.ClassifyDevice(nbr.SystemDescription, nbr.SystemName, nbr.Capabilities)
 }
 
 func extractHost(address string) string {
