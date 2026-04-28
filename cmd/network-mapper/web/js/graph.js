@@ -468,19 +468,23 @@ const NetworkGraph = (() => {
 
     function toggleGroupByTOR(elements) {
         if (!cy) return;
+
+        // If VLAN grouping is active, clean it up first regardless of TOR toggle direction
+        if (vlanGrouped) {
+            cy.nodes().forEach(n => {
+                if (n.isChild()) n.move({ parent: null });
+                n.style('display', 'element');
+            });
+            cy.edges().forEach(e => e.style('display', 'element'));
+            cy.nodes('.vlan-group').remove();
+            vlanGrouped = false;
+            // Reset grouped so the toggle below starts from a clean state
+            grouped = false;
+        }
+
         grouped = !grouped;
 
         if (grouped) {
-            // First, undo any VLAN grouping
-            if (vlanGrouped) {
-                cy.nodes().forEach(n => {
-                    if (n.isChild()) n.move({ parent: null });
-                    n.style('display', 'element');
-                });
-                cy.edges().forEach(e => e.style('display', 'element'));
-                cy.nodes('.vlan-group').remove();
-                vlanGrouped = false;
-            }
 
             // Build parent-child map: for each switch, find connected non-switch nodes
             const switches = new Set();
