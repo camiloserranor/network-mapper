@@ -31,13 +31,18 @@
                     <option value="all">All Devices</option>
                     <option value="switch">Switches</option>
                     <option value="host">Hosts</option>
+                    <option value="vm">VMs</option>
                     <option value="bmc">BMCs</option>
                     <option value="unknown">Unknown</option>
+                </select>
+                <select id="vlan-filter" class="btn">
+                    <option value="">All VLANs</option>
                 </select>
             </div>
             <div class="btn-group">
                 <button class="btn" id="fit-btn" title="Fit to screen">⤢ Fit</button>
-                <button class="btn" id="group-btn" title="Group nodes by TOR switch">▦ Group</button>
+                <button class="btn" id="group-btn" title="Group nodes by TOR switch">▦ TOR</button>
+                <button class="btn" id="vlan-group-btn" title="Group nodes by VLAN">▧ VLAN</button>
                 <button class="btn" id="export-btn" title="Export as PNG">⤓ Export</button>
             </div>
         </div>

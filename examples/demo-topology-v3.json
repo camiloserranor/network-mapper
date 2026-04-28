@@ -1,0 +1,241 @@
+{
+  "collected_at": "2025-01-15T10:30:00Z",
+  "devices": [
+    {
+      "id": "tor-switch-01",
+      "type": "switch",
+      "system_name": "TOR-SW-01",
+      "chassis_id": "aa:bb:cc:00:01:01",
+      "system_description": "Cisco NX-OS 10.3(2)",
+      "management_address": "10.0.0.1",
+      "software_version": "10.3(2)",
+      "vlans": [100, 200, 300],
+      "interfaces": [
+        {"name": "Ethernet1/1", "oper_status": "UP", "speed": "25G", "mtu": "9216"},
+        {"name": "Ethernet1/2", "oper_status": "UP", "speed": "25G", "mtu": "9216"},
+        {"name": "Ethernet1/3", "oper_status": "UP", "speed": "25G", "mtu": "9216"},
+        {"name": "Ethernet1/4", "oper_status": "UP", "speed": "25G", "mtu": "9216"},
+        {"name": "Ethernet1/48", "oper_status": "UP", "speed": "100G", "mtu": "9216"}
+      ]
+    },
+    {
+      "id": "tor-switch-02",
+      "type": "switch",
+      "system_name": "TOR-SW-02",
+      "chassis_id": "aa:bb:cc:00:02:01",
+      "system_description": "Cisco NX-OS 10.3(2)",
+      "management_address": "10.0.0.2",
+      "software_version": "10.3(2)",
+      "vlans": [100, 200, 300],
+      "interfaces": [
+        {"name": "Ethernet1/1", "oper_status": "UP", "speed": "25G", "mtu": "9216"},
+        {"name": "Ethernet1/2", "oper_status": "UP", "speed": "25G", "mtu": "9216"},
+        {"name": "Ethernet1/3", "oper_status": "UP", "speed": "25G", "mtu": "9216"},
+        {"name": "Ethernet1/48", "oper_status": "UP", "speed": "100G", "mtu": "9216"}
+      ]
+    },
+    {
+      "id": "hci-node-01",
+      "type": "host",
+      "system_name": "AzS-HCI-Node01",
+      "chassis_id": "de:ad:be:ef:01:01",
+      "system_description": "Azure Stack HCI Host",
+      "management_address": "10.0.1.11",
+      "vlans": [100, 200],
+      "interfaces": [
+        {"name": "NIC1-Port1", "oper_status": "UP", "speed": "25G", "mtu": "9216"},
+        {"name": "NIC1-Port2", "oper_status": "UP", "speed": "25G", "mtu": "9216"}
+      ]
+    },
+    {
+      "id": "hci-node-02",
+      "type": "host",
+      "system_name": "AzS-HCI-Node02",
+      "chassis_id": "de:ad:be:ef:02:01",
+      "system_description": "Azure Stack HCI Host",
+      "management_address": "10.0.1.12",
+      "vlans": [100, 300],
+      "interfaces": [
+        {"name": "NIC1-Port1", "oper_status": "UP", "speed": "25G", "mtu": "9216"},
+        {"name": "NIC1-Port2", "oper_status": "UP", "speed": "25G", "mtu": "9216"}
+      ]
+    },
+    {
+      "id": "hci-node-03",
+      "type": "host",
+      "system_name": "AzS-HCI-Node03",
+      "chassis_id": "de:ad:be:ef:03:01",
+      "system_description": "Azure Stack HCI Host",
+      "management_address": "10.0.1.13",
+      "vlans": [200, 300],
+      "interfaces": [
+        {"name": "NIC1-Port1", "oper_status": "UP", "speed": "25G", "mtu": "9216"},
+        {"name": "NIC1-Port2", "oper_status": "UP", "speed": "25G", "mtu": "9216"}
+      ]
+    },
+    {
+      "id": "bmc-node-01",
+      "type": "bmc",
+      "system_name": "BMC-Node01",
+      "chassis_id": "b0:0b:01:01:01:01",
+      "management_address": "10.0.2.11",
+      "vlans": [],
+      "interfaces": []
+    },
+    {
+      "id": "bmc-node-02",
+      "type": "bmc",
+      "system_name": "BMC-Node02",
+      "chassis_id": "b0:0b:02:02:02:02",
+      "management_address": "10.0.2.12",
+      "vlans": [],
+      "interfaces": []
+    }
+  ],
+  "links": [
+    {
+      "local_device": "tor-switch-01",
+      "local_port": "Ethernet1/1",
+      "remote_device": "hci-node-01",
+      "remote_port": "NIC1-Port1",
+      "remote_chassis_id": "de:ad:be:ef:01:01",
+      "source": "lldp",
+      "oper_status": "UP",
+      "speed": "25G"
+    },
+    {
+      "local_device": "tor-switch-01",
+      "local_port": "Ethernet1/2",
+      "remote_device": "hci-node-02",
+      "remote_port": "NIC1-Port1",
+      "remote_chassis_id": "de:ad:be:ef:02:01",
+      "source": "lldp",
+      "oper_status": "UP",
+      "speed": "25G"
+    },
+    {
+      "local_device": "tor-switch-02",
+      "local_port": "Ethernet1/1",
+      "remote_device": "hci-node-01",
+      "remote_port": "NIC1-Port2",
+      "remote_chassis_id": "de:ad:be:ef:01:01",
+      "source": "lldp",
+      "oper_status": "UP",
+      "speed": "25G"
+    },
+    {
+      "local_device": "tor-switch-02",
+      "local_port": "Ethernet1/2",
+      "remote_device": "hci-node-03",
+      "remote_port": "NIC1-Port1",
+      "remote_chassis_id": "de:ad:be:ef:03:01",
+      "source": "lldp",
+      "oper_status": "UP",
+      "speed": "25G"
+    },
+    {
+      "local_device": "tor-switch-01",
+      "local_port": "Ethernet1/3",
+      "remote_device": "hci-node-03",
+      "remote_port": "NIC1-Port2",
+      "remote_chassis_id": "de:ad:be:ef:03:01",
+      "source": "lldp",
+      "oper_status": "UP",
+      "speed": "25G"
+    },
+    {
+      "local_device": "tor-switch-01",
+      "local_port": "Ethernet1/48",
+      "remote_device": "tor-switch-02",
+      "remote_port": "Ethernet1/48",
+      "remote_chassis_id": "aa:bb:cc:00:02:01",
+      "source": "lldp",
+      "oper_status": "UP",
+      "speed": "100G"
+    },
+    {
+      "local_device": "tor-switch-01",
+      "local_port": "Ethernet1/4",
+      "remote_device": "bmc-node-01",
+      "remote_port": "BMC-Eth0",
+      "remote_chassis_id": "b0:0b:01:01:01:01",
+      "source": "lldp",
+      "oper_status": "UP",
+      "speed": "1G"
+    },
+    {
+      "local_device": "tor-switch-02",
+      "local_port": "Ethernet1/3",
+      "remote_device": "bmc-node-02",
+      "remote_port": "BMC-Eth0",
+      "remote_chassis_id": "b0:0b:02:02:02:02",
+      "source": "lldp",
+      "oper_status": "UP",
+      "speed": "1G"
+    }
+  ],
+  "vlans": [
+    {"id": 100, "name": "Management", "gateway": "10.0.100.1/24"},
+    {"id": 200, "name": "Storage", "gateway": "10.0.200.1/24"},
+    {"id": 300, "name": "Compute", "gateway": "10.0.300.1/24"}
+  ],
+  "endpoints": [
+    {
+      "mac": "52:54:00:aa:01:01",
+      "ips": ["10.0.100.101"],
+      "vlans": [100],
+      "host_device": "hci-node-01",
+      "host_port": "Ethernet1/1",
+      "switch_id": "tor-switch-01"
+    },
+    {
+      "mac": "52:54:00:aa:01:02",
+      "ips": ["10.0.200.101"],
+      "vlans": [200],
+      "host_device": "hci-node-01",
+      "host_port": "Ethernet1/1",
+      "switch_id": "tor-switch-01"
+    },
+    {
+      "mac": "52:54:00:bb:02:01",
+      "ips": ["10.0.100.102"],
+      "vlans": [100],
+      "host_device": "hci-node-02",
+      "host_port": "Ethernet1/2",
+      "switch_id": "tor-switch-01"
+    },
+    {
+      "mac": "52:54:00:bb:02:02",
+      "ips": ["10.0.300.102", "10.0.100.112"],
+      "vlans": [300, 100],
+      "host_device": "hci-node-02",
+      "host_port": "Ethernet1/2",
+      "switch_id": "tor-switch-01"
+    },
+    {
+      "mac": "52:54:00:cc:03:01",
+      "ips": ["10.0.200.103"],
+      "vlans": [200],
+      "host_device": "hci-node-03",
+      "host_port": "Ethernet1/2",
+      "switch_id": "tor-switch-02"
+    },
+    {
+      "mac": "52:54:00:cc:03:02",
+      "ips": ["10.0.300.103"],
+      "vlans": [300],
+      "host_device": "hci-node-03",
+      "host_port": "Ethernet1/2",
+      "switch_id": "tor-switch-02"
+    },
+    {
+      "mac": "52:54:00:cc:03:03",
+      "ips": ["10.0.200.113"],
+      "vlans": [200],
+      "host_device": "hci-node-03",
+      "host_port": "Ethernet1/3",
+      "switch_id": "tor-switch-01"
+    }
+  ],
+  "partial_failures": []
+}

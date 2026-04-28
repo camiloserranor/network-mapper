@@ -11,6 +11,8 @@ type Topology struct {
 	PartialFailures []PartialError `json:"partial_failures"`
 	Devices         []Device       `json:"devices"`
 	Links           []Link         `json:"links"`
+	VLANs           []VLAN         `json:"vlans,omitempty"`
+	Endpoints       []Endpoint     `json:"endpoints,omitempty"`
 }
 
 // Device represents a discovered network device (switch, host, BMC, etc).
@@ -26,6 +28,7 @@ type Device struct {
 	CPUUtilization    float64           `json:"cpu_utilization,omitempty"`    // percentage (0-100)
 	MemoryUsed        uint64            `json:"memory_used,omitempty"`       // bytes
 	MemoryTotal       uint64            `json:"memory_total,omitempty"`      // bytes
+	VLANs             []int             `json:"vlans,omitempty"`             // VLAN IDs this device participates in
 	Interfaces        []Interface       `json:"interfaces,omitempty"`
 	Annotations       map[string]string `json:"annotations,omitempty"`
 }
@@ -71,4 +74,25 @@ type PartialError struct {
 	Switch  string `json:"switch"`
 	Phase   string `json:"phase"`   // connect, lldp, interfaces, system
 	Message string `json:"message"`
+}
+
+// VLAN represents a discovered VLAN on the network.
+type VLAN struct {
+	ID          int      `json:"id"`
+	Name        string   `json:"name,omitempty"`
+	Status      string   `json:"status,omitempty"`
+	Gateway     string   `json:"gateway,omitempty"`      // SVI IP address
+	MemberPorts []string `json:"member_ports,omitempty"` // switch interfaces in this VLAN
+	SourceSwitch string  `json:"source_switch,omitempty"`
+}
+
+// Endpoint represents a discovered VM or virtual endpoint behind a physical host.
+type Endpoint struct {
+	MAC        string   `json:"mac"`
+	IPs        []string `json:"ips,omitempty"`
+	VLANs      []int    `json:"vlans"`
+	HostPort   string   `json:"host_port"`              // switch port where MAC was learned
+	HostDevice string   `json:"host_device,omitempty"`  // parent host device ID (from LLDP)
+	SwitchID   string   `json:"switch_id"`              // switch that reported this MAC
+	Type       string   `json:"type"`                   // vm, container, floating, unknown
 }

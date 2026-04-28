@@ -1,0 +1,151 @@
+package transform
+
+import (
+	"strconv"
+	"strings"
+
+	"github.com/camiloserranor/network-mapper/internal/gnmi"
+	"github.com/camiloserranor/network-mapper/internal/topology"
+)
+
+// gNMI paths for VLAN configuration.
+const (
+	VLANPathNXOS       = "/System/bd-items"
+	VLANPathOpenConfig = "/openconfig-network-instance:network-instances/network-instance/vlans/vlan"
+	SVIIPPath          = "/openconfig-interfaces:interfaces/interface/subinterfaces/subinterface/ipv4/addresses/address"
+)
+
+// ParseVLANsNXOS extracts VLAN definitions from NX-OS gNMI responses.
+// NX-OS path: /System/bd-items → bd-items → BD-list
+func ParseVLANsNXOS(notifs []gnmi.Notification, switchID string) []topology.VLAN {
+	var vlans []topology.VLAN
+
+	for _, n := range notifs {
+		for _, u := range n.Updates {
+			items := AsMapSlice(u.Value)
+			if items == nil {
+				continue
+			}
+
+			for _, item := range items {
+				// BD-list (bridge domain list) or nested under bd-items
+				bdList := GetSlice(item, "BD-list")
+				if bdList == nil {
+					bdList = GetSlice(item, "bd-items")
+				}
+				if bdList == nil {
+					// Direct BD entry
+					if v := extractVLAN(item, switchID); v.ID > 0 {
+						vlans = append(vlans, v)
+					}
+					continue
+				}
+
+				for _, bdRaw := range bdList {
+					bd, ok := bdRaw.(map[string]interface{})
+					if !ok {
+						continue
+					}
+					if v := extractVLAN(bd, switchID); v.ID > 0 {
+						vlans = append(vlans, v)
+					}
+				}
+			}
+		}
+	}
+
+	return vlans
+}
+
+func extractVLAN(m map[string]interface{}, switchID string) topology.VLAN {
+	idStr := GetFirstString(m, "fabEncap", "accEncap", "id")
+	vlanID := parseVLANIDFromEncap(idStr)
+
+	if vlanID == 0 {
+		return topology.VLAN{}
+	}
+
+	name := GetFirstString(m, "name", "descr")
+	status := GetFirstString(m, "adminSt", "operSt", "status")
+
+	// Collect member ports if available
+	var memberPorts []string
+	if members := GetSlice(m, "member-items"); members != nil {
+		for _, mRaw := range members {
+			if member, ok := mRaw.(map[string]interface{}); ok {
+				port := GetFirstString(member, "if", "id", "port")
+				if port != "" {
+					memberPorts = append(memberPorts, NormalizeInterfaceName(port))
+				}
+			}
+		}
+	}
+
+	return topology.VLAN{
+		ID:           vlanID,
+		Name:         name,
+		Status:       status,
+		MemberPorts:  memberPorts,
+		SourceSwitch: switchID,
+	}
+}
+
+// parseVLANIDFromEncap handles "vlan-100", "100", etc.
+func parseVLANIDFromEncap(s string) int {
+	s = strings.TrimPrefix(s, "vlan-")
+	s = strings.TrimPrefix(s, "Vlan")
+	s = strings.TrimPrefix(s, "vlan")
+	id, _ := strconv.Atoi(s)
+	return id
+}
+
+// ParseSVIGateways extracts IP addresses from SVI (VLAN) interfaces to identify gateways.
+// It looks for interfaces named "Vlan<N>" and extracts their IP address.
+func ParseSVIGateways(notifs []gnmi.Notification) map[int]string {
+	gateways := make(map[int]string) // VLAN ID → gateway IP
+
+	for _, n := range notifs {
+		for _, u := range n.Updates {
+			// Extract interface name from path
+			ifName := ExtractPathKey(u.Path, "name")
+			if ifName == "" {
+				continue
+			}
+
+			// Only interested in VLAN SVIs
+			if !strings.HasPrefix(strings.ToLower(ifName), "vlan") {
+				continue
+			}
+
+			vlanID := parseVLANIDFromEncap(ifName)
+			if vlanID == 0 {
+				continue
+			}
+
+			vals, ok := u.Value.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			// Look for IP in various formats
+			ip := GetFirstString(vals, "ip", "prefix", "address")
+			if ip == "" {
+				// Nested under state or config
+				if state := GetMap(vals, "state"); state != nil {
+					ip = GetFirstString(state, "ip", "prefix")
+				}
+			}
+
+			// Strip prefix length if present (e.g., "10.0.100.1/24" → "10.0.100.1")
+			if idx := strings.Index(ip, "/"); idx > 0 {
+				ip = ip[:idx]
+			}
+
+			if ip != "" {
+				gateways[vlanID] = ip
+			}
+		}
+	}
+
+	return gateways
+}

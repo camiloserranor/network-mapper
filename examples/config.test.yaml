@@ -15,30 +15,13 @@ auth:
 
 switches:
   - name: TOR-1
-    address: "10.218.191.131:50051" # -> Rack 14A
-    platform: nxos    
-
-  - name: TOR-2
-    address: "10.218.191.136:50051" # -> Rack 16A
-    platform: nxos
-
-  - name: TOR-3
-    address: "10.218.191.142:50051" # -> Rack 21A
-    platform: nxos
-    
-  - name: TOR-4
-    address: "10.218.191.132:50051" # -> Rack 14B
-    platform: nxos
-    
-  - name: TOR-5
-    address: "10.218.191.137:50051" # -> Rack 16B
-    platform: nxos
-    
-  - name: TOR-6
-    address: "10.218.191.143:50051" # -> Rack 21B
-    platform: nxos
-    
-    
+    #address: "100.71.34.149:50051"
+    # address: "10.218.191.143:50051"
+    address: "100.100.81.129:50051" #-> 
+    platform: sonic
+    auth:
+      username: "${CISCO_SWITCH_USER}"
+      password: "${CISCO_SWITCH_PASS}"
 tls:
   # Trust-On-First-Use: fetch and cache switch certs on first connection
   # tofu: true

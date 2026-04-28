@@ -23,6 +23,9 @@ type switchResult struct {
 	Device     topology.Device
 	Neighbors  []transform.LLDPNeighbor
 	Interfaces []topology.Interface
+	MACEntries []transform.MACEntry
+	ARPEntries []transform.ARPEntry
+	VLANs      []topology.VLAN
 	Errors     []topology.PartialError
 }
 
@@ -132,6 +135,15 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 	// 4. Collect switch resource utilization (CPU/memory)
 	collectResources(ctx, client, sw, &result)
 
+	// 5. Collect MAC table (for VM endpoint discovery)
+	collectMACTable(ctx, client, sw, &result)
+
+	// 6. Collect ARP table (for IP-to-MAC mapping)
+	collectARPTable(ctx, client, sw, &result)
+
+	// 7. Collect VLAN configuration
+	collectVLANs(ctx, client, sw, &result)
+
 	log.Printf("  %s: collection completed in %s", sw.Name, time.Since(start))
 
 	return result
@@ -220,6 +232,60 @@ func collectResources(ctx context.Context, client *gnmi.Client, sw config.Switch
 	}
 }
 
+func collectMACTable(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
+	if sw.Platform != "nxos" {
+		return // MAC table collection only supported on NX-OS for now
+	}
+
+	notifs, err := client.GetWithFallback(ctx, transform.MACTablePathNXOS)
+	if err != nil {
+		log.Printf("  %s: MAC table unavailable: %v", sw.Name, err)
+		result.Errors = append(result.Errors, topology.PartialError{
+			Switch: sw.Name, Phase: "mac-table", Message: err.Error(),
+		})
+		return
+	}
+
+	result.MACEntries = transform.ParseMACTableNXOS(notifs, sw.Name)
+	log.Printf("  %s: %d MAC table entries", sw.Name, len(result.MACEntries))
+}
+
+func collectARPTable(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
+	if sw.Platform != "nxos" {
+		return // ARP table collection only supported on NX-OS for now
+	}
+
+	notifs, err := client.GetWithFallback(ctx, transform.ARPPathNXOS)
+	if err != nil {
+		log.Printf("  %s: ARP table unavailable: %v", sw.Name, err)
+		result.Errors = append(result.Errors, topology.PartialError{
+			Switch: sw.Name, Phase: "arp-table", Message: err.Error(),
+		})
+		return
+	}
+
+	result.ARPEntries = transform.ParseARPTableNXOS(notifs, sw.Name)
+	log.Printf("  %s: %d ARP entries", sw.Name, len(result.ARPEntries))
+}
+
+func collectVLANs(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
+	if sw.Platform != "nxos" {
+		return // VLAN collection only supported on NX-OS for now
+	}
+
+	notifs, err := client.GetWithFallback(ctx, transform.VLANPathNXOS)
+	if err != nil {
+		log.Printf("  %s: VLAN config unavailable: %v", sw.Name, err)
+		result.Errors = append(result.Errors, topology.PartialError{
+			Switch: sw.Name, Phase: "vlan-config", Message: err.Error(),
+		})
+		return
+	}
+
+	result.VLANs = transform.ParseVLANsNXOS(notifs, sw.Name)
+	log.Printf("  %s: %d VLANs", sw.Name, len(result.VLANs))
+}
+
 func buildTopology(results []switchResult, now time.Time) *topology.Topology {
 	topo := &topology.Topology{
 		SchemaVersion: "1.0",
@@ -302,6 +368,55 @@ func buildTopology(results []switchResult, now time.Time) *topology.Topology {
 	// Flatten device map
 	for _, d := range deviceMap {
 		topo.Devices = append(topo.Devices, *d)
+	}
+
+	// Collect VLANs from all switches (deduplicate by ID)
+	vlanMap := make(map[int]topology.VLAN)
+	for _, r := range results {
+		for _, v := range r.VLANs {
+			if _, exists := vlanMap[v.ID]; !exists {
+				vlanMap[v.ID] = v
+			}
+		}
+	}
+	for _, v := range vlanMap {
+		topo.VLANs = append(topo.VLANs, v)
+	}
+
+	// Correlate endpoints (VMs) from MAC/ARP/LLDP data
+	var correlationInputs []transform.CorrelationInput
+	for _, r := range results {
+		if len(r.MACEntries) > 0 {
+			correlationInputs = append(correlationInputs, transform.CorrelationInput{
+				SwitchID:   r.SwitchID,
+				Neighbors:  r.Neighbors,
+				MACEntries: r.MACEntries,
+				ARPEntries: r.ARPEntries,
+			})
+		}
+	}
+	if len(correlationInputs) > 0 {
+		topo.Endpoints = transform.CorrelateEndpoints(correlationInputs)
+
+		// Assign VLAN memberships to devices based on endpoint data
+		deviceVLANs := make(map[string]map[int]bool)
+		for _, ep := range topo.Endpoints {
+			if ep.HostDevice != "" {
+				if deviceVLANs[ep.HostDevice] == nil {
+					deviceVLANs[ep.HostDevice] = make(map[int]bool)
+				}
+				for _, vid := range ep.VLANs {
+					deviceVLANs[ep.HostDevice][vid] = true
+				}
+			}
+		}
+		for i := range topo.Devices {
+			if vlans, ok := deviceVLANs[topo.Devices[i].ID]; ok {
+				for vid := range vlans {
+					topo.Devices[i].VLANs = append(topo.Devices[i].VLANs, vid)
+				}
+			}
+		}
 	}
 
 	if topo.PartialFailures == nil {
