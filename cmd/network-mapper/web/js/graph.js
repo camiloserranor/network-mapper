@@ -119,6 +119,7 @@ const NetworkGraph = (() => {
                 'text-margin-y': -8,
                 'text-outline-width': 2,
                 'text-outline-color': '#0d1117',
+                'events': 'no',
             },
         },
         // Compound parent node style
@@ -322,12 +323,13 @@ const NetworkGraph = (() => {
     }
 
     function setupInteraction() {
-        // Hover: highlight connected elements
+        // Hover: highlight connected elements (skip VLAN compound nodes)
         cy.on('mouseover', 'node', (evt) => {
             const node = evt.target;
+            if (node.hasClass('vlan-group')) return;
             const neighborhood = node.neighborhood().add(node);
 
-            cy.elements().addClass('dimmed');
+            cy.elements().not('.vlan-group').addClass('dimmed');
             neighborhood.removeClass('dimmed');
             node.addClass('highlight');
             node.connectedEdges().addClass('highlight show-label');
