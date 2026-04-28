@@ -9,9 +9,8 @@
 #   username: "${GNMI_USER}"
 #   password: "${GNMI_PASS}"
 auth:
-  username: "gnmiuser"
-  password: ${GNMI_PASS}
-  # password_keyvault: https://azurestack-network.vault.azure.net/secrets/Net-Admin/222d9bb58f644b78b1670caef1ac7358
+  username: "${CISCO_SWITCH_USER}"
+  password: "${CISCO_SWITCH_PASS}"
 
 switches:
   - name: TOR-1
@@ -19,9 +18,10 @@ switches:
     # address: "10.218.191.143:50051"
     address: "100.100.81.129:50051" #-> 
     platform: sonic
-    auth:
-      username: "${CISCO_SWITCH_USER}"
-      password: "${CISCO_SWITCH_PASS}"
+    # Per-switch auth override (optional — omit to use global auth):
+    # auth:
+    #   username_keyvault: https://myvault.vault.azure.net/secrets/tor1-user
+    #   password_keyvault: https://myvault.vault.azure.net/secrets/tor1-pass
 tls:
   # Trust-On-First-Use: fetch and cache switch certs on first connection
   # tofu: true

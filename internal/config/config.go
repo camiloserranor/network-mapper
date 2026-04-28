@@ -28,14 +28,17 @@ type SwitchConfig struct {
 	Address  string     `yaml:"address"`  // host:port (e.g., "10.0.0.1:8080")
 	Name     string     `yaml:"name"`     // friendly name (optional, defaults to address)
 	Platform string     `yaml:"platform"` // sonic, nxos
-	Auth     AuthConfig `yaml:"auth"`
+	Auth     AuthConfig `yaml:"auth"`     // per-switch override (empty fields fall back to global)
 }
 
-// AuthConfig defines authentication credentials for a switch.
+// AuthConfig defines authentication credentials.
+// Resolution priority for each field: keyvault URI > plaintext/env var.
+// Per-switch auth overrides global auth for any non-empty field.
 type AuthConfig struct {
-	Username         string `yaml:"username"`
+	Username         string `yaml:"username"`          // supports ${ENV_VAR} syntax
+	UsernameKeyvault string `yaml:"username_keyvault"` // Key Vault secret URI for username
 	Password         string `yaml:"password"`          // supports ${ENV_VAR} syntax
-	PasswordKeyvault string `yaml:"password_keyvault"` // Key Vault secret URI (takes precedence over password)
+	PasswordKeyvault string `yaml:"password_keyvault"` // Key Vault secret URI for password
 }
 
 // TLSConfig defines TLS settings for gNMI connections.
@@ -84,16 +87,22 @@ func Load(path string) (*Config, error) {
 	return &cfg, nil
 }
 
-// resolveKeyVaultSecrets fetches passwords from Azure Key Vault for switches that have password_keyvault set.
+// resolveKeyVaultSecrets resolves Key Vault URIs for username and password.
+// It applies global auth inheritance first, then resolves any KV URIs.
 func (c *Config) resolveKeyVaultSecrets() error {
+	// Inherit global auth into switches (per-switch fields take precedence)
+	for i := range c.Switches {
+		c.Switches[i].Auth = mergeAuth(c.Auth, c.Switches[i].Auth)
+	}
+
+	// Check if any switch needs Key Vault resolution
 	var needsKV bool
 	for _, sw := range c.Switches {
-		if sw.Auth.PasswordKeyvault != "" {
+		if sw.Auth.UsernameKeyvault != "" || sw.Auth.PasswordKeyvault != "" {
 			needsKV = true
 			break
 		}
 	}
-
 	if !needsKV {
 		return nil
 	}
@@ -107,21 +116,51 @@ func (c *Config) resolveKeyVaultSecrets() error {
 	defer cancel()
 
 	for i := range c.Switches {
-		kvURI := c.Switches[i].Auth.PasswordKeyvault
-		if kvURI == "" {
-			continue
+		sw := &c.Switches[i]
+		name := sw.Name
+		if name == "" {
+			name = sw.Address
 		}
 
-		log.Printf("[config] Resolving password from Key Vault for switch %q", c.Switches[i].Name)
-		secret, err := resolver.Resolve(ctx, kvURI)
-		if err != nil {
-			return fmt.Errorf("switch %q: %w", c.Switches[i].Name, err)
+		if sw.Auth.UsernameKeyvault != "" {
+			log.Printf("[config] Resolving username from Key Vault for switch %q", name)
+			secret, err := resolver.Resolve(ctx, sw.Auth.UsernameKeyvault)
+			if err != nil {
+				return fmt.Errorf("switch %q username: %w", name, err)
+			}
+			sw.Auth.Username = secret
 		}
 
-		c.Switches[i].Auth.Password = secret
+		if sw.Auth.PasswordKeyvault != "" {
+			log.Printf("[config] Resolving password from Key Vault for switch %q", name)
+			secret, err := resolver.Resolve(ctx, sw.Auth.PasswordKeyvault)
+			if err != nil {
+				return fmt.Errorf("switch %q password: %w", name, err)
+			}
+			sw.Auth.Password = secret
+		}
 	}
 
 	return nil
+}
+
+// mergeAuth merges global auth with per-switch auth.
+// Per-switch values take precedence over global for any non-empty field.
+func mergeAuth(global, perSwitch AuthConfig) AuthConfig {
+	result := global
+	if perSwitch.Username != "" {
+		result.Username = perSwitch.Username
+	}
+	if perSwitch.UsernameKeyvault != "" {
+		result.UsernameKeyvault = perSwitch.UsernameKeyvault
+	}
+	if perSwitch.Password != "" {
+		result.Password = perSwitch.Password
+	}
+	if perSwitch.PasswordKeyvault != "" {
+		result.PasswordKeyvault = perSwitch.PasswordKeyvault
+	}
+	return result
 }
 
 // resolveEnvVars replaces ${VAR_NAME} with the environment variable value.
