@@ -1,15 +1,27 @@
 # Network Mapper Configuration
 # Defines TOR switches to query for topology discovery.
 
+# Global auth — inherited by all switches unless overridden per-switch.
+# Use Key Vault URIs to avoid plaintext credentials:
+#   username_keyvault: https://myvault.vault.azure.net/secrets/gnmi-username
+#   password_keyvault: https://myvault.vault.azure.net/secrets/gnmi-password
+# Or use env vars for dev/test:
+#   username: "${GNMI_USER}"
+#   password: "${GNMI_PASS}"
+auth:
+  username: "${CISCO_SWITCH_USER}"
+  password: "${CISCO_SWITCH_PASS}"
+
 switches:
   - name: TOR-1
     #address: "100.71.34.149:50051"
     # address: "10.218.191.143:50051"
     address: "100.100.81.129:50051" #-> 
     platform: sonic
-    auth:
-      username: "${CISCO_SWITCH_USER}"
-      password: "${CISCO_SWITCH_PASS}"
+    # Per-switch auth override (optional — omit to use global auth):
+    # auth:
+    #   username_keyvault: https://myvault.vault.azure.net/secrets/tor1-user
+    #   password_keyvault: https://myvault.vault.azure.net/secrets/tor1-pass
 tls:
   # Trust-On-First-Use: fetch and cache switch certs on first connection
   # tofu: true
