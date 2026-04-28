@@ -40,8 +40,10 @@ Azure Local deployments rely on physical cabling between hosts and TOR switches.
 # Build from source
 go build -o network-mapper ./cmd/network-mapper/
 
+# Authenticate (dev/test — production uses Arc managed identity)
+az login
+
 # Collect topology from TOR switches
-export SWITCH_PASSWORD="your-password"
 network-mapper collect --config examples/config.yaml --output topology.json
 
 # Launch the interactive web UI
@@ -50,35 +52,90 @@ network-mapper serve --topology topology.json --port 8080
 
 ## Configuration
 
-Network Mapper uses a YAML configuration file. Credentials support `${ENV_VAR}` syntax for secure password handling.
+Network Mapper uses a YAML configuration file. Switch credentials are stored in Azure Key Vault — **never in plaintext config files**.
 
 ```yaml
 # config.yaml
+
+# Global auth — applies to all switches unless overridden per-switch.
+auth:
+  username_keyvault: https://myvault.vault.azure.net/secrets/gnmi-username
+  password_keyvault: https://myvault.vault.azure.net/secrets/gnmi-password
+
 switches:
   - name: TOR-1
-    address: "10.0.0.1:8080"
+    address: "10.0.0.1:50051"
     platform: sonic            # sonic | nxos
-    auth:
-      username: admin
-      password: "${SWITCH_PASSWORD}"
 
   - name: TOR-2
-    address: "10.0.0.2:8080"
+    address: "10.0.0.2:50051"
     platform: sonic
-    auth:
-      username: admin
-      password: "${SWITCH_PASSWORD}"
+    # Per-switch override (optional):
+    # auth:
+    #   username_keyvault: https://myvault.vault.azure.net/secrets/tor2-user
+    #   password_keyvault: https://myvault.vault.azure.net/secrets/tor2-pass
 
 tls:
-  tofu: true                   # Trust-On-First-Use cert pinning
-  cert_dir: ".certs"           # Directory to cache switch certificates
-  # skip_verify: true          # Skip all TLS verification
+  skip_verify: true            # Or use tofu/ca_cert for production
+  # tofu: true                 # Trust-On-First-Use cert pinning
+  # cert_dir: ".certs"
   # ca_cert: /path/to/ca.pem  # Explicit CA trust
 
 collect:
   timeout_sec: 30              # Per-switch timeout
   parallel: 2                  # Max concurrent switch connections
   skip_counters: false         # Skip interface counter collection
+```
+
+## Authentication & Credentials
+
+Network Mapper uses [Azure Identity `DefaultAzureCredential`](https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication) to authenticate to Key Vault. No client secrets or tokens are stored — the tool relies on the ambient identity of the environment.
+
+### Production (Azure Local VM)
+
+In production, network-mapper runs on a VM inside the Azure Local cluster. These VMs are Azure Arc-enabled, which means they have a **managed identity** automatically available:
+
+1. **Enable system-assigned managed identity** on the Arc-enabled VM (usually enabled by default)
+2. **Grant the identity access** to the Key Vault:
+   ```bash
+   az keyvault set-policy --name myvault \
+     --object-id <vm-managed-identity-object-id> \
+     --secret-permissions get
+   ```
+   Or assign the **Key Vault Secrets User** RBAC role on the vault.
+3. **Run network-mapper** — `DefaultAzureCredential` detects Arc managed identity automatically. No extra config needed.
+
+### Development / Testing
+
+On a developer workstation, authenticate using the Azure CLI:
+
+```bash
+az login
+# That's it — DefaultAzureCredential picks up the az CLI token.
+network-mapper collect --config config.yaml --output topology.json
+```
+
+The credential chain tried by `DefaultAzureCredential` (in order):
+1. Environment variables (`AZURE_CLIENT_ID` / `AZURE_CLIENT_SECRET` / `AZURE_TENANT_ID`)
+2. Workload Identity (Kubernetes)
+3. Managed Identity (Azure VM / Arc-enabled VM)
+4. Azure CLI (`az login`)
+5. Azure PowerShell (`Connect-AzAccount`)
+
+### Key Vault Setup
+
+Store the gNMI credentials as two separate secrets:
+
+```bash
+az keyvault secret set --vault-name myvault --name gnmi-username --value "admin"
+az keyvault secret set --vault-name myvault --name gnmi-password --value "your-secure-password"
+```
+
+Then reference them in config:
+```yaml
+auth:
+  username_keyvault: https://myvault.vault.azure.net/secrets/gnmi-username
+  password_keyvault: https://myvault.vault.azure.net/secrets/gnmi-password
 ```
 
 ## CLI Commands
