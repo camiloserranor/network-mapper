@@ -23,12 +23,63 @@ const NetworkGraph = (() => {
         unknown: 'ellipse',
     };
 
-    // SVG icon paths (served from /img/)
+    // SVG icon data URIs — clean Fluent-style line icons
     const typeIcons = {
-        switch:  '/img/icon-switch.svg',
-        host:    '/img/icon-host.svg',
-        bmc:     '/img/icon-bmc.svg',
-        vm:      '/img/icon-vm.svg',
+        // Network switch: rectangle with 4 port indicators
+        switch: 'data:image/svg+xml,' + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">' +
+            '<rect x="4" y="12" width="40" height="24" rx="3" stroke="#0078d4" stroke-width="2.5" fill="none"/>' +
+            '<circle cx="13" cy="21" r="2.5" fill="#0078d4"/>' +
+            '<circle cx="22" cy="21" r="2.5" fill="#0078d4"/>' +
+            '<circle cx="31" cy="21" r="2.5" fill="#0078d4"/>' +
+            '<circle cx="40" cy="21" r="2.5" fill="none" stroke="#0078d4" stroke-width="1.5"/>' +
+            '<line x1="10" y1="30" x2="38" y2="30" stroke="#0078d4" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 3"/>' +
+            '</svg>'
+        ),
+        // Server / Arc machine: server tower with status light
+        host: 'data:image/svg+xml,' + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">' +
+            '<rect x="8" y="4" width="32" height="40" rx="3" stroke="#44b700" stroke-width="2.5" fill="none"/>' +
+            '<line x1="8" y1="18" x2="40" y2="18" stroke="#44b700" stroke-width="1.5"/>' +
+            '<line x1="8" y1="32" x2="40" y2="32" stroke="#44b700" stroke-width="1.5"/>' +
+            '<circle cx="14" cy="11" r="2" fill="#44b700"/>' +
+            '<line x1="20" y1="11" x2="34" y2="11" stroke="#44b700" stroke-width="2" stroke-linecap="round"/>' +
+            '<circle cx="14" cy="25" r="2" fill="#44b700"/>' +
+            '<line x1="20" y1="25" x2="34" y2="25" stroke="#44b700" stroke-width="2" stroke-linecap="round"/>' +
+            '<circle cx="14" cy="39" r="2" fill="#44b700" opacity="0.4"/>' +
+            '<line x1="20" y1="39" x2="34" y2="39" stroke="#44b700" stroke-width="2" stroke-linecap="round" opacity="0.4"/>' +
+            '</svg>'
+        ),
+        // Virtual machine: monitor with VM badge
+        vm: 'data:image/svg+xml,' + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">' +
+            '<rect x="6" y="6" width="36" height="26" rx="3" stroke="#a36efd" stroke-width="2.5" fill="none"/>' +
+            '<line x1="18" y1="32" x2="30" y2="32" stroke="#a36efd" stroke-width="2.5" stroke-linecap="round"/>' +
+            '<line x1="24" y1="32" x2="24" y2="38" stroke="#a36efd" stroke-width="2.5"/>' +
+            '<line x1="16" y1="38" x2="32" y2="38" stroke="#a36efd" stroke-width="2.5" stroke-linecap="round"/>' +
+            '<path d="M16 15 L21 23 L26 15" stroke="#a36efd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>' +
+            '<path d="M26 15 L29 23 L32 15" stroke="#a36efd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>' +
+            '</svg>'
+        ),
+        // BMC: chip/board management icon
+        bmc: 'data:image/svg+xml,' + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">' +
+            '<rect x="12" y="12" width="24" height="24" rx="3" stroke="#f7630c" stroke-width="2.5" fill="none"/>' +
+            '<rect x="18" y="18" width="12" height="12" rx="1.5" stroke="#f7630c" stroke-width="1.5" fill="#f7630c" fill-opacity="0.15"/>' +
+            '<line x1="16" y1="8" x2="16" y2="12" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
+            '<line x1="24" y1="8" x2="24" y2="12" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
+            '<line x1="32" y1="8" x2="32" y2="12" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
+            '<line x1="16" y1="36" x2="16" y2="40" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
+            '<line x1="24" y1="36" x2="24" y2="40" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
+            '<line x1="32" y1="36" x2="32" y2="40" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
+            '<line x1="8" y1="16" x2="12" y2="16" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
+            '<line x1="8" y1="24" x2="12" y2="24" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
+            '<line x1="8" y1="32" x2="12" y2="32" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
+            '<line x1="36" y1="16" x2="40" y2="16" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
+            '<line x1="36" y1="24" x2="40" y2="24" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
+            '<line x1="36" y1="32" x2="40" y2="32" stroke="#f7630c" stroke-width="2" stroke-linecap="round"/>' +
+            '</svg>'
+        ),
     };
 
     // Cytoscape style definitions — Azure portal dark theme
@@ -63,8 +114,9 @@ const NetworkGraph = (() => {
                 'background-color': '#252423',
                 'background-image': typeIcons.switch,
                 'background-fit': 'contain',
-                'background-clip': 'none',
-                'background-image-containment': 'over',
+                'background-clip': 'node',
+                'background-width': '70%',
+                'background-height': '70%',
                 'shape': typeShapes.switch,
                 'width': 56,
                 'height': 42,
@@ -79,8 +131,9 @@ const NetworkGraph = (() => {
                 'background-color': '#252423',
                 'background-image': typeIcons.host,
                 'background-fit': 'contain',
-                'background-clip': 'none',
-                'background-image-containment': 'over',
+                'background-clip': 'node',
+                'background-width': '65%',
+                'background-height': '65%',
                 'shape': typeShapes.host,
                 'width': 48,
                 'height': 48,
@@ -95,8 +148,9 @@ const NetworkGraph = (() => {
                 'background-color': '#252423',
                 'background-image': typeIcons.bmc,
                 'background-fit': 'contain',
-                'background-clip': 'none',
-                'background-image-containment': 'over',
+                'background-clip': 'node',
+                'background-width': '65%',
+                'background-height': '65%',
                 'shape': typeShapes.bmc,
                 'width': 36,
                 'height': 36,
@@ -119,8 +173,9 @@ const NetworkGraph = (() => {
                 'background-color': '#252423',
                 'background-image': typeIcons.vm,
                 'background-fit': 'contain',
-                'background-clip': 'none',
-                'background-image-containment': 'over',
+                'background-clip': 'node',
+                'background-width': '65%',
+                'background-height': '65%',
                 'shape': typeShapes.vm,
                 'width': 32,
                 'height': 32,
