@@ -38,16 +38,27 @@ sudo cp examples/config.yaml /etc/network-mapper/config.yaml
 sudo nano /etc/network-mapper/config.yaml
 ```
 
-Example config with Key Vault:
+Example config with Key Vault credentials:
 
 ```yaml
+auth:
+  username_keyvault: "https://myvault.vault.azure.net/secrets/gnmi-username"
+  password_keyvault: "https://myvault.vault.azure.net/secrets/gnmi-password"
+
 switches:
   - address: "10.0.0.1:50051"
     name: tor1
-    platform: nxos
-    auth:
-      username: admin
-      password_keyvault: "https://myvault.vault.azure.net/secrets/tor1-password"
+    platform: sonic
+  - address: "10.0.0.2:50051"
+    name: tor2
+    platform: sonic
+
+tls:
+  skip_verify: true
+
+collect:
+  timeout_sec: 30
+  parallel: 2
 ```
 
 ## Install Systemd Service
@@ -63,16 +74,44 @@ sudo systemctl status network-mapper
 sudo journalctl -u network-mapper -f
 ```
 
-## Azure Managed Identity (for Key Vault)
+## Azure Arc Managed Identity (for Key Vault)
 
-If the VM has a **managed identity** assigned, `DefaultAzureCredential` will
-automatically use it to access Key Vault — no client secrets needed.
+In Azure Local deployments, VMs are **Azure Arc-enabled** and automatically get a managed identity.
+`DefaultAzureCredential` detects this identity — no client secrets or extra config needed.
 
-1. **Assign managed identity** to the VM in Azure Portal → VM → Identity → System assigned → On
-2. **Grant Key Vault access**: Key Vault → Access policies → Add → Select the VM's identity → Secret permissions: Get
-3. The network-mapper service will automatically authenticate via managed identity
+### Setup
 
-For **service principal** auth instead, set environment variables in the service file:
+1. **Verify Arc enrollment** — the VM should already be Arc-enabled as part of the Azure Local cluster:
+   ```bash
+   azcmagent show   # Should show "Connected" status
+   ```
+
+2. **Grant Key Vault access** to the VM's managed identity:
+   ```bash
+   # Get the VM's managed identity object ID
+   OBJECT_ID=$(az connectedmachine show --name <vm-name> --resource-group <rg> --query identity.principalId -o tsv)
+
+   # Grant secret read access
+   az keyvault set-policy --name myvault \
+     --object-id $OBJECT_ID \
+     --secret-permissions get
+   ```
+   Or use RBAC: assign **Key Vault Secrets User** role on the vault to the VM identity.
+
+3. **Run the service** — credentials are resolved automatically at startup.
+
+### Development / Testing (without Arc)
+
+On a developer machine, `az login` provides the credential:
+
+```bash
+az login
+network-mapper collect --config /etc/network-mapper/config.yaml --output topology.json
+```
+
+### Service Principal (alternative)
+
+For environments without managed identity or `az login`, set environment variables in the service file:
 
 ```ini
 # In /etc/systemd/system/network-mapper.service [Service] section:
@@ -86,6 +125,7 @@ Environment=AZURE_CLIENT_SECRET=your-client-secret
 Ensure the VM can reach:
 - TOR switches on gNMI port (default: 50051)
 - Azure Key Vault (`*.vault.azure.net:443`) if using KV credentials
+- Azure Arc endpoints (required for managed identity token refresh)
 - Clients on port 8080 (web UI)
 
 ## Docker on VM (Alternative)
