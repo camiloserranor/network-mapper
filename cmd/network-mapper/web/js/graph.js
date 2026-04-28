@@ -551,7 +551,9 @@ const NetworkGraph = (() => {
                 if (n.isChild()) {
                     n.move({ parent: null });
                 }
+                n.style('display', 'element');
             });
+            cy.edges().forEach(e => e.style('display', 'element'));
             cy.nodes('.vlan-group').remove();
             vlanGrouped = false;
             grouped = false;
@@ -619,12 +621,22 @@ const NetworkGraph = (() => {
         cy.add(vlanNodes);
 
         // Move each device into its primary VLAN (exactly one)
+        // Hide nodes that don't belong to any VLAN (switches, BMCs)
         cy.nodes().forEach(n => {
             if (n.hasClass('vlan-group')) return;
             const primaryVLAN = devicePrimaryVLAN[n.id()];
             if (primaryVLAN != null) {
                 n.move({ parent: `vlan-${primaryVLAN}` });
+                n.style('display', 'element');
+            } else {
+                n.style('display', 'none');
             }
+        });
+        // Hide edges where either endpoint is hidden
+        cy.edges().forEach(e => {
+            const srcHidden = e.source().style('display') === 'none';
+            const tgtHidden = e.target().style('display') === 'none';
+            e.style('display', (srcHidden || tgtHidden) ? 'none' : 'element');
         });
 
         vlanGrouped = true;
@@ -639,20 +651,11 @@ const NetworkGraph = (() => {
 
         const colWidth = 300;
         const nodeSep = 80;
-        const topMargin = 120; // leave room for switches at top
+        const topMargin = 60;
         const totalWidth = sortedVLANs.length * colWidth;
         const startX = -totalWidth / 2 + colWidth / 2;
 
         const positions = {};
-
-        // Position switches (ungrouped) across the top
-        const switches = cy.nodes().filter(n => n.data('type') === 'switch' && !n.isParent());
-        const switchSep = 150;
-        const switchTotalW = (switches.length - 1) * switchSep;
-        const switchStartX = -switchTotalW / 2;
-        switches.forEach((n, i) => {
-            positions[n.id()] = { x: switchStartX + i * switchSep, y: 60 };
-        });
 
         // Position children within each VLAN column
         sortedVLANs.forEach((vid, colIdx) => {
