@@ -275,13 +275,13 @@ const NetworkGraph = (() => {
 
     // Tier Y positions for hierarchical layout
     const tierGap = 200;
-    const tierY = { 0: 80, 1: 80 + tierGap, 2: 80 + tierGap * 2 };
+    const tierY = { 0: 80, 1: 80 + tierGap, 2: 80 + tierGap * 2, 3: 80 + tierGap * 3 };
 
     function applyTieredLayout() {
         if (!cy) return;
 
-        // Group nodes by tier
-        const tiers = { 0: [], 1: [], 2: [] };
+        // Group nodes by tier (skip compound/parent nodes)
+        const tiers = { 0: [], 1: [], 2: [], 3: [] };
         cy.nodes().forEach((n) => {
             if (n.isParent()) return;
             const rank = getNodeRank(n);
@@ -289,7 +289,7 @@ const NetworkGraph = (() => {
         });
 
         // Sort nodes within each tier by label for consistent ordering
-        for (const rank of [0, 1, 2]) {
+        for (const rank of [0, 1, 2, 3]) {
             tiers[rank].sort((a, b) => (a.data('label') || '').localeCompare(b.data('label') || ''));
         }
 
@@ -297,7 +297,7 @@ const NetworkGraph = (() => {
         const nodeSep = 120;
         const positions = {};
 
-        for (const rank of [0, 1, 2]) {
+        for (const rank of [0, 1, 2, 3]) {
             const nodes = tiers[rank];
             const totalWidth = (nodes.length - 1) * nodeSep;
             const startX = -totalWidth / 2;
@@ -568,26 +568,27 @@ const NetworkGraph = (() => {
             grouped = false;
         }
 
-        // Build VLAN membership from topology data
-        const deviceVLANs = {};
+        // Build VLAN membership: each device gets exactly ONE primary VLAN (first in list)
+        // Switches are excluded — they span all VLANs and stay at top level
+        const devicePrimaryVLAN = {};
         if (topology.devices) {
             topology.devices.forEach(d => {
+                if (d.type === 'switch') return; // switches stay ungrouped
                 if (d.vlans && d.vlans.length > 0) {
-                    deviceVLANs[d.id] = d.vlans;
+                    devicePrimaryVLAN[d.id] = d.vlans[0];
                 }
             });
         }
-        // Also include VM endpoints
         if (topology.endpoints) {
             topology.endpoints.forEach(ep => {
                 const epId = 'vm-' + ep.mac.replace(/:/g, '');
                 if (ep.vlans && ep.vlans.length > 0) {
-                    deviceVLANs[epId] = ep.vlans;
+                    devicePrimaryVLAN[epId] = ep.vlans[0];
                 }
             });
         }
 
-        // Get all VLAN IDs
+        // Get all VLAN IDs and names
         const allVLANs = new Set();
         const vlanNames = {};
         if (topology.vlans) {
@@ -596,15 +597,14 @@ const NetworkGraph = (() => {
                 vlanNames[v.id] = v.name || `VLAN ${v.id}`;
             });
         }
-        Object.values(deviceVLANs).forEach(vlans => {
-            vlans.forEach(v => allVLANs.add(v));
-        });
+        Object.values(devicePrimaryVLAN).forEach(v => allVLANs.add(v));
 
         if (allVLANs.size === 0) return;
 
         // Create VLAN compound nodes
+        const sortedVLANs = [...allVLANs].sort((a, b) => a - b);
         const vlanNodes = [];
-        allVLANs.forEach(vid => {
+        sortedVLANs.forEach(vid => {
             const label = vlanNames[vid] || `VLAN ${vid}`;
             vlanNodes.push({
                 group: 'nodes',
@@ -618,18 +618,68 @@ const NetworkGraph = (() => {
         });
         cy.add(vlanNodes);
 
-        // Move devices into their primary VLAN (first VLAN in their list)
+        // Move each device into its primary VLAN (exactly one)
         cy.nodes().forEach(n => {
             if (n.hasClass('vlan-group')) return;
-            const vlans = deviceVLANs[n.id()];
-            if (vlans && vlans.length > 0) {
-                n.move({ parent: `vlan-${vlans[0]}` });
+            const primaryVLAN = devicePrimaryVLAN[n.id()];
+            if (primaryVLAN != null) {
+                n.move({ parent: `vlan-${primaryVLAN}` });
             }
         });
 
         vlanGrouped = true;
         grouped = true;
-        runLayout(currentLayout);
+
+        // Use a manual column layout so VLAN regions don't overlap
+        applyVLANColumnLayout(sortedVLANs);
+    }
+
+    function applyVLANColumnLayout(sortedVLANs) {
+        if (!cy) return;
+
+        const colWidth = 300;
+        const nodeSep = 80;
+        const topMargin = 120; // leave room for switches at top
+        const totalWidth = sortedVLANs.length * colWidth;
+        const startX = -totalWidth / 2 + colWidth / 2;
+
+        const positions = {};
+
+        // Position switches (ungrouped) across the top
+        const switches = cy.nodes().filter(n => n.data('type') === 'switch' && !n.isParent());
+        const switchSep = 150;
+        const switchTotalW = (switches.length - 1) * switchSep;
+        const switchStartX = -switchTotalW / 2;
+        switches.forEach((n, i) => {
+            positions[n.id()] = { x: switchStartX + i * switchSep, y: 60 };
+        });
+
+        // Position children within each VLAN column
+        sortedVLANs.forEach((vid, colIdx) => {
+            const colX = startX + colIdx * colWidth;
+            const parent = cy.getElementById(`vlan-${vid}`);
+            if (!parent || parent.length === 0) return;
+
+            const children = parent.children().sort((a, b) =>
+                (a.data('label') || '').localeCompare(b.data('label') || '')
+            );
+
+            children.forEach((n, rowIdx) => {
+                positions[n.id()] = {
+                    x: colX,
+                    y: topMargin + rowIdx * nodeSep,
+                };
+            });
+        });
+
+        // Animate all nodes to their positions
+        cy.nodes().forEach(n => {
+            if (n.isParent()) return;
+            const pos = positions[n.id()];
+            if (pos) n.animate({ position: pos, duration: 600, easing: 'ease-in-out-quad' });
+        });
+
+        setTimeout(() => cy.fit(50), 650);
     }
 
     function isVLANGrouped() {
