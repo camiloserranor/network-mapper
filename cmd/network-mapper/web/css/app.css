@@ -1,28 +1,36 @@
 /* ============================================================
-   Network Mapper — Dark Theme (Obsidian-inspired)
+   Network Mapper — Azure Portal Dark Theme
+   Follows Fluent Design System / Azure portal conventions
    ============================================================ */
 
 :root {
-    --bg-primary: #1a1a2e;
-    --bg-secondary: #16213e;
-    --bg-surface: #0f3460;
-    --bg-graph: #0d1117;
-    --accent: #e94560;
-    --accent-glow: rgba(233, 69, 96, 0.35);
-    --text-primary: #e6e6e6;
-    --text-secondary: #8b8fa3;
-    --text-muted: #555770;
-    --border: #2a2d3e;
-    --node-switch: #2196F3;
-    --node-host: #4CAF50;
-    --node-bmc: #FF9800;
-    --node-unknown: #9E9E9E;
-    --edge-default: #3a3d52;
-    --edge-highlight: #e94560;
+    /* Azure portal dark theme palette */
+    --bg-primary: #1b1a19;
+    --bg-secondary: #252423;
+    --bg-surface: #323130;
+    --bg-graph: #1b1a19;
+    --accent: #0078d4;
+    --accent-hover: #106ebe;
+    --accent-glow: rgba(0, 120, 212, 0.25);
+    --text-primary: #ffffff;
+    --text-secondary: #d2d0ce;
+    --text-muted: #a19f9d;
+    --border: #484644;
+    --border-subtle: #3b3a39;
+    --node-switch: #0078d4;
+    --node-host: #44b700;
+    --node-bmc: #f7630c;
+    --node-vm: #a36efd;
+    --node-unknown: #8a8886;
+    --edge-default: #605e5c;
+    --edge-highlight: #0078d4;
+    --danger: #d13438;
+    --success: #57a300;
+    --warning: #fce100;
     --sidebar-width: 340px;
-    --toolbar-height: 52px;
-    --radius: 8px;
-    --transition: 0.25s ease;
+    --toolbar-height: 48px;
+    --radius: 4px;
+    --transition: 0.2s ease;
 }
 
 /* Reset */
@@ -33,7 +41,7 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Oxygen, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
     height: 100vh;
@@ -46,7 +54,7 @@ body {
 #toolbar {
     height: var(--toolbar-height);
     background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border-subtle);
     display: flex;
     align-items: center;
     padding: 0 16px;
@@ -146,18 +154,19 @@ body {
     width: 100%;
     max-width: 320px;
     padding: 6px 14px;
-    background: var(--bg-primary);
+    background: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     color: var(--text-primary);
     font-size: 13px;
+    font-family: 'Segoe UI', sans-serif;
     outline: none;
     transition: border-color var(--transition);
 }
 
 #search-input:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 2px var(--accent-glow);
+    box-shadow: 0 0 0 1px var(--accent);
 }
 
 #search-input::placeholder {
@@ -172,7 +181,7 @@ body {
 
 .btn {
     padding: 6px 12px;
-    background: var(--bg-primary);
+    background: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     color: var(--text-secondary);
@@ -180,10 +189,11 @@ body {
     cursor: pointer;
     transition: all var(--transition);
     white-space: nowrap;
+    font-family: 'Segoe UI', sans-serif;
 }
 
 .btn:hover {
-    background: var(--bg-surface);
+    background: var(--border);
     color: var(--text-primary);
 }
 
@@ -239,7 +249,7 @@ select.btn {
     bottom: 0;
     width: var(--sidebar-width);
     background: var(--bg-secondary);
-    border-left: 1px solid var(--border);
+    border-left: 1px solid var(--border-subtle);
     overflow-y: auto;
     transition: transform var(--transition), opacity var(--transition);
     z-index: 150;
@@ -318,7 +328,7 @@ select.btn {
 
 .interface-list .port {
     color: var(--accent);
-    font-family: 'SF Mono', 'Cascadia Code', monospace;
+    font-family: 'Cascadia Code', 'Consolas', 'SF Mono', monospace;
     font-size: 12px;
 }
 
@@ -337,11 +347,11 @@ select.btn {
     text-transform: uppercase;
 }
 
-.type-badge.switch { background: rgba(33, 150, 243, 0.2); color: var(--node-switch); }
-.type-badge.host { background: rgba(76, 175, 80, 0.2); color: var(--node-host); }
-.type-badge.bmc { background: rgba(255, 152, 0, 0.2); color: var(--node-bmc); }
-.type-badge.unknown { background: rgba(158, 158, 158, 0.2); color: var(--node-unknown); }
-.type-badge.vm { background: rgba(156, 39, 176, 0.2); color: #CE93D8; }
+.type-badge.switch { background: rgba(0, 120, 212, 0.2); color: var(--node-switch); }
+.type-badge.host { background: rgba(68, 183, 0, 0.2); color: var(--node-host); }
+.type-badge.bmc { background: rgba(247, 99, 12, 0.2); color: var(--node-bmc); }
+.type-badge.unknown { background: rgba(138, 136, 134, 0.2); color: var(--node-unknown); }
+.type-badge.vm { background: rgba(163, 110, 253, 0.2); color: var(--node-vm); }
 
 /* ---- Error overlay ---- */
 #error-overlay {
@@ -403,7 +413,7 @@ select.btn {
     background: var(--bg-secondary);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 1px rgba(233, 69, 96, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     z-index: 200;
     overflow: hidden;
     animation: popup-in 0.15s ease-out;
@@ -423,8 +433,8 @@ select.btn {
     justify-content: space-between;
     align-items: center;
     padding: 10px 14px;
-    border-bottom: 1px solid var(--border);
-    background: rgba(15, 52, 96, 0.3);
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
 }
 
 .popup-header .type-badge {
@@ -473,7 +483,7 @@ select.btn {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
     font-size: 11px;
 }
 
