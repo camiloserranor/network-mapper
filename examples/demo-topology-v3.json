@@ -237,5 +237,9 @@
       "switch_id": "tor-switch-01"
     }
   ],
-  "partial_failures": []
+  "partial_failures": [
+    {"switch": "tor-switch-3", "phase": "connect", "message": "dial tcp 10.0.1.3:6030: i/o timeout — switch unreachable"},
+    {"switch": "tor-switch-1", "phase": "mac-table", "message": "rpc error: code = Internal desc = could not read MAC table"},
+    {"switch": "tor-switch-1", "phase": "arp-table", "message": "rpc error: code = Unimplemented desc = ARP collection not supported"}
+  ]
 }

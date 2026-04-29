@@ -126,10 +126,26 @@ const Toolbar = (() => {
         }
 
         if (failureCount > 0) {
-            text += ` · ⚠ ${failureCount} failure${failureCount > 1 ? 's' : ''}`;
+            const warningSpan = document.createElement('span');
+            warningSpan.className = 'badge-warning';
+            warningSpan.textContent = ` · ⚠ ${failureCount} failure${failureCount > 1 ? 's' : ''}`;
+            warningSpan.title = 'Click to show failure details';
+            warningSpan.style.cursor = 'pointer';
+            warningSpan.onclick = (e) => {
+                e.stopPropagation();
+                // Reset dismissed state and re-show the banner
+                if (typeof dismissedSignature !== 'undefined') {
+                    dismissedSignature = null;
+                }
+                if (typeof showWarnings === 'function') {
+                    showWarnings(topology.partial_failures);
+                }
+            };
+            badge.textContent = text;
+            badge.appendChild(warningSpan);
+        } else {
+            badge.textContent = text;
         }
-
-        badge.textContent = text;
 
         // Populate VLAN filter dropdown
         populateVLANFilter(topology);

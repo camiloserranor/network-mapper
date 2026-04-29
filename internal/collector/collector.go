@@ -283,10 +283,12 @@ func buildTopology(results []switchResult, now time.Time) *topology.Topology {
 		topo.SourceSwitches = append(topo.SourceSwitches, r.SwitchID)
 		topo.PartialFailures = append(topo.PartialFailures, r.Errors...)
 
-		// Add the switch itself
+		// Add the switch itself (skip if connect failed and no device was built)
 		switchDev := r.Device
 		switchDev.Interfaces = r.Interfaces
-		deviceMap[switchDev.ID] = &switchDev
+		if switchDev.ID != "" {
+			deviceMap[switchDev.ID] = &switchDev
+		}
 
 		// Convert LLDP neighbors to links and remote devices
 		for _, nbr := range r.Neighbors {

@@ -11,6 +11,7 @@ let currentTopology = null;
 
         Toolbar.init();
         Toolbar.updateBadge(topology);
+        showWarnings(topology.partial_failures);
 
         const elements = topologyToCytoscape(topology);
         const cy = NetworkGraph.init('cy', elements);
@@ -47,6 +48,7 @@ let currentTopology = null;
         LiveConnection.init((newTopology) => {
             currentTopology = newTopology;
             Toolbar.updateBadge(newTopology);
+            showWarnings(newTopology.partial_failures);
             Sidebar.setTopology(newTopology);
             Popup.setTopology(newTopology);
             NetworkGraph.updateElements(topologyToCytoscape(newTopology));
@@ -163,4 +165,94 @@ function showError(message) {
     const msgEl = document.getElementById('error-message');
     overlay.classList.remove('hidden');
     msgEl.textContent = message;
+}
+
+// ---- Partial failure warnings ----
+
+let dismissedSignature = null;
+
+function showWarnings(failures) {
+    const banner = document.getElementById('warning-banner');
+    const summary = document.getElementById('warning-summary');
+    const details = document.getElementById('warning-details');
+    const toggle = document.getElementById('warning-toggle');
+
+    if (!failures || failures.length === 0) {
+        banner.classList.add('hidden');
+        return;
+    }
+
+    // Build a stable signature so dismissal persists until failures change
+    const sig = failures.map(f => `${f.switch}|${f.phase}|${f.message}`).sort().join('\n');
+    if (sig === dismissedSignature) {
+        // User dismissed this exact set — keep hidden
+        return;
+    }
+
+    // Group failures by switch
+    const groups = {};
+    for (const f of failures) {
+        const key = f.switch || 'unknown';
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(f);
+    }
+
+    const switchNames = Object.keys(groups);
+    const unreachable = switchNames.filter(s => groups[s].some(f => f.phase === 'connect'));
+    const degraded = switchNames.filter(s => !groups[s].some(f => f.phase === 'connect'));
+
+    // Summary text
+    const parts = [];
+    if (unreachable.length > 0) {
+        parts.push(`${unreachable.length} switch${unreachable.length > 1 ? 'es' : ''} unreachable`);
+    }
+    if (degraded.length > 0) {
+        parts.push(`${degraded.length} switch${degraded.length > 1 ? 'es' : ''} with partial data`);
+    }
+    summary.textContent = parts.join(', ') + ' — topology may be incomplete';
+
+    // Build detail HTML, unreachable switches first
+    const sortedNames = [...unreachable, ...degraded];
+    let html = '';
+    for (const sw of sortedNames) {
+        const isUnreachable = unreachable.includes(sw);
+        const sevClass = isUnreachable ? 'unreachable' : 'degraded';
+        const sevLabel = isUnreachable ? 'Unreachable' : 'Partial data';
+
+        html += `<div class="warning-switch-group">`;
+        html += `<div class="warning-switch-name">`;
+        html += `<span class="severity-dot ${sevClass}" title="${sevLabel}"></span>`;
+        html += `${escapeHtml(sw)}`;
+        html += `</div>`;
+
+        for (const f of groups[sw]) {
+            html += `<div class="warning-phase">`;
+            html += `<span class="phase-label">${escapeHtml(f.phase)}:</span> ${escapeHtml(f.message)}`;
+            html += `</div>`;
+        }
+        html += `</div>`;
+    }
+    details.innerHTML = html;
+
+    // Wire toggle
+    toggle.onclick = () => {
+        details.classList.toggle('hidden');
+        toggle.textContent = details.classList.contains('hidden') ? '▾' : '▴';
+    };
+
+    // Wire dismiss
+    document.getElementById('warning-dismiss').onclick = () => {
+        dismissedSignature = sig;
+        banner.classList.add('hidden');
+        details.classList.add('hidden');
+        toggle.textContent = '▾';
+    };
+
+    banner.classList.remove('hidden');
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
 }

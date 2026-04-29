@@ -48,6 +48,17 @@
         </div>
     </header>
 
+    <!-- Warning banner for partial failures -->
+    <div id="warning-banner" class="hidden">
+        <div class="warning-banner-content">
+            <span class="warning-icon">⚠</span>
+            <span id="warning-summary"></span>
+            <button id="warning-toggle" class="btn-icon" title="Show details">▾</button>
+            <button id="warning-dismiss" class="btn-icon" title="Dismiss">✕</button>
+        </div>
+        <div id="warning-details" class="hidden"></div>
+    </div>
+
     <!-- Main content -->
     <div id="main">
         <!-- Graph canvas -->
