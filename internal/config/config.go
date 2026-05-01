@@ -12,9 +12,11 @@ import (
 
 // Config is the top-level configuration for network-mapper.
 type Config struct {
-	Switches []SwitchConfig `yaml:"switches"`
-	TLS      TLSConfig      `yaml:"tls"`
-	Collect  CollectConfig  `yaml:"collect"`
+Auth           AuthConfig     `yaml:"auth"`            // global auth (inherited by all switches unless overridden)
+Switches       []SwitchConfig `yaml:"switches"`
+TLS            TLSConfig      `yaml:"tls"`
+Collect        CollectConfig  `yaml:"collect"`
+DeploymentJSON string         `yaml:"deployment_json"` // optional path to Azure Local deployment design JSON
 }
 
 // SwitchConfig defines how to connect to a single TOR switch.

@@ -56,7 +56,17 @@ const NetworkGraph = (() => {
                 'border-color': 'rgba(33, 150, 243, 0.4)',
             },
         },
-        // Host nodes
+        // Spine switch nodes (larger, bolder border)
+        {
+            selector: 'node[type="switch"][role="spine"]',
+            style: {
+                'width': 64,
+                'height': 48,
+                'border-width': 2.5,
+                'border-color': '#2899f5',
+            },
+        },
+        // Host nodes (Arc machines)
         {
             selector: 'node[type="host"]',
             style: {
@@ -191,8 +201,13 @@ const NetworkGraph = (() => {
         },
     ];
 
-    // Rank tiers: BMC on top (0), switches middle (1), hosts bottom (2)
-    const typeRank = { bmc: 0, switch: 1, host: 2, unknown: 2 };
+    // Rank tiers: spine switches (0), leaf switches (1), hosts/BMC (2), VMs bottom (3)
+    const typeRank = { bmc: 2, switch: 1, host: 2, vm: 3, unknown: 2 };
+
+    function getNodeRank(node) {
+        if (node.data('type') === 'switch' && node.data('role') === 'spine') return 0;
+        return typeRank[node.data('type')] ?? 2;
+    }
 
     // Layout configurations
     const layouts = {
@@ -231,7 +246,8 @@ const NetworkGraph = (() => {
         // Group nodes by tier
         const tiers = { 0: [], 1: [], 2: [] };
         cy.nodes().forEach((n) => {
-            const rank = typeRank[n.data('type')] ?? 2;
+            if (n.isParent()) return;
+            const rank = getNodeRank(n);
             tiers[rank].push(n);
         });
 

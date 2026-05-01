@@ -72,7 +72,18 @@ func runServe(cmd *cobra.Command, args []string) error {
 		interval := time.Duration(intervalSec) * time.Second
 		fmt.Printf("Live mode: collecting from %d switch(es) every %s\n", len(cfg.Switches), interval)
 
-		srv.SetLiveMode(nil)
+		// Perform initial collection synchronously so the API is ready before the browser opens
+		fmt.Println("Running initial topology collection...")
+		initCtx, initCancel := context.WithTimeout(context.Background(), time.Duration(cfg.Collect.TimeoutSec)*time.Second+30*time.Second)
+		initialTopo, err := collector.Collect(initCtx, cfg)
+		initCancel()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "WARNING: initial collection failed: %v\n", err)
+			initialTopo = &topology.Topology{CollectedAt: time.Now().UTC()}
+		}
+		fmt.Printf("Initial collection complete: %d devices, %d links\n", len(initialTopo.Devices), len(initialTopo.Links))
+
+		srv.SetLiveMode(initialTopo)
 
 		sc := collector.NewStreamingCollector(cfg, interval, func(topo *topology.Topology) {
 			srv.UpdateTopology(topo)

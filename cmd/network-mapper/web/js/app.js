@@ -75,17 +75,34 @@ async function fetchTopology() {
 function topologyToCytoscape(topology) {
     const elements = [];
 
+    // Detect spine switches: switches that are only connected to other switches (not hosts/VMs/BMCs)
+    const switchIds = new Set((topology.devices || []).filter(d => d.type === 'switch').map(d => d.id));
+    const switchConnectsNonSwitch = new Set();
+    for (const link of (topology.links || [])) {
+        const localIsSwitch = switchIds.has(link.local_device);
+        const remoteIsSwitch = switchIds.has(link.remote_device);
+        if (localIsSwitch && !remoteIsSwitch) switchConnectsNonSwitch.add(link.local_device);
+        if (remoteIsSwitch && !localIsSwitch) switchConnectsNonSwitch.add(link.remote_device);
+    }
+
     // Devices → nodes
     for (const device of (topology.devices || [])) {
         // Count interface health
         const ifaces = device.interfaces || [];
         const ifacesUp = ifaces.filter((i) => i.oper_status === 'UP').length;
 
+        // Determine role: spine switches only connect to other switches
+        let role = '';
+        if (device.type === 'switch') {
+            role = switchConnectsNonSwitch.has(device.id) ? 'leaf' : 'spine';
+        }
+
         elements.push({
             data: {
                 id: device.id,
                 label: device.system_name || device.id,
                 type: device.type || 'unknown',
+                role: role,
                 chassis_id: device.chassis_id || '',
                 system_name: device.system_name || '',
                 system_description: device.system_description || '',

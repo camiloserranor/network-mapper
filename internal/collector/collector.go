@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/camiloserranor/network-mapper/internal/config"
+	"github.com/camiloserranor/network-mapper/internal/deployment"
 	"github.com/camiloserranor/network-mapper/internal/gnmi"
 	"github.com/camiloserranor/network-mapper/internal/topology"
 	"github.com/camiloserranor/network-mapper/internal/transform"
@@ -50,7 +51,22 @@ func Collect(ctx context.Context, cfg *config.Config) (*topology.Topology, error
 
 	wg.Wait()
 
-	return buildTopology(results, now), nil
+	topo := buildTopology(results, now)
+
+	// Enrich with deployment data if configured (non-fatal on failure)
+	if cfg.DeploymentJSON != "" {
+		dd, err := deployment.Load(cfg.DeploymentJSON)
+		if err != nil {
+			log.Printf("WARNING: could not load deployment JSON: %v", err)
+			topo.PartialFailures = append(topo.PartialFailures, topology.PartialError{
+				Switch: "deployment", Phase: "enrichment", Message: err.Error(),
+			})
+		} else {
+			deployment.EnrichTopology(topo, dd)
+		}
+	}
+
+	return topo, nil
 }
 
 func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Config, now time.Time) switchResult {

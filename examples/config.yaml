@@ -27,3 +27,8 @@ collect:
   timeout_sec: 30     # Per-switch timeout
   parallel: 2         # Max concurrent switch connections
   skip_counters: false # Set true to skip interface counter collection
+
+# Optional: Azure Local deployment design JSON for topology enrichment.
+# When provided, enriches discovered devices with authoritative hostnames,
+# MAC addresses, and IP addresses from the deployment plan.
+# deployment_json: /path/to/deployment.json
