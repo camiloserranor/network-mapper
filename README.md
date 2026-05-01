@@ -202,19 +202,23 @@ For Cisco NX-OS switches, native paths are used: `/System/lldp-items/inst-items/
 
 ## Web UI Features
 
-The embedded web UI provides an interactive Obsidian-style graph visualization:
+The embedded web UI provides an interactive topology visualization (Azure portal-inspired dark theme):
 
-- **Hierarchical layout** — BMCs on top, TOR switches in the middle, hosts at the bottom
+- **Tree-based exploration** — initially shows only switches; double-click to expand hosts, then VMs
+- **Spine/leaf hierarchy** — spine switches appear at the top, leaf switches below, then hosts, then VMs
+- **Hierarchical layout** — tree-aware positioning that avoids node overlaps across subtrees
 - **Force-directed layout** — alternative physics-based layout
-- **Group by TOR** — compound nodes grouping hosts under their connected switch
+- **Inventory panel** — collapsible left sidebar listing all discovered physical devices with expand/details buttons
+- **VLAN summary view** — groups nodes by VLAN, showing device counts per VLAN instead of individual nodes
 - **Hover interactions** — highlights connected neighbors, dims unrelated nodes, shows port labels
 - **Click popup card** — floating card with key device/link info near the clicked element
 - **Full detail sidebar** — interface list with health indicators, traffic counters, connection list
+- **Tooltips** — hover over detail fields for explanations (e.g., what "Source Device" means in LLDP context)
 - **Search** — find devices by name, ID, or chassis ID
-- **Filter by type** — show only switches, hosts, BMCs, or all
 - **DOWN link highlighting** — red dashed lines for operationally down connections
-- **PNG export** — download the graph as a high-resolution image
-- **Dark theme** — Obsidian-inspired dark UI optimized for NOC environments
+- **Dual export** — download the topology as PNG image or JSON data
+- **Live updates** — WebSocket connection refreshes topology data without page reload
+- **Dark theme** — Azure portal-inspired dark UI optimized for NOC environments
 
 ## Supported Platforms
 
@@ -228,6 +232,51 @@ The tool automatically handles:
 - **JSON_IETF prefix stripping** — removes `module-name:` prefixes from response keys (RFC 7951)
 - **Interface name normalization** — `eth1/1` → `Eth1/1`, `Ethernet0` unchanged
 
+## Device Identification
+
+The tool classifies every discovered device into one of five types. Classification uses only data obtained from gNMI — no external database is required.
+
+| Type | Meaning | How identified |
+|------|---------|---------------|
+| **switch** | Network switch (TOR, spine, leaf) | LLDP capabilities (Bridge/Router), or system description keywords: SONiC, NX-OS, Arista, Cumulus, FTOS, Dell EMC, Cisco |
+| **host** | Physical server | LLDP capabilities (Station only), or system description keywords: Linux, Ubuntu, Windows, Red Hat, CentOS, SLES. Also promoted from `unknown` via ARP enrichment or deployment JSON matching |
+| **bmc** | Baseboard Management Controller | Name or description contains: iDRAC, iLO, BMC, IPMI, Redfish |
+| **vm** | Virtual machine / endpoint | MAC address learned on a switch port that does NOT match (or nearly match) the LLDP chassis-id of the neighbor on that port |
+| **unknown** | Unclassifiable device | No LLDP capabilities and no matching keywords. Common for bare-metal NICs on NX-OS (empty system-name/capabilities) |
+
+### Spine vs. Leaf Switch Classification
+
+The web UI further classifies switches for layout purposes:
+
+- **Spine** — a switch whose LLDP neighbors are exclusively other switches (no host/BMC connections)
+- **Leaf** — a switch with at least one non-switch neighbor (host, BMC, or unknown device)
+
+This classification is computed client-side from the link data and used only for visual hierarchy (spine at top, leaf below). It is not stored in the topology JSON.
+
+### Device Identity Priority
+
+| Priority | Source | Example | When used |
+|----------|--------|---------|-----------|
+| 1 | Config name (queried switches) | `TOR-1` | Always — user-assigned name from `config.yaml` |
+| 2 | LLDP system-name (neighbors) | `rr1-n42-r14-93180hl-8-1a` | When the neighbor reports a hostname |
+| 3 | LLDP chassis-id (neighbors) | `d8:94:24:f2:cf:b4` | Fallback when system-name is empty |
+| 4 | Deployment hostname (enrichment) | `ASRR1N42R14U01` | Replaces MAC-based IDs after deployment matching |
+
+For full details on device correlation, MAC offset handling, and enrichment passes, see [`docs/DEVICE-CORRELATION.md`](docs/DEVICE-CORRELATION.md).
+
+## Deployment JSON Enrichment (Experimental)
+
+> ⚠️ **This feature is experimental.** It has been tested against a single Azure Local deployment layout. The deployment JSON schema may vary across versions and regions. Use this feature for additional context, but do not rely on it as the sole source of truth.
+
+When provided with a deployment plan JSON file (`--deployment` flag), the tool can enrich the topology with authoritative host metadata:
+
+- **MAC matching** — correlates LLDP chassis-ids to deployment NIC MACs (exact and +2 offset)
+- **NIC port grouping** — merges multi-NIC-port devices into single host nodes
+- **ID rename** — replaces MAC-based IDs with deployment hostnames
+- **Missing host synthesis** — adds expected hosts that were not discovered via LLDP
+
+The deployment JSON is read from files produced by Azure Local deployment tooling. See [`docs/DEVICE-CORRELATION.md`](docs/DEVICE-CORRELATION.md) for the expected schema and matching algorithm.
+
 ## Architecture
 
 ```
@@ -238,11 +287,12 @@ network-mapper/
 │       ├── index.html
 │       ├── css/app.css        # Dark theme
 │       ├── js/
-│       │   ├── graph.js       # Cytoscape.js init, layout, interactions
-│       │   ├── sidebar.js     # Detail panel with interface health
+│       │   ├── graph.js       # Cytoscape.js init, tree layout, expand/collapse, VLAN view
+│       │   ├── sidebar.js     # Detail panel with interface health and tooltips
 │       │   ├── popup.js       # Floating card near clicked elements
-│       │   ├── toolbar.js     # Layout, search, filter, export controls
-│       │   └── app.js         # Main entry, topology transform, event wiring
+│       │   ├── toolbar.js     # Layout, search, export (PNG + JSON) controls
+│       │   ├── live.js        # WebSocket connection for live topology updates
+│       │   └── app.js         # Main entry, topology transform, inventory panel
 │       └── lib/               # Vendored: cytoscape.min.js, dagre.min.js
 ├── internal/
 │   ├── config/                # YAML config loading + env-var resolution
@@ -250,6 +300,8 @@ network-mapper/
 │   ├── transform/             # LLDP, interface, system data parsers
 │   ├── collector/             # Orchestrator: connect, collect, build topology
 │   ├── topology/              # Core types: Device, Interface, Link, Topology
+│   ├── deployment/            # Deployment JSON enrichment (experimental)
+│   ├── secrets/               # Azure Key Vault credential resolution
 │   └── server/                # HTTP server: embedded web + REST API
 └── examples/
     ├── config.yaml            # Sample config for 2 TOR switches

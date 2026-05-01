@@ -53,9 +53,10 @@ ClientKey  string `yaml:"client_key"`  // path to client key (optional, for mTLS
 
 // CollectConfig defines collection behavior.
 type CollectConfig struct {
-TimeoutSec  int  `yaml:"timeout_sec"`  // per-switch timeout (default 30)
-Parallel    int  `yaml:"parallel"`     // max concurrent switch connections (default 2)
+TimeoutSec   int  `yaml:"timeout_sec"`   // per-switch timeout (default 30)
+Parallel     int  `yaml:"parallel"`      // max concurrent switch connections (default 2)
 SkipCounters bool `yaml:"skip_counters"` // skip interface counter collection
+ReverseDNS   bool `yaml:"reverse_dns"`   // attempt reverse DNS for host IP→hostname (default false)
 }
 
 // Load reads and parses a configuration file.

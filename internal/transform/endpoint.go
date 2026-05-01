@@ -1,6 +1,8 @@
 package transform
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/camiloserranor/network-mapper/internal/topology"
@@ -68,8 +70,10 @@ func CorrelateEndpoints(inputs []CorrelationInput) []topology.Endpoint {
 
 			entryMAC := normalizeMACAddress(macEntry.MAC)
 
-			// Skip if this MAC matches the LLDP chassis (it's the physical host, not a VM)
-			if chassisIDs != nil && chassisIDs[entryMAC] {
+			// Skip if this MAC matches the LLDP chassis (it's the physical host, not a VM).
+			// Also skip if the MAC is within ±2 of a chassis ID, which covers the
+			// NX-OS LLDP offset where chassis-id = port MAC + 2.
+			if chassisIDs != nil && isHostMAC(entryMAC, chassisIDs) {
 				continue
 			}
 
@@ -162,4 +166,52 @@ func appendUniqueInt(slice []int, val int) []int {
 		}
 	}
 	return append(slice, val)
+}
+
+// isHostMAC returns true if the given MAC matches any chassis ID directly,
+// or is within ±2 of a chassis ID (covering the NX-OS LLDP offset).
+func isHostMAC(mac string, chassisIDs map[string]bool) bool {
+	if chassisIDs[mac] {
+		return true
+	}
+	// Check if mac is within ±2 of any chassis ID
+	hex := strings.ReplaceAll(mac, ":", "")
+	if len(hex) != 12 {
+		return false
+	}
+	macVal, err := strconv.ParseUint(hex, 16, 48)
+	if err != nil {
+		return false
+	}
+	for chassisMAC := range chassisIDs {
+		cHex := strings.ReplaceAll(chassisMAC, ":", "")
+		if len(cHex) != 12 {
+			continue
+		}
+		cVal, err := strconv.ParseUint(cHex, 16, 48)
+		if err != nil {
+			continue
+		}
+		diff := int64(macVal) - int64(cVal)
+		if diff >= -2 && diff <= 2 {
+			return true
+		}
+	}
+	return false
+}
+
+// macAddOffsetStr adds an integer offset to a normalized MAC address.
+func macAddOffsetStr(mac string, offset int) string {
+	hex := strings.ReplaceAll(mac, ":", "")
+	if len(hex) != 12 {
+		return mac
+	}
+	val, err := strconv.ParseUint(hex, 16, 48)
+	if err != nil {
+		return mac
+	}
+	val = uint64(int64(val) + int64(offset))
+	hex = fmt.Sprintf("%012x", val)
+	return fmt.Sprintf("%s:%s:%s:%s:%s:%s",
+		hex[0:2], hex[2:4], hex[4:6], hex[6:8], hex[8:10], hex[10:12])
 }

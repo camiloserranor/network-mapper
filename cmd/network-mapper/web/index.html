@@ -11,7 +11,6 @@
     <header id="toolbar">
         <div class="toolbar-left">
             <h1 class="logo">⬡ Network Mapper</h1>
-            <span id="info-badge" class="badge">Loading...</span>
             <span id="live-indicator" class="live-indicator disconnected"><span class="live-dot"></span> Offline</span>
         </div>
         <div class="toolbar-center">
@@ -27,26 +26,20 @@
                 </button>
             </div>
             <div class="btn-group">
-                <select id="filter-select" class="btn">
-                    <option value="all">All Devices</option>
-                    <option value="switch">Switches</option>
-                    <option value="host">Hosts</option>
-                    <option value="vm">VMs</option>
-                    <option value="bmc">BMCs</option>
-                    <option value="unknown">Unknown</option>
-                </select>
-                <select id="vlan-filter" class="btn">
-                    <option value="">All VLANs</option>
-                </select>
-            </div>
-            <div class="btn-group">
                 <button class="btn" id="fit-btn" title="Fit to screen">⤢ Fit</button>
-                <button class="btn" id="group-btn" title="Group nodes by TOR switch">▦ TOR</button>
+                <button class="btn" id="collapse-all-btn" title="Collapse all to switches only">⊟ Collapse</button>
                 <button class="btn" id="vlan-group-btn" title="Group nodes by VLAN">▧ VLAN</button>
-                <button class="btn" id="export-btn" title="Export as PNG">⤓ Export</button>
+                <button class="btn" id="export-png-btn" title="Export as PNG image">🖼 PNG</button>
+                <button class="btn" id="export-json-btn" title="Export topology as JSON">{ } JSON</button>
             </div>
         </div>
     </header>
+
+    <!-- Tree navigation hint -->
+    <div id="tree-hint" class="tree-hint">
+        <span>💡 Double-click a switch to reveal connected hosts, then a host to see its VMs.</span>
+        <button id="tree-hint-dismiss" class="btn-icon" title="Dismiss">✕</button>
+    </div>
 
     <!-- Warning banner for partial failures -->
     <div id="warning-banner" class="hidden">
@@ -61,6 +54,20 @@
 
     <!-- Main content -->
     <div id="main">
+        <!-- Inventory panel (left side) -->
+        <aside id="inventory-panel">
+            <div class="inventory-header">
+                <h2>📋 Inventory</h2>
+                <button id="inventory-toggle" class="btn-icon" title="Collapse panel">◀</button>
+            </div>
+            <div id="inventory-content">
+                <div id="inventory-search-wrap">
+                    <input type="text" id="inventory-search" placeholder="Filter inventory..." autocomplete="off">
+                </div>
+                <div id="inventory-groups"></div>
+            </div>
+        </aside>
+
         <!-- Graph canvas -->
         <div id="cy"></div>
 
@@ -72,6 +79,7 @@
             </div>
             <div id="popup-body"></div>
             <div class="popup-footer">
+                <button id="popup-expand-btn" class="btn btn-sm" title="Expand/collapse connected devices">⊞ Expand</button>
                 <button id="popup-details-btn" class="btn btn-sm">More details →</button>
             </div>
         </div>
@@ -85,6 +93,9 @@
             <div id="sidebar-content"></div>
         </aside>
     </div>
+
+    <!-- Inventory expand tab (visible when inventory is collapsed) -->
+    <div id="inventory-expand-btn" class="hidden" title="Show inventory">▶ Inventory</div>
 
     <!-- Error overlay -->
     <div id="error-overlay" class="hidden">

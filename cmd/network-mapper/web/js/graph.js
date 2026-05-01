@@ -5,6 +5,24 @@
 const NetworkGraph = (() => {
     let cy = null;
     let currentLayout = 'dagre';
+    let storedTopology = null;
+
+    // Tree expand/collapse state
+    const expandedNodes = new Set();
+    // Maps parent ID → Set of child node IDs currently in the graph
+    const expandedChildren = {};
+
+    // Tier hierarchy: spine(0) > leaf(1) > host/bmc(2) > unknown(3) > vm(4)
+    // Switches without a role default to tier 1 (leaf)
+    const typeRank = { bmc: 2, switch: 1, host: 2, unknown: 3, vm: 4 };
+
+    function getNodeTier(node) {
+        const type = node.data('type');
+        if (type === 'switch') {
+            return node.data('switchRole') === 'spine' ? 0 : 1;
+        }
+        return typeRank[type] ?? 3;
+    }
 
     // Azure portal-inspired color map for device types
     const typeColors = {
@@ -124,12 +142,16 @@ const NetworkGraph = (() => {
                 'border-width': 1.5,
             },
         },
-        // Unknown nodes
+        // Unknown nodes — smaller and dimmed to reduce visual noise
         {
             selector: 'node[type="unknown"]',
             style: {
                 'background-color': '#323130',
                 'border-color': typeColors.unknown,
+                'width': 28,
+                'height': 28,
+                'opacity': 0.4,
+                'font-size': '9px',
             },
         },
         // VM endpoint nodes
@@ -321,9 +343,40 @@ const NetworkGraph = (() => {
 
     // Tier Y positions for hierarchical layout
     const tierGap = 200;
-    const tierY = { 0: 80, 1: 80 + tierGap, 2: 80 + tierGap * 2, 3: 80 + tierGap * 3 };
 
-    function applyTieredLayout() {
+    // Minimum horizontal space reserved for a single leaf node.
+    const TREE_NODE_W  = 110;
+    // Cell size for VM grid layout (VMs are shown in a compact grid under their host).
+    const TREE_VM_CELL = 55;
+    // Max columns in the VM grid — keeps the grid compact even for thousands of VMs.
+    const TREE_VM_COLS = 12;
+    // Vertical gap between a parent and its children tier.
+    const TREE_TIER_H  = tierGap;
+    // Horizontal gap between adjacent sibling subtrees.
+    const TREE_GAP     = 30;
+
+    /**
+     * Tree-aware hierarchical layout.
+     *
+     * Positions every visible node using a classic tree drawing algorithm:
+     *
+     *   1. Identify root nodes — visible nodes not parented under any
+     *      expanded node.  ALL roots share the same top row (y = 80)
+     *      regardless of device tier; this centres spines at the tree
+     *      apex.
+     *   2. Sort roots: spine switches first, then leaf switches, then
+     *      everything else — each sub-group alphabetical by label.
+     *   3. Bottom-up: compute the horizontal width each subtree needs.
+     *      Leaf nodes ➜ TREE_NODE_W.
+     *      VMs ➜ compact grid  (TREE_VM_COLS × TREE_VM_CELL).
+     *      Others ➜ sum of children widths + gaps.
+     *   4. Top-down: each node is centred over its subtree.  Children
+     *      are placed at parent_y + TREE_TIER_H.
+     *   5. Animate all visible nodes to computed positions.
+     *
+     * Called after every expand / collapse / hierarchy-button click.
+     */
+    function layoutVisibleTree(fitAfter) {
         if (!cy) return;
 
         // Group nodes by tier (skip compound/parent nodes)
@@ -334,47 +387,174 @@ const NetworkGraph = (() => {
             tiers[rank].push(n);
         });
 
-        // Sort nodes within each tier by label for consistent ordering
-        for (const rank of [0, 1, 2, 3]) {
-            tiers[rank].sort((a, b) => (a.data('label') || '').localeCompare(b.data('label') || ''));
-        }
-
-        // Calculate positions: center each tier horizontally
-        const nodeSep = 120;
-        const positions = {};
-
-        for (const rank of [0, 1, 2, 3]) {
-            const nodes = tiers[rank];
-            const totalWidth = (nodes.length - 1) * nodeSep;
-            const startX = -totalWidth / 2;
-
-            nodes.forEach((n, i) => {
-                positions[n.id()] = { x: startX + i * nodeSep, y: tierY[rank] };
-            });
-        }
-
-        // Animate to tiered positions
-        cy.nodes().forEach((n) => {
-            const pos = positions[n.id()];
-            if (pos) n.animate({ position: pos, duration: 600, easing: 'ease-in-out-quad' });
+        // Sort: spines first, then other switches, then by label
+        roots.sort((a, b) => {
+            const ra = rootSortKey(a), rb = rootSortKey(b);
+            if (ra !== rb) return ra - rb;
+            return (a.data('label') || '').localeCompare(b.data('label') || '');
         });
 
-        // Fit after animation
-        setTimeout(() => cy.fit(50), 650);
+        function rootSortKey(n) {
+            if (n.data('type') === 'switch' && n.data('switchRole') === 'spine') return 0;
+            if (n.data('type') === 'switch') return 1;
+            if (n.data('type') === 'host') return 2;
+            return 3;
+        }
+
+        // --- 2. Bottom-up: compute subtree widths ---
+        function subtreeWidth(nodeId) {
+            const children = expandedChildren[nodeId];
+            if (!children || children.size === 0) return TREE_NODE_W;
+
+            const childArr = [...children];
+
+            // VM children → grid layout width
+            if (childArr[0] && childArr[0].startsWith('vm-')) {
+                const cols = Math.min(childArr.length, TREE_VM_COLS);
+                return Math.max(cols * TREE_VM_CELL, TREE_NODE_W);
+            }
+
+            // Non-VM children → sum of subtrees + gaps
+            let total = 0;
+            for (const cid of childArr) {
+                total += subtreeWidth(cid) + TREE_GAP;
+            }
+            return Math.max(total - TREE_GAP, TREE_NODE_W);
+        }
+
+        // --- 3. Top-down: assign positions ---
+        const positions = {};
+
+        function positionSubtree(nodeId, cx, y) {
+            positions[nodeId] = { x: cx, y };
+
+            const children = expandedChildren[nodeId];
+            if (!children || children.size === 0) return;
+
+            const childArr = [...children];
+            const childY = y + TREE_TIER_H;
+
+            // VMs → compact grid centred under parent
+            if (childArr[0] && childArr[0].startsWith('vm-')) {
+                const cols = Math.min(childArr.length, TREE_VM_COLS);
+                const gridW = (cols - 1) * TREE_VM_CELL;
+                const sx = cx - gridW / 2;
+                for (let i = 0; i < childArr.length; i++) {
+                    positions[childArr[i]] = {
+                        x: sx + (i % cols) * TREE_VM_CELL,
+                        y: childY + Math.floor(i / cols) * TREE_VM_CELL,
+                    };
+                }
+                return;
+            }
+
+            // Sort children for stable ordering
+            childArr.sort((a, b) => {
+                const na = cy.getElementById(a), nb = cy.getElementById(b);
+                return (na.data('label') || '').localeCompare(nb.data('label') || '');
+            });
+
+            const totalW = childArr.reduce((s, c) => s + subtreeWidth(c) + TREE_GAP, 0) - TREE_GAP;
+            let curX = cx - totalW / 2;
+
+            for (const cid of childArr) {
+                const w = subtreeWidth(cid);
+                positionSubtree(cid, curX + w / 2, childY);
+                curX += w + TREE_GAP;
+            }
+        }
+
+        // --- 4. Lay out roots grouped by tier, each group centred ---
+        //
+        // Tier-0 roots (spines) get the top row. Their expanded children
+        // land at tier-1 Y.  Independent tier-1 roots (leaf switches not
+        // parented to an expanded spine) are placed in a SEPARATE band to
+        // the right of any spine-subtree children at that level so they
+        // never overlap.
+
+        const ROOT_Y = 80;
+
+        // Group roots by their sort key (spine=0, leaf=1, host=2, other=3)
+        const rootGroups = {};
+        for (const root of roots) {
+            const k = rootSortKey(root);
+            if (!rootGroups[k]) rootGroups[k] = [];
+            rootGroups[k].push(root);
+        }
+
+        // Track the rightmost X occupied at each Y level by earlier groups
+        let occupiedRight = -Infinity;
+
+        const groupKeys = Object.keys(rootGroups).map(Number).sort();
+        for (const gk of groupKeys) {
+            const group = rootGroups[gk];
+            const groupY = ROOT_Y + gk * TREE_TIER_H;
+
+            const totalW = group.reduce(
+                (s, r) => s + subtreeWidth(r.id()) + TREE_GAP, 0
+            ) - TREE_GAP;
+
+            // If a previous tier's subtrees already occupy space at this Y
+            // (e.g. expanded spine children at tier-1 Y), offset this group
+            // so it starts after the occupied region.
+            let startX;
+            if (occupiedRight > -Infinity) {
+                // Centre the group, but push right if it would collide
+                const centred = -totalW / 2;
+                startX = Math.max(centred, occupiedRight + TREE_GAP * 2);
+            } else {
+                startX = -totalW / 2;
+            }
+
+            let curX = startX;
+            for (const root of group) {
+                const w = subtreeWidth(root.id());
+                positionSubtree(root.id(), curX + w / 2, groupY);
+                curX += w + TREE_GAP;
+            }
+
+            // Update occupied bounds from all positions set so far
+            occupiedRight = -Infinity;
+            for (const pos of Object.values(positions)) {
+                if (pos.x > occupiedRight) occupiedRight = pos.x;
+            }
+            occupiedRight += TREE_NODE_W / 2;
+        }
+
+        // --- 5. Animate ---
+        visible.forEach(n => {
+            const pos = positions[n.id()];
+            if (pos) n.animate({ position: pos, duration: 400, easing: 'ease-in-out-quad' });
+        });
+
+        if (fitAfter) {
+            setTimeout(() => cy.fit(cy.elements(':visible'), 50), 450);
+        }
     }
 
-    function init(containerId, elements) {
+    // Called by runLayout('dagre') — always fit when user explicitly switches layout
+    function applyTieredLayout() {
+        layoutVisibleTree(true);
+    }
+
+    function init(containerId, elements, topology) {
+        storedTopology = topology || null;
+        expandedNodes.clear();
+
         cy = cytoscape({
             container: document.getElementById(containerId),
             elements: elements,
             style: graphStyle,
-            layout: { name: 'preset' }, // start with no layout; we apply tiered manually
+            layout: { name: 'preset' },
             minZoom: 0.1,
             maxZoom: 4,
             wheelSensitivity: 0.3,
         });
 
         setupInteraction();
+
+        // Apply initial tree view: show only switches, hide everything else
+        applyInitialTreeView();
 
         // Apply default tiered layout
         applyTieredLayout();
@@ -418,28 +598,13 @@ const NetworkGraph = (() => {
         if (name === 'dagre') {
             applyTieredLayout();
         } else {
-            const config = layouts[name];
-            if (config) cy.layout(config).run();
+            const config = { ...layouts[name], eles: cy.elements(':visible') };
+            if (config.name) cy.layout(config).run();
         }
     }
 
     function fitToScreen() {
-        if (cy) cy.fit(50);
-    }
-
-    function filterByType(type) {
-        if (!cy) return;
-        if (type === 'all') {
-            cy.elements().show();
-        } else {
-            cy.nodes().hide();
-            cy.edges().hide();
-            const matchingNodes = cy.nodes(`[type="${type}"]`);
-            matchingNodes.show();
-            matchingNodes.connectedEdges().show();
-            matchingNodes.connectedEdges().connectedNodes().show();
-        }
-        runLayout(currentLayout);
+        if (cy) cy.fit(cy.elements(':visible'), 50);
     }
 
     function searchNodes(query) {
@@ -461,90 +626,25 @@ const NetworkGraph = (() => {
 
     function exportPNG() {
         if (!cy) return;
-        const png = cy.png({ full: true, scale: 2, bg: '#0d1117' });
+        const png = cy.png({ full: true, scale: 2, bg: '#1b1a19' });
         const link = document.createElement('a');
         link.href = png;
         link.download = 'network-topology.png';
         link.click();
     }
 
-    let grouped = false;
-
-    function toggleGroupByTOR(elements) {
-        if (!cy) return;
-
-        // If VLAN grouping is active, clean it up first regardless of TOR toggle direction
-        if (vlanGrouped) {
-            cy.nodes().forEach(n => {
-                if (n.isChild()) n.move({ parent: null });
-                n.style('display', 'element');
-            });
-            cy.edges().forEach(e => e.style('display', 'element'));
-            cy.nodes('.vlan-group').remove();
-            vlanGrouped = false;
-            // Reset grouped so the toggle below starts from a clean state
-            grouped = false;
-        }
-
-        grouped = !grouped;
-
-        if (grouped) {
-
-            // Build parent-child map: for each switch, find connected non-switch nodes
-            const switches = new Set();
-            cy.nodes().forEach(n => {
-                if (n.data('type') === 'switch') switches.add(n.id());
-            });
-
-            // Track which non-switch node connects to which switch(es)
-            const nodeToSwitches = {};
-            cy.edges().forEach(e => {
-                const src = e.source().id();
-                const tgt = e.target().id();
-                if (switches.has(src) && !switches.has(tgt)) {
-                    (nodeToSwitches[tgt] = nodeToSwitches[tgt] || []).push(src);
-                }
-                if (switches.has(tgt) && !switches.has(src)) {
-                    (nodeToSwitches[src] = nodeToSwitches[src] || []).push(tgt);
-                }
-            });
-
-            // Add group parent nodes for each switch
-            switches.forEach(swId => {
-                const groupId = 'group-' + swId;
-                if (cy.getElementById(groupId).length === 0) {
-                    cy.add({
-                        group: 'nodes',
-                        data: {
-                            id: groupId,
-                            label: swId + ' group',
-                            type: 'group',
-                        },
-                    });
-                }
-
-                // Move the switch into its own group
-                cy.getElementById(swId).move({ parent: groupId });
-            });
-
-            // Move each child into its primary switch group
-            for (const [nodeId, swIds] of Object.entries(nodeToSwitches)) {
-                const primarySwitch = swIds[0]; // first connected switch
-                const groupId = 'group-' + primarySwitch;
-                cy.getElementById(nodeId).move({ parent: groupId });
-            }
-        } else {
-            // Ungroup: move all nodes to root and remove group nodes
-            cy.nodes().forEach(n => {
-                if (n.isChild()) n.move({ parent: null });
-            });
-            cy.nodes('[type="group"]').remove();
-        }
-
-        // Re-apply layout
-        runLayout(currentLayout);
-        return grouped;
+    function exportJSON() {
+        if (!storedTopology) return;
+        const json = JSON.stringify(storedTopology, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'network-topology.json';
+        link.click();
+        URL.revokeObjectURL(link.href);
     }
+
+    let grouped = false;
 
     function isGrouped() { return grouped; }
 
@@ -559,36 +659,57 @@ const NetworkGraph = (() => {
     function updateElements(newElements) {
         if (!cy) return;
 
-        const existingIds = new Set();
-        cy.elements().forEach(e => existingIds.add(e.id()));
-
+        // Build set of base elements (non-VM device nodes + edges)
         const newIds = new Set();
         newElements.forEach(e => newIds.add(e.data.id));
 
-        // Remove elements that no longer exist
-        cy.elements().forEach(e => {
-            if (!newIds.has(e.id())) {
-                e.remove();
-            }
+        // Collect IDs of dynamically-added VM nodes so we can protect their edges
+        const vmNodeIds = new Set();
+        cy.nodes().forEach(n => {
+            if (n.data('type') === 'vm') vmNodeIds.add(n.id());
         });
 
-        // Add or update elements
-        for (const el of newElements) {
-            const existing = cy.getElementById(el.data.id);
-            if (existing.length > 0) {
-                // Update data fields
-                existing.data(el.data);
-            } else {
-                cy.add(el);
-            }
-        }
+        cy.batch(() => {
+            // Remove elements that no longer exist, but skip:
+            // - VM nodes (managed by expand/collapse)
+            // - Edges connected to VM nodes (dynamically created)
+            // - VLAN summary/group nodes
+            cy.elements().forEach(e => {
+                if (e.data('type') === 'vm') return;
+                if (e.data('type') === 'vlan-summary') return;
+                if (e.hasClass('vlan-group')) return;
+                // Protect edges that connect to VM nodes
+                if (e.isEdge()) {
+                    if (vmNodeIds.has(e.source().id()) || vmNodeIds.has(e.target().id())) return;
+                }
+                if (!newIds.has(e.id())) {
+                    e.remove();
+                }
+            });
 
-        // Re-run layout for new nodes
-        const addedCount = newElements.filter(e => !existingIds.has(e.data.id)).length;
-        const removedCount = [...existingIds].filter(id => !newIds.has(id)).length;
-        if (addedCount > 0 || removedCount > 0) {
-            runLayout(currentLayout);
-        }
+            // Add or update elements — preserve current display state
+            for (const el of newElements) {
+                const existing = cy.getElementById(el.data.id);
+                if (existing.length > 0) {
+                    // Preserve the expand badge — incoming data has the plain label
+                    const savedExpandLabel = existing.data('expandLabel');
+                    existing.data(el.data);
+                    if (savedExpandLabel) existing.data('expandLabel', savedExpandLabel);
+                    // Refresh child counts that may have changed
+                    if (existing.isNode()) updateExpandLabel(existing);
+                } else {
+                    cy.add(el);
+                    const added = cy.getElementById(el.data.id);
+                    if (added.length > 0 && added.isNode()) {
+                        const type = added.data('type');
+                        if (type !== 'switch') {
+                            added.style('display', 'none');
+                        }
+                        updateExpandLabel(added);
+                    }
+                }
+            }
+        });
     }
 
     // VLAN color palette — muted tones consistent with Azure portal
@@ -603,167 +724,448 @@ const NetworkGraph = (() => {
     }
 
     let vlanGrouped = false;
+    let vlanSummaryNodes = []; // IDs of summary nodes added during VLAN view
 
     function toggleGroupByVLAN(topology) {
         if (!cy || !topology) return;
 
         if (vlanGrouped) {
-            // Ungroup: move all nodes back to root and remove VLAN group nodes
-            cy.nodes().forEach(n => {
-                if (n.isChild()) {
-                    n.move({ parent: null });
+            // Remove summary nodes and restore tree view
+            cy.batch(() => {
+                for (const id of vlanSummaryNodes) {
+                    const n = cy.getElementById(id);
+                    if (n.length) { n.connectedEdges().remove(); n.remove(); }
                 }
-                n.style('display', 'element');
+                cy.nodes('.vlan-group').remove();
             });
-            cy.edges().forEach(e => e.style('display', 'element'));
-            cy.nodes('.vlan-group').remove();
+            vlanSummaryNodes = [];
             vlanGrouped = false;
-            grouped = false;
+
+            // Restore tree view
+            applyInitialTreeView();
+            const toReExpand = [...expandedNodes];
+            expandedNodes.clear();
+            for (const id of toReExpand) expandNode(id);
             runLayout(currentLayout);
             return;
         }
 
-        // First, undo any TOR grouping
-        if (grouped) {
-            cy.nodes().forEach(n => {
-                if (n.isChild()) n.move({ parent: null });
-            });
-            cy.nodes(':parent').remove();
-            grouped = false;
-        }
-
-        // Build VLAN membership: each device gets exactly ONE primary VLAN (first in list)
-        // Switches are excluded — they span all VLANs and stay at top level
-        const devicePrimaryVLAN = {};
-        if (topology.devices) {
-            topology.devices.forEach(d => {
-                if (d.type === 'switch') return; // switches stay ungrouped
-                if (d.vlans && d.vlans.length > 0) {
-                    devicePrimaryVLAN[d.id] = d.vlans[0];
-                }
-            });
-        }
-        if (topology.endpoints) {
-            topology.endpoints.forEach(ep => {
-                const epId = 'vm-' + ep.mac.replace(/:/g, '');
-                if (ep.vlans && ep.vlans.length > 0) {
-                    devicePrimaryVLAN[epId] = ep.vlans[0];
-                }
-            });
-        }
-
-        // Get all VLAN IDs and names
+        // Collect VLAN info
         const allVLANs = new Set();
         const vlanNames = {};
         if (topology.vlans) {
-            topology.vlans.forEach(v => {
-                allVLANs.add(v.id);
-                vlanNames[v.id] = v.name || `VLAN ${v.id}`;
-            });
+            topology.vlans.forEach(v => { allVLANs.add(v.id); vlanNames[v.id] = v.name || `VLAN ${v.id}`; });
         }
-        Object.values(devicePrimaryVLAN).forEach(v => allVLANs.add(v));
+
+        // Count devices per VLAN per type
+        const vlanCounts = {}; // vid → { switch: N, host: N, vm: N, ... }
+        function addCount(vid, type) {
+            allVLANs.add(vid);
+            if (!vlanCounts[vid]) vlanCounts[vid] = {};
+            vlanCounts[vid][type] = (vlanCounts[vid][type] || 0) + 1;
+        }
+        for (const d of (topology.devices || [])) {
+            if (d.vlans && d.vlans.length > 0) addCount(d.vlans[0], d.type || 'unknown');
+        }
+        for (const ep of (topology.endpoints || [])) {
+            if (ep.vlans && ep.vlans.length > 0) addCount(ep.vlans[0], 'vm');
+        }
 
         if (allVLANs.size === 0) return;
 
-        // Create VLAN compound nodes
         const sortedVLANs = [...allVLANs].sort((a, b) => a - b);
-        const vlanNodes = [];
+
+        // Hide all real nodes/edges
+        cy.batch(() => {
+            cy.nodes().style('display', 'none');
+            cy.edges().style('display', 'none');
+        });
+
+        // Create VLAN compound nodes + summary child nodes
+        const toAdd = [];
+        vlanSummaryNodes = [];
         sortedVLANs.forEach(vid => {
             const label = vlanNames[vid] || `VLAN ${vid}`;
-            vlanNodes.push({
+            const counts = vlanCounts[vid] || {};
+            const parts = [];
+            if (counts.switch) parts.push(`${counts.switch} switches`);
+            if (counts.host) parts.push(`${counts.host} hosts`);
+            if (counts.vm) parts.push(`${counts.vm} VMs`);
+            if (counts.bmc) parts.push(`${counts.bmc} BMCs`);
+            if (counts.unknown) parts.push(`${counts.unknown} unknown`);
+            const summaryText = parts.length > 0 ? parts.join('\n') : 'empty';
+
+            toAdd.push({
                 group: 'nodes',
-                data: {
-                    id: `vlan-${vid}`,
-                    label: label,
-                    vlanColor: getVLANColor(vid),
-                },
+                data: { id: `vlan-${vid}`, label: label, vlanColor: getVLANColor(vid) },
                 classes: 'vlan-group',
             });
-        });
-        cy.add(vlanNodes);
-
-        // Move each device into its primary VLAN (exactly one)
-        // Hide nodes that don't belong to any VLAN (switches, BMCs)
-        cy.nodes().forEach(n => {
-            if (n.hasClass('vlan-group')) return;
-            const primaryVLAN = devicePrimaryVLAN[n.id()];
-            if (primaryVLAN != null) {
-                n.move({ parent: `vlan-${primaryVLAN}` });
-                n.style('display', 'element');
-            } else {
-                n.style('display', 'none');
-            }
-        });
-        // Hide edges where either endpoint is hidden
-        cy.edges().forEach(e => {
-            const srcHidden = e.source().style('display') === 'none';
-            const tgtHidden = e.target().style('display') === 'none';
-            e.style('display', (srcHidden || tgtHidden) ? 'none' : 'element');
-        });
-
-        vlanGrouped = true;
-        grouped = true;
-
-        // Use a manual column layout so VLAN regions don't overlap
-        applyVLANColumnLayout(sortedVLANs);
-    }
-
-    function applyVLANColumnLayout(sortedVLANs) {
-        if (!cy) return;
-
-        const colWidth = 300;
-        const nodeSep = 80;
-        const topMargin = 60;
-        const totalWidth = sortedVLANs.length * colWidth;
-        const startX = -totalWidth / 2 + colWidth / 2;
-
-        const positions = {};
-
-        // Position children within each VLAN column
-        sortedVLANs.forEach((vid, colIdx) => {
-            const colX = startX + colIdx * colWidth;
-            const parent = cy.getElementById(`vlan-${vid}`);
-            if (!parent || parent.length === 0) return;
-
-            const children = parent.children().sort((a, b) =>
-                (a.data('label') || '').localeCompare(b.data('label') || '')
-            );
-
-            children.forEach((n, rowIdx) => {
-                positions[n.id()] = {
-                    x: colX,
-                    y: topMargin + rowIdx * nodeSep,
-                };
+            const summaryId = `vlan-summary-${vid}`;
+            vlanSummaryNodes.push(summaryId);
+            toAdd.push({
+                group: 'nodes',
+                data: { id: summaryId, label: `${label}\n${summaryText}`, parent: `vlan-${vid}`, type: 'vlan-summary' },
             });
         });
 
-        // Animate all nodes to their positions
-        cy.nodes().forEach(n => {
-            if (n.isParent()) return;
-            const pos = positions[n.id()];
-            if (pos) n.animate({ position: pos, duration: 600, easing: 'ease-in-out-quad' });
-        });
+        cy.batch(() => { cy.add(toAdd); });
 
-        setTimeout(() => cy.fit(50), 650);
+        // Style summary nodes
+        cy.style().selector('node[type="vlan-summary"]').style({
+            'shape': 'round-rectangle',
+            'width': 160,
+            'height': 80,
+            'background-color': '#2a2a3e',
+            'border-width': 1,
+            'border-color': '#444',
+            'color': '#e0e0e0',
+            'font-size': 11,
+            'text-wrap': 'wrap',
+            'text-valign': 'center',
+            'text-halign': 'center',
+            'label': 'data(label)',
+        }).update();
+
+        vlanGrouped = true;
+
+        // Column layout for VLAN groups
+        const colWidth = 220;
+        const totalWidth = sortedVLANs.length * colWidth;
+        const startX = -totalWidth / 2 + colWidth / 2;
+        sortedVLANs.forEach((vid, i) => {
+            const n = cy.getElementById(`vlan-summary-${vid}`);
+            if (n.length) n.position({ x: startX + i * colWidth, y: 80 });
+        });
+        setTimeout(() => cy.fit(50), 100);
     }
 
     function isVLANGrouped() {
         return vlanGrouped;
     }
 
+    function setTopology(topology) {
+        storedTopology = topology;
+    }
+
+    // ---- Tree expand/collapse ----
+
+    // Show all switches initially; mark expandable nodes with child count badges.
+    // Spine switches (tier 0) connect to leaf switches (tier 1) in the hierarchy.
+    function applyInitialTreeView() {
+        if (!cy) return;
+
+        cy.batch(() => {
+            cy.nodes().forEach(n => {
+                if (n.data('type') === 'switch') {
+                    n.style('display', 'element');
+                    updateExpandLabel(n);
+                } else {
+                    n.style('display', 'none');
+                }
+            });
+            // Show only switch↔switch edges
+            cy.edges().forEach(e => {
+                const srcType = e.source().data('type');
+                const tgtType = e.target().data('type');
+                if (srcType === 'switch' && tgtType === 'switch') {
+                    e.style('display', 'element');
+                } else {
+                    e.style('display', 'none');
+                }
+            });
+        });
+    }
+
+    // Update a node's label to show expand/collapse badge with child count
+    function updateExpandLabel(node) {
+        const childCount = node.data('childCount') || 0;
+        const vmCount = node.data('vmCount') || 0;
+        const baseName = node.data('system_name') || node.data('label') || node.id();
+        const isExpanded = expandedNodes.has(node.id());
+
+        let badge = '';
+        const type = node.data('type');
+        const role = node.data('switchRole');
+
+        if (type === 'switch' && role === 'spine' && childCount > 0) {
+            badge = isExpanded ? `\n▾ ${childCount} leaf switches` : `\n▸ ${childCount} leaf switches`;
+        } else if (type === 'switch' && childCount > 0) {
+            badge = isExpanded ? `\n▾ ${childCount} connected` : `\n▸ ${childCount} connected`;
+        } else if (type === 'host' && vmCount > 0) {
+            badge = isExpanded ? `\n▾ ${vmCount} VMs` : `\n▸ ${vmCount} VMs`;
+        } else if (childCount > 0) {
+            badge = isExpanded ? `\n▾ ${childCount}` : `\n▸ ${childCount}`;
+        }
+
+        node.data('expandLabel', baseName + badge);
+
+        if (childCount > 0 || vmCount > 0) {
+            if (isExpanded) {
+                node.removeClass('expandable').addClass('expanded');
+            } else {
+                node.removeClass('expanded').addClass('expandable');
+            }
+        }
+    }
+
+    // Get the direct children IDs of a node from topology links
+    function getChildIds(nodeId) {
+        if (!storedTopology) return [];
+
+        const nodeType = getDeviceType(nodeId);
+        const nodeRole = getDeviceRole(nodeId);
+        const nodeEffectiveRank = (nodeType === 'switch' && nodeRole === 'spine') ? 0 : (typeRank[nodeType] ?? 3);
+        const children = [];
+
+        // Check LLDP links for device-to-device children
+        for (const link of (storedTopology.links || [])) {
+            let childId = null;
+            if (link.local_device === nodeId) {
+                childId = link.remote_device;
+            } else if (link.remote_device === nodeId) {
+                childId = link.local_device;
+            }
+            if (!childId) continue;
+
+            const childType = getDeviceType(childId);
+            const childRole = getDeviceRole(childId);
+            const childEffectiveRank = (childType === 'switch' && childRole === 'spine') ? 0 : (typeRank[childType] ?? 3);
+            // Child must be in a lower tier (higher rank number)
+            if (childEffectiveRank > nodeEffectiveRank) {
+                children.push(childId);
+            }
+        }
+
+        // For hosts, also include VMs from endpoints
+        if (nodeType === 'host' && storedTopology.endpoints) {
+            for (const ep of storedTopology.endpoints) {
+                if (ep.host_device === nodeId) {
+                    children.push('vm-' + ep.mac.replace(/:/g, ''));
+                }
+            }
+        }
+
+        return children;
+    }
+
+    // Look up device type from topology data
+    function getDeviceType(deviceId) {
+        if (!storedTopology) return 'unknown';
+        if (deviceId.startsWith('vm-')) return 'vm';
+        const device = (storedTopology.devices || []).find(d => d.id === deviceId);
+        return device ? (device.type || 'unknown') : 'unknown';
+    }
+
+    // Look up switch role (spine/leaf) from the Cytoscape node data
+    function getDeviceRole(deviceId) {
+        if (!cy) return '';
+        const node = cy.getElementById(deviceId);
+        if (node && node.length) return node.data('switchRole') || '';
+        return '';
+    }
+
+    // Create a VM node element from endpoint data
+    function createVMElement(ep) {
+        const epId = 'vm-' + ep.mac.replace(/:/g, '');
+        const label = (ep.ips && ep.ips.length > 0) ? ep.ips[0] : ep.mac;
+        return {
+            group: 'nodes',
+            data: {
+                id: epId,
+                label: label,
+                expandLabel: label,
+                type: 'vm',
+                mac: ep.mac,
+                ips: ep.ips || [],
+                vlans: ep.vlans || [],
+                host_device: ep.host_device || '',
+                host_port: ep.host_port || '',
+                switch_id: ep.switch_id || '',
+                childCount: 0,
+                vmCount: 0,
+            },
+        };
+    }
+
+    // Create a VM→host edge element
+    function createVMEdge(ep) {
+        const epId = 'vm-' + ep.mac.replace(/:/g, '');
+        return {
+            group: 'edges',
+            data: {
+                id: `${ep.host_device}::vm::${epId}`,
+                source: ep.host_device,
+                target: epId,
+                source_type: 'mac-table',
+                edgeLabel: ep.host_port || '',
+                oper_status: 'UP',
+            },
+        };
+    }
+
+    function toggleExpand(nodeId) {
+        if (expandedNodes.has(nodeId)) {
+            collapseNode(nodeId);
+        } else {
+            expandNode(nodeId);
+        }
+    }
+
+    function expandNode(nodeId) {
+        if (!cy || !storedTopology) return;
+        if (expandedNodes.has(nodeId)) return;
+
+        const node = cy.getElementById(nodeId);
+        if (node.length === 0) return;
+
+        expandedNodes.add(nodeId);
+        const childIds = getChildIds(nodeId);
+        if (childIds.length === 0) {
+            updateExpandLabel(node);
+            return;
+        }
+
+        cy.batch(() => {
+            const addedIds = new Set();
+            const nodeType = getDeviceType(nodeId);
+
+            for (const childId of childIds) {
+                const existing = cy.getElementById(childId);
+                if (existing.length > 0) {
+                    // Node already exists (just hidden), show it
+                    existing.style('display', 'element');
+                    addedIds.add(childId);
+                } else if (childId.startsWith('vm-')) {
+                    // VM nodes are created on-demand
+                    const ep = (storedTopology.endpoints || []).find(
+                        e => ('vm-' + e.mac.replace(/:/g, '')) === childId
+                    );
+                    if (ep) {
+                        cy.add(createVMElement(ep));
+                        cy.add(createVMEdge(ep));
+                        addedIds.add(childId);
+                    }
+                }
+            }
+
+            // Show edges connecting the parent to its now-visible children
+            cy.edges().forEach(e => {
+                const src = e.source().id();
+                const tgt = e.target().id();
+                if ((src === nodeId && addedIds.has(tgt)) ||
+                    (tgt === nodeId && addedIds.has(src))) {
+                    e.style('display', 'element');
+                }
+            });
+
+            // Update expand labels on newly shown children
+            for (const childId of addedIds) {
+                const child = cy.getElementById(childId);
+                if (child.length > 0) {
+                    updateExpandLabel(child);
+                }
+            }
+
+            updateExpandLabel(node);
+        });
+
+        expandedChildren[nodeId] = new Set(childIds);
+
+        // Layout depends on active layout mode
+        if (currentLayout === 'dagre') {
+            layoutVisibleTree();
+        } else {
+            // For force / other layouts: place children near parent, then re-run
+            const parentPos = node.position();
+            for (const childId of childIds) {
+                const child = cy.getElementById(childId);
+                if (child.length > 0 && child.style('display') !== 'none') {
+                    child.position({
+                        x: parentPos.x + (Math.random() - 0.5) * 200,
+                        y: parentPos.y + 100 + Math.random() * 150,
+                    });
+                }
+            }
+            const cfg = { ...layouts[currentLayout], eles: cy.elements(':visible') };
+            if (cfg.name) cy.layout(cfg).run();
+        }
+    }
+
+    function collapseNode(nodeId) {
+        if (!cy) return;
+        if (!expandedNodes.has(nodeId)) return;
+
+        expandedNodes.delete(nodeId);
+        const childIds = expandedChildren[nodeId] || new Set();
+
+        cy.batch(() => {
+            // Recursively collapse children first
+            for (const childId of childIds) {
+                if (expandedNodes.has(childId)) {
+                    collapseNode(childId);
+                }
+            }
+
+            for (const childId of childIds) {
+                const child = cy.getElementById(childId);
+                if (child.length === 0) continue;
+
+                if (child.data('type') === 'vm') {
+                    // Remove VM nodes entirely to free memory
+                    child.connectedEdges().remove();
+                    child.remove();
+                } else {
+                    // Hide device nodes and their edges
+                    child.connectedEdges().style('display', 'none');
+                    child.style('display', 'none');
+                }
+            }
+
+            const node = cy.getElementById(nodeId);
+            if (node.length > 0) {
+                updateExpandLabel(node);
+            }
+        });
+
+        delete expandedChildren[nodeId];
+
+        // Re-layout depending on active mode
+        if (currentLayout === 'dagre') {
+            layoutVisibleTree();
+        } else {
+            const cfg = { ...layouts[currentLayout], eles: cy.elements(':visible') };
+            if (cfg.name) cy.layout(cfg).run();
+        }
+    }
+
+    // Collapse all nodes back to switches-only view
+    function collapseAll() {
+        if (!cy) return;
+        const toCollapse = [...expandedNodes];
+        // Collapse in reverse order (children before parents)
+        toCollapse.reverse();
+        for (const nodeId of toCollapse) {
+            collapseNode(nodeId);
+        }
+    }
+
     return {
         init,
         runLayout,
         fitToScreen,
-        filterByType,
         searchNodes,
         exportPNG,
-        toggleGroupByTOR,
+        exportJSON,
         toggleGroupByVLAN,
         isGrouped,
         isVLANGrouped,
         getInstance,
         getCurrentLayout,
         updateElements,
+        setTopology,
+        toggleExpand,
+        expandNode,
+        collapseNode,
+        collapseAll,
     };
 })();

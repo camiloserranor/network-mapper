@@ -69,7 +69,7 @@ func ParseLLDPOpenConfig(notifs []gnmi.Notification) []LLDPNeighbor {
 
 				neighbor := LLDPNeighbor{
 					LocalPort:         NormalizeInterfaceName(localPort),
-					ChassisID:         GetFirstString(state, "chassis-id", "chassis_id"),
+					ChassisID:         normalizeMACAddress(GetFirstString(state, "chassis-id", "chassis_id")),
 					PortID:            GetFirstString(state, "port-id", "port_id"),
 					PortDescription:   GetFirstString(state, "port-description", "port_description"),
 					SystemName:        GetFirstString(state, "system-name", "system_name"),
@@ -138,7 +138,7 @@ func ParseLLDPNXOS(notifs []gnmi.Notification) []LLDPNeighbor {
 
 					neighbor := LLDPNeighbor{
 						LocalPort:         NormalizeInterfaceName(localPort),
-						ChassisID:         GetString(adj, "chassisIdV"),
+						ChassisID:         normalizeMACAddress(GetString(adj, "chassisIdV")),
 						PortID:            GetString(adj, "portIdV"),
 						PortDescription:   GetString(adj, "portDesc"),
 						SystemName:        GetString(adj, "sysName"),

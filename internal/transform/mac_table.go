@@ -22,41 +22,93 @@ type MACEntry struct {
 }
 
 // ParseMACTableNXOS extracts MAC address table entries from NX-OS gNMI responses.
-// NX-OS path: /System/mac-items → table-items → vlan-items → MacAddressEntry-list
+//
+// NX-OS path: /System/mac-items
+// Response structure (verified on NX-OS 10.5):
+//
+//	value = {
+//	  "table-items": {
+//	    "vlan-items": {
+//	      "MacAddressEntry-list": [
+//	        {"vlan":"vlan-100","macAddress":"aa:bb:cc:dd:ee:ff","port":"eth1/3","type":"primary",...},
+//	        ...
+//	      ]
+//	    }
+//	  }
+//	}
+//
+// Each entry in MacAddressEntry-list carries its own "vlan" field.
 func ParseMACTableNXOS(notifs []gnmi.Notification, switchID string) []MACEntry {
 	var entries []MACEntry
 
 	for _, n := range notifs {
 		for _, u := range n.Updates {
-			// Try to walk the nested structure
 			root := AsMapSlice(u.Value)
 			if root == nil {
 				continue
 			}
 
 			for _, item := range root {
-				// Navigate: table-items → vlan-items
-				tableItems := GetMap(item, "table-items")
-				if tableItems == nil {
-					// Might be flattened
-					entries = append(entries, extractMACEntries(item, switchID)...)
+				entries = append(entries, extractMACFromRoot(item, switchID)...)
+			}
+		}
+	}
+
+	return entries
+}
+
+// extractMACFromRoot navigates the NX-OS MAC table structure to find entries.
+// It handles multiple response layouts:
+//   - Full path: table-items → vlan-items → MacAddressEntry-list (flat list with per-entry vlan)
+//   - Full path: table-items → vlan-items (as array of VLANs) → MacAddressEntry-list (per VLAN)
+//   - Direct: MacAddressEntry-list at root (when querying deeper paths)
+func extractMACFromRoot(item map[string]interface{}, switchID string) []MACEntry {
+	// Try full structure: table-items → ...
+	if tableItems := GetMap(item, "table-items"); tableItems != nil {
+		return extractMACFromTableItems(tableItems, switchID)
+	}
+	// Try direct MacAddressEntry-list at root
+	return extractMACEntries(item, switchID)
+}
+
+func extractMACFromTableItems(tableItems map[string]interface{}, switchID string) []MACEntry {
+	var entries []MACEntry
+
+	// Case 1: vlan-items is an object with MacAddressEntry-list directly
+	// (flat structure where each entry carries its own vlan field)
+	if vlanObj := GetMap(tableItems, "vlan-items"); vlanObj != nil {
+		if macList := GetSlice(vlanObj, "MacAddressEntry-list"); macList != nil {
+			for _, raw := range macList {
+				entry, ok := raw.(map[string]interface{})
+				if !ok {
 					continue
 				}
-
-				vlanItems := GetSlice(tableItems, "vlan-items")
-				if vlanItems == nil {
-					// Try as VlanMacEntry-list directly
-					vlanItems = GetSlice(tableItems, "VlanMacEntry-list")
+				mac := GetFirstString(entry, "macAddress", "mac_address", "addr")
+				if mac == "" {
+					continue
 				}
-
-				for _, vlanRaw := range vlanItems {
-					vlan, ok := vlanRaw.(map[string]interface{})
-					if !ok {
-						continue
-					}
-					entries = append(entries, extractMACEntries(vlan, switchID)...)
-				}
+				port := NormalizeInterfaceName(GetFirstString(entry, "port", "if", "intf"))
+				vlanID := parseVLANID(GetFirstString(entry, "vlan", "encap", "id"))
+				entries = append(entries, MACEntry{
+					MAC:      normalizeMACAddress(mac),
+					VLAN:     vlanID,
+					Port:     port,
+					Type:     GetFirstString(entry, "type", "macType"),
+					SwitchID: switchID,
+				})
 			}
+			return entries
+		}
+	}
+
+	// Case 2: vlan-items is an array of VLAN containers
+	if vlanSlice := GetSlice(tableItems, "vlan-items"); vlanSlice != nil {
+		for _, vlanRaw := range vlanSlice {
+			vlan, ok := vlanRaw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			entries = append(entries, extractMACEntries(vlan, switchID)...)
 		}
 	}
 
