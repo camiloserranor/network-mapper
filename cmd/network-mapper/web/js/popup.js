@@ -25,16 +25,18 @@ const Popup = (() => {
 
         closeBtn().addEventListener('click', hide);
 
-        // Expand/collapse connected devices
-        const expandBtn = document.getElementById('popup-expand-btn');
-        if (expandBtn) {
-            expandBtn.addEventListener('click', (e) => {
+        // Drill down into device
+        const drillBtn = document.getElementById('popup-drill-btn');
+        if (drillBtn) {
+            drillBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 e.preventDefault();
                 if (currentNodeData) {
-                    const nodeId = currentNodeData.id;
+                    const type = currentNodeData.type;
+                    const id = currentNodeData.id;
                     hide();
-                    NetworkGraph.toggleExpand(nodeId);
+                    if (type === 'switch') ViewManager.navigateTo('switch', id);
+                    else if (type === 'host') ViewManager.navigateTo('host', id);
                 }
             });
         }

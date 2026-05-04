@@ -11,35 +11,23 @@
     <header id="toolbar">
         <div class="toolbar-left">
             <h1 class="logo">⬡ Network Mapper</h1>
-            <span id="live-indicator" class="live-indicator disconnected"><span class="live-dot"></span> Offline</span>
         </div>
         <div class="toolbar-center">
             <input type="text" id="search-input" placeholder="Search devices..." autocomplete="off">
         </div>
         <div class="toolbar-right">
-            <div class="btn-group" id="layout-buttons">
-                <button class="btn" data-layout="cose" title="Force-directed layout">
-                    ◎ Force
-                </button>
-                <button class="btn active" data-layout="dagre" title="Hierarchical layout">
-                    ☰ Hierarchy
-                </button>
-            </div>
             <div class="btn-group">
-                <button class="btn" id="fit-btn" title="Fit to screen">⤢ Fit</button>
-                <button class="btn" id="collapse-all-btn" title="Collapse all to switches only">⊟ Collapse</button>
-                <button class="btn" id="vlan-group-btn" title="Group nodes by VLAN">▧ VLAN</button>
-                <button class="btn" id="export-png-btn" title="Export as PNG image">🖼 PNG</button>
+                <button class="btn" id="refresh-btn" title="Refresh topology data">⟳ Refresh</button>
+                <button class="btn" id="fit-btn" title="Scroll to top">⤢ Top</button>
                 <button class="btn" id="export-json-btn" title="Export topology as JSON">{ } JSON</button>
             </div>
         </div>
     </header>
 
-    <!-- Tree navigation hint -->
-    <div id="tree-hint" class="tree-hint">
-        <span>💡 Double-click a switch to reveal connected hosts, then a host to see its VMs.</span>
-        <button id="tree-hint-dismiss" class="btn-icon" title="Dismiss">✕</button>
-    </div>
+    <!-- Breadcrumb navigation bar -->
+    <nav id="breadcrumb-bar">
+        <span id="breadcrumb-trail"></span>
+    </nav>
 
     <!-- Warning banner for partial failures -->
     <div id="warning-banner" class="hidden">
@@ -68,8 +56,11 @@
             </div>
         </aside>
 
-        <!-- Graph canvas -->
+        <!-- Graph canvas (fabric view) -->
         <div id="cy"></div>
+
+        <!-- Detail view (switch/host/VM diagrams) -->
+        <div id="detail-view" class="hidden"></div>
 
         <!-- Floating popup card (anchored near clicked node) -->
         <div id="popup-card" class="hidden">
@@ -79,7 +70,7 @@
             </div>
             <div id="popup-body"></div>
             <div class="popup-footer">
-                <button id="popup-expand-btn" class="btn btn-sm" title="Expand/collapse connected devices">⊞ Expand</button>
+                <button id="popup-drill-btn" class="btn btn-sm" title="Drill into this device">⊞ Drill Down</button>
                 <button id="popup-details-btn" class="btn btn-sm">More details →</button>
             </div>
         </div>
@@ -116,7 +107,6 @@
     <script src="/js/sidebar.js"></script>
     <script src="/js/popup.js"></script>
     <script src="/js/toolbar.js"></script>
-    <script src="/js/live.js"></script>
     <script src="/js/app.js"></script>
 </body>
 </html>
