@@ -369,10 +369,91 @@ function renderFabricView() {
         });
     }
 
-    // Render with compound-aware layout
-    NetworkGraph.render(elements, 'fabric-compound');
+    // Render with preset positions (manual placement for compact view)
+    // Classify: switches with the most total links are likely leaves (they connect to hosts/unknowns)
+    // Switches that only connect to other switches are spines
+    const switchLinkCounts = {};
+    const switchToSwitchCounts = {};
+    for (const sw of switches) {
+        switchLinkCounts[sw.id] = Object.keys(portMaps[sw.id]).length;
+        switchToSwitchCounts[sw.id] = 0;
+    }
+    for (const link of (topology.links || [])) {
+        const localDev = (topology.devices || []).find(d => d.id === link.local_device);
+        const remoteDev = (topology.devices || []).find(d => d.id === link.remote_device);
+        if (!localDev || !remoteDev) continue;
+        if (localDev.type === 'switch' && remoteDev.type === 'switch') {
+            switchToSwitchCounts[localDev.id] = (switchToSwitchCounts[localDev.id] || 0) + 1;
+            switchToSwitchCounts[remoteDev.id] = (switchToSwitchCounts[remoteDev.id] || 0) + 1;
+        }
+    }
+
+    // Spine = switch where ALL links go to other switches (or very few total links)
+    // Leaf = switch with many non-switch connections
+    const spines = [];
+    const leaves = [];
+    for (const sw of switches) {
+        const total = switchLinkCounts[sw.id] || 0;
+        const toSwitch = switchToSwitchCounts[sw.id] || 0;
+        if (total <= toSwitch + 1) {
+            spines.push(sw.id);
+        } else {
+            leaves.push(sw.id);
+        }
+    }
+    // If all are classified the same, just split by link count (fewer links = spine)
+    if (spines.length === 0 || leaves.length === 0) {
+        const sorted = [...switches].sort((a, b) => 
+            (switchLinkCounts[a.id] || 0) - (switchLinkCounts[b.id] || 0)
+        );
+        spines.length = 0;
+        leaves.length = 0;
+        const splitAt = Math.max(1, Math.floor(sorted.length / 2));
+        sorted.forEach((sw, i) => {
+            if (i < splitAt) spines.push(sw.id);
+            else leaves.push(sw.id);
+        });
+    }
+
+    // Calculate positions: compact grid
+    const hGap = 160;  // horizontal gap between switches
+    const vGap = 200;  // vertical gap between spine and leaf rows
+
+    // Center each row
+    function rowPositions(ids, yPos) {
+        const totalWidth = (ids.length - 1) * hGap;
+        const startX = -totalWidth / 2;
+        const positions = {};
+        ids.forEach((id, i) => {
+            positions[id] = { x: startX + i * hGap, y: yPos };
+        });
+        return positions;
+    }
+
+    const spinePositions = rowPositions(spines, 0);
+    const leafPositions = rowPositions(leaves, vGap);
+    const allPositions = { ...spinePositions, ...leafPositions };
+
+    // Set positions on parent switch elements
+    for (const el of elements) {
+        if (el.data && el.data.type === 'switch-parent' && allPositions[el.data.id]) {
+            el.position = allPositions[el.data.id];
+        }
+    }
+
+    // Update roles on elements based on our classification
+    for (const el of elements) {
+        if (el.data && el.data.type === 'switch-parent') {
+            el.data.role = spines.includes(el.data.id) ? 'spine' : 'leaf';
+        }
+    }
+
+    NetworkGraph.render(elements, 'preset');
 
     const cy = NetworkGraph.getInstance();
+
+    // Position ports inside parents after render
+    NetworkGraph.arrangePortsInRows();
 
     // Remove previous fabric-specific handlers to avoid stacking
     cy.off('mouseover', 'node[type="port"]');
@@ -409,25 +490,7 @@ function renderFabricView() {
         ViewManager.navigateTo('switch', evt.target.data('id'));
     });
 
-    setTimeout(() => {
-        // Ensure spines are on top: if average spine Y > average leaf Y, flip all Y positions
-        const spines = cy.nodes('[type="switch-parent"][role="spine"]');
-        const leaves = cy.nodes('[type="switch-parent"][role="leaf"]');
-        if (spines.length > 0 && leaves.length > 0) {
-            const avgSpineY = spines.reduce((s, n) => s + n.position('y'), 0) / spines.length;
-            const avgLeafY = leaves.reduce((s, n) => s + n.position('y'), 0) / leaves.length;
-            if (avgSpineY > avgLeafY) {
-                // Flip all nodes around center Y
-                const allNodes = cy.nodes();
-                const centerY = (avgSpineY + avgLeafY) / 2;
-                allNodes.forEach(n => {
-                    n.position('y', 2 * centerY - n.position('y'));
-                });
-            }
-        }
-        NetworkGraph.arrangePortsInRows();
-        NetworkGraph.fitToScreen();
-    }, 600);
+    setTimeout(() => NetworkGraph.fitToScreen(), 100);
 }
 
 // Port tooltip helpers

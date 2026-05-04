@@ -273,6 +273,10 @@ const NetworkGraph = (() => {
 
     // Layout configurations
     const layouts = {
+        preset: {
+            name: 'preset',
+            animate: false,
+        },
         dagre: {
             name: 'dagre',
             animate: true,
