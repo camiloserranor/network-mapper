@@ -21,6 +21,7 @@ type LLDPNeighbor struct {
 	SystemName        string
 	SystemDescription string
 	ManagementAddress string
+	Capabilities      string // LLDP system capabilities (e.g. "bridge", "router", "station-only")
 }
 
 // ParseLLDPOpenConfig extracts LLDP neighbors from OpenConfig gNMI responses.
@@ -68,12 +69,24 @@ func ParseLLDPOpenConfig(notifs []gnmi.Notification) []LLDPNeighbor {
 
 				neighbor := LLDPNeighbor{
 					LocalPort:         NormalizeInterfaceName(localPort),
-					ChassisID:         GetFirstString(state, "chassis-id", "chassis_id"),
+					ChassisID:         normalizeMACAddress(GetFirstString(state, "chassis-id", "chassis_id")),
 					PortID:            GetFirstString(state, "port-id", "port_id"),
 					PortDescription:   GetFirstString(state, "port-description", "port_description"),
 					SystemName:        GetFirstString(state, "system-name", "system_name"),
 					SystemDescription: GetFirstString(state, "system-description", "system_description"),
 					ManagementAddress: GetFirstString(state, "management-address", "management_address", "mgmt-ip"),
+				}
+
+				// Parse system capabilities from OpenConfig capabilities list
+				if caps := GetMap(nbr, "capabilities"); caps != nil {
+					if capList := GetSlice(caps, "capability"); capList != nil {
+						neighbor.Capabilities = extractCapabilities(capList)
+					}
+				}
+				if neighbor.Capabilities == "" {
+					if capsStr := GetFirstString(state, "system-capabilities", "system_capabilities"); capsStr != "" {
+						neighbor.Capabilities = capsStr
+					}
 				}
 
 				if neighbor.ChassisID != "" || neighbor.PortID != "" {
@@ -125,12 +138,13 @@ func ParseLLDPNXOS(notifs []gnmi.Notification) []LLDPNeighbor {
 
 					neighbor := LLDPNeighbor{
 						LocalPort:         NormalizeInterfaceName(localPort),
-						ChassisID:         GetString(adj, "chassisIdV"),
+						ChassisID:         normalizeMACAddress(GetString(adj, "chassisIdV")),
 						PortID:            GetString(adj, "portIdV"),
 						PortDescription:   GetString(adj, "portDesc"),
 						SystemName:        GetString(adj, "sysName"),
 						SystemDescription: GetString(adj, "sysDesc"),
 						ManagementAddress: mgmtIP,
+						Capabilities:      GetString(adj, "sysCap"),
 					}
 
 					if neighbor.ChassisID != "" || neighbor.PortID != "" {
@@ -144,8 +158,40 @@ func ParseLLDPNXOS(notifs []gnmi.Notification) []LLDPNeighbor {
 	return neighbors
 }
 
-// ClassifyDevice guesses the device type from LLDP system description and name.
-func ClassifyDevice(description, name string) string {
+// ClassifyDevice determines the device type using LLDP system capabilities,
+// description, and name. Capabilities are checked first as they are the most
+// reliable signal (standardized in IEEE 802.1AB), then we fall back to
+// string-matching heuristics on description and name fields.
+func ClassifyDevice(description, name, capabilities string) string {
+	// Capabilities-based classification (most reliable)
+	capsLower := strings.ToLower(capabilities)
+	if capsLower != "" {
+		isBridge := strings.Contains(capsLower, "bridge")
+		isRouter := strings.Contains(capsLower, "router")
+		isStation := strings.Contains(capsLower, "station")
+
+		// Bridge+Router = network switch (TOR)
+		if isBridge || isRouter {
+			// But if also described as BMC, prefer BMC
+			for _, hint := range []string{"iDRAC", "iLO", "BMC", "IPMI", "Redfish"} {
+				if containsCI(description, hint) || containsCI(name, hint) {
+					return "bmc"
+				}
+			}
+			return "switch"
+		}
+		// Station-only = end host (server or BMC)
+		if isStation {
+			for _, hint := range []string{"iDRAC", "iLO", "BMC", "IPMI", "Redfish"} {
+				if containsCI(description, hint) || containsCI(name, hint) {
+					return "bmc"
+				}
+			}
+			return "host"
+		}
+	}
+
+	// Fallback: description/name heuristics
 	// BMC detection
 	for _, hint := range []string{"iDRAC", "iLO", "BMC", "IPMI", "Redfish"} {
 		if containsCI(description, hint) || containsCI(name, hint) {
@@ -172,7 +218,35 @@ func ClassifyDevice(description, name string) string {
 
 // classifyDevice is the internal version using LLDPNeighbor.
 func classifyDevice(nbr LLDPNeighbor) string {
-	return ClassifyDevice(nbr.SystemDescription, nbr.SystemName)
+	return ClassifyDevice(nbr.SystemDescription, nbr.SystemName, nbr.Capabilities)
+}
+
+// extractCapabilities builds a comma-separated string of enabled LLDP
+// capabilities from an OpenConfig capability list.
+func extractCapabilities(capList []interface{}) string {
+	var caps []string
+	for _, raw := range capList {
+		capMap, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		state := GetMap(capMap, "state")
+		if state == nil {
+			state = capMap
+		}
+		enabled := false
+		if v, ok := state["enabled"]; ok {
+			if b, ok := v.(bool); ok {
+				enabled = b
+			}
+		}
+		if enabled {
+			if name := GetFirstString(state, "name", "capability"); name != "" {
+				caps = append(caps, name)
+			}
+		}
+	}
+	return strings.Join(caps, ",")
 }
 
 func containsCI(s, substr string) bool {

@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/exec"
 	"runtime"
@@ -25,6 +26,8 @@ type Server struct {
 	port         int
 	webFS        fs.FS
 	live         bool // true when using streaming collector
+	enablePprof  bool // enable /debug/pprof/* endpoints
+	startTime    time.Time
 
 	// Live mode state
 	mu        sync.RWMutex
@@ -45,7 +48,13 @@ func New(topologyPath string, port int, webFS fs.FS) *Server {
 		port:         port,
 		webFS:        webFS,
 		clients:      make(map[*wsClient]struct{}),
+		startTime:    time.Now(),
 	}
+}
+
+// SetPprof enables /debug/pprof/* endpoints.
+func (s *Server) SetPprof(enable bool) {
+	s.enablePprof = enable
 }
 
 // SetLiveMode enables live streaming mode (topology served from memory, WebSocket push).
@@ -77,7 +86,13 @@ func (s *Server) Start() error {
 
 	mux.HandleFunc("/api/topology", s.handleTopology)
 	mux.HandleFunc("/api/health", s.handleHealth)
+	mux.HandleFunc("/api/metrics", s.handleMetrics)
 	mux.HandleFunc("/api/ws", s.handleWebSocket)
+
+	if s.enablePprof {
+		log.Println("[pprof] Profiling endpoints enabled at /debug/pprof/")
+		mux.Handle("/debug/pprof/", http.DefaultServeMux)
+	}
 
 	addr := fmt.Sprintf(":%d", s.port)
 	log.Printf("Listening on %s", addr)
@@ -144,6 +159,31 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	s.clientsMu.Unlock()
 
 	json.NewEncoder(w).Encode(resp)
+}
+
+func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	metrics := map[string]interface{}{
+		"uptime_seconds":    time.Since(s.startTime).Seconds(),
+		"goroutines":        runtime.NumGoroutine(),
+		"heap_alloc_bytes":  m.HeapAlloc,
+		"heap_sys_bytes":    m.HeapSys,
+		"heap_objects":      m.HeapObjects,
+		"gc_cycles":         m.NumGC,
+		"gc_pause_total_ns": m.PauseTotalNs,
+		"num_cpu":           runtime.NumCPU(),
+		"go_version":        runtime.Version(),
+	}
+
+	s.clientsMu.Lock()
+	metrics["ws_clients"] = len(s.clients)
+	s.clientsMu.Unlock()
+
+	json.NewEncoder(w).Encode(metrics)
 }
 
 func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {

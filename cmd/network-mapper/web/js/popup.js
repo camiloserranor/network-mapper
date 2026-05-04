@@ -25,6 +25,20 @@ const Popup = (() => {
 
         closeBtn().addEventListener('click', hide);
 
+        // Expand/collapse connected devices
+        const expandBtn = document.getElementById('popup-expand-btn');
+        if (expandBtn) {
+            expandBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                if (currentNodeData) {
+                    const nodeId = currentNodeData.id;
+                    hide();
+                    NetworkGraph.toggleExpand(nodeId);
+                }
+            });
+        }
+
         detailsBtn().addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
@@ -61,7 +75,7 @@ const Popup = (() => {
 
         // Key info rows
         if (nodeData.mgmt_addr) html += popupRow('IP', nodeData.mgmt_addr);
-        if (nodeData.chassis_id) html += popupRow('Chassis', nodeData.chassis_id);
+        if (nodeData.chassis_id) html += popupRow('Chassis', normalizeMAC(nodeData.chassis_id));
         if (nodeData.software_version) html += popupRow('Version', nodeData.software_version);
         if (nodeData.uptime) html += popupRow('Uptime', nodeData.uptime);
         if (nodeData.system_description) html += popupRow('OS', truncate(nodeData.system_description, 40));
@@ -108,8 +122,8 @@ const Popup = (() => {
         titleEl().innerHTML = '🔗 Link';
 
         let html = '';
-        html += popupRow('From', `${esc(edgeData.source)} : ${esc(edgeData.local_port || '?')}`);
-        html += popupRow('To', `${esc(edgeData.target)} : ${esc(edgeData.remote_port || '?')}`);
+        html += popupRow('From', `${esc(edgeData.source)} : ${esc(edgeData.local_port || '?')}`, 'Source device and local port where LLDP discovered this link');
+        html += popupRow('To', `${esc(edgeData.target)} : ${esc(edgeData.remote_port || '?')}`, 'Remote neighbor and port discovered via LLDP');
 
         if (edgeData.oper_status) {
             const color = edgeData.oper_status === 'UP' ? '#4CAF50' : '#e94560';
@@ -160,8 +174,9 @@ const Popup = (() => {
         return !card().classList.contains('hidden');
     }
 
-    function popupRow(label, value) {
-        return `<div class="popup-row">
+    function popupRow(label, value, tooltip) {
+        const tip = tooltip ? ` title="${esc(tooltip)}"` : '';
+        return `<div class="popup-row"${tip}>
             <span class="popup-label">${esc(String(label))}</span>
             <span class="popup-value">${esc(String(value))}</span>
         </div>`;
