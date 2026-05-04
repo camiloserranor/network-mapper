@@ -9,36 +9,19 @@
 #   username: "${GNMI_USER}"
 #   password: "${GNMI_PASS}"
 auth:
-  username: "gnmiuser"
-  password: ${GNMI_PASS}
-  # password_keyvault: https://azurestack-network.vault.azure.net/secrets/Net-Admin/222d9bb58f644b78b1670caef1ac7358
+  username: "administrator"
+  password_keyvault: https://azurestack-network.vault.azure.net/secrets/Net-Admin/222d9bb58f644b78b1670caef1ac7358
 
 switches:
   - name: TOR-1
-    address: "10.218.191.131:50051" # -> Rack 14A
-    platform: nxos    
-
-  - name: TOR-2
-    address: "10.218.191.136:50051" # -> Rack 16A
-    platform: nxos
-
-  - name: TOR-3
-    address: "10.218.191.142:50051" # -> Rack 21A
-    platform: nxos
-    
-  - name: TOR-4
-    address: "10.218.191.132:50051" # -> Rack 14B
-    platform: nxos
-    
-  - name: TOR-5
-    address: "10.218.191.137:50051" # -> Rack 16B
-    platform: nxos
-    
-  - name: TOR-6
-    address: "10.218.191.143:50051" # -> Rack 21B
-    platform: nxos
-    
-    
+    #address: "100.71.34.149:50051"
+    # address: "10.218.191.143:50051"
+    address: "100.100.81.129:50051" #-> 
+    platform: sonic
+    # Per-switch auth override (optional — omit to use global auth):
+    # auth:
+    #   username_keyvault: https://myvault.vault.azure.net/secrets/tor1-user
+    #   password_keyvault: https://myvault.vault.azure.net/secrets/tor1-pass
 tls:
   # Trust-On-First-Use: fetch and cache switch certs on first connection
   # tofu: true

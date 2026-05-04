@@ -1,0 +1,35 @@
+[Unit]
+Description=Network Mapper — Physical topology discovery for Azure Local
+Documentation=https://github.com/camiloserranor/network-mapper
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=network-mapper
+Group=network-mapper
+ExecStart=/usr/local/bin/network-mapper serve \
+    --config /etc/network-mapper/config.yaml \
+    --port 8080 \
+    --no-open
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=network-mapper
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/network-mapper
+PrivateTmp=true
+
+# Environment for DefaultAzureCredential (managed identity works automatically on Azure VMs)
+# For service principal auth, uncomment and set:
+# Environment=AZURE_TENANT_ID=...
+# Environment=AZURE_CLIENT_ID=...
+# Environment=AZURE_CLIENT_SECRET=...
+
+[Install]
+WantedBy=multi-user.target

@@ -23,6 +23,9 @@ type switchResult struct {
 	Device     topology.Device
 	Neighbors  []transform.LLDPNeighbor
 	Interfaces []topology.Interface
+	MACEntries []transform.MACEntry
+	ARPEntries []transform.ARPEntry
+	VLANs      []topology.VLAN
 	Errors     []topology.PartialError
 }
 
@@ -51,7 +54,7 @@ func Collect(ctx context.Context, cfg *config.Config) (*topology.Topology, error
 
 	wg.Wait()
 
-	topo := buildTopology(results, now)
+	topo := buildTopology(results, now, cfg.Collect.ReverseDNS)
 
 	// Enrich with deployment data if configured (non-fatal on failure)
 	if cfg.DeploymentJSON != "" {
@@ -70,6 +73,7 @@ func Collect(ctx context.Context, cfg *config.Config) (*topology.Topology, error
 }
 
 func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Config, now time.Time) switchResult {
+	start := time.Now()
 	result := switchResult{
 		SwitchName: sw.Name,
 		SwitchID:   sw.Name,
@@ -127,6 +131,20 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 
 	// 3. Collect interface state
 	collectInterfaces(ctx, client, sw, cfg, &result)
+
+	// 4. Collect switch resource utilization (CPU/memory)
+	collectResources(ctx, client, sw, &result)
+
+	// 5. Collect MAC table (for VM endpoint discovery)
+	collectMACTable(ctx, client, sw, &result)
+
+	// 6. Collect ARP table (for IP-to-MAC mapping)
+	collectARPTable(ctx, client, sw, &result)
+
+	// 7. Collect VLAN configuration
+	collectVLANs(ctx, client, sw, &result)
+
+	log.Printf("  %s: collection completed in %s", sw.Name, time.Since(start))
 
 	return result
 }
@@ -187,7 +205,117 @@ func collectInterfaces(ctx context.Context, client *gnmi.Client, sw config.Switc
 	log.Printf("  %s: %d interfaces", sw.Name, len(result.Interfaces))
 }
 
-func buildTopology(results []switchResult, now time.Time) *topology.Topology {
+func collectResources(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
+	cpuPath := transform.CPUPathOpenConfig
+	memPath := transform.MemoryPathOpenConfig
+	if sw.Platform == "nxos" {
+		cpuPath = transform.CPUPathNXOS
+		memPath = transform.MemoryPathNXOS
+	}
+
+	cpuNotifs, cpuErr := client.GetWithFallback(ctx, cpuPath)
+	memNotifs, memErr := client.GetWithFallback(ctx, memPath)
+
+	if cpuErr != nil && memErr != nil {
+		log.Printf("  %s: resource stats unavailable (CPU: %v, Memory: %v)", sw.Name, cpuErr, memErr)
+		return
+	}
+
+	stats := transform.ParseResourceStatsNXOS(cpuNotifs, memNotifs)
+	result.Device.CPUUtilization = stats.CPUUtilization
+	result.Device.MemoryUsed = stats.MemoryUsed
+	result.Device.MemoryTotal = stats.MemoryTotal
+
+	if stats.MemoryTotal > 0 {
+		memPct := float64(stats.MemoryUsed) / float64(stats.MemoryTotal) * 100
+		log.Printf("  %s: CPU %.1f%%, Memory %.1f%% (%d/%d bytes)", sw.Name, stats.CPUUtilization, memPct, stats.MemoryUsed, stats.MemoryTotal)
+	}
+}
+
+func collectMACTable(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
+	if sw.Platform != "nxos" {
+		return // MAC table collection only supported on NX-OS for now
+	}
+
+	notifs, err := client.GetWithFallback(ctx, transform.MACTablePathNXOS)
+	if err != nil {
+		log.Printf("  %s: MAC table unavailable: %v", sw.Name, err)
+		result.Errors = append(result.Errors, topology.PartialError{
+			Switch: sw.Name, Phase: "mac-table", Message: err.Error(),
+		})
+		return
+	}
+
+	result.MACEntries = transform.ParseMACTableNXOS(notifs, sw.Name)
+	log.Printf("  %s: %d MAC table entries (from %d notifications)", sw.Name, len(result.MACEntries), len(notifs))
+	if len(result.MACEntries) == 0 && len(notifs) > 0 {
+		// Log raw notification structure for debugging
+		for i, n := range notifs {
+			log.Printf("  %s: MAC notif[%d]: %d updates", sw.Name, i, len(n.Updates))
+			for j, u := range n.Updates {
+				if j < 3 { // only first 3 to avoid flooding
+					raw := fmt.Sprintf("%v", u.Value)
+					if len(raw) > 300 {
+						raw = raw[:300] + "..."
+					}
+					log.Printf("  %s: MAC update[%d]: path=%q value=%s", sw.Name, j, u.Path, raw)
+				}
+			}
+		}
+	}
+}
+
+func collectARPTable(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
+	if sw.Platform != "nxos" {
+		return // ARP table collection only supported on NX-OS for now
+	}
+
+	notifs, err := client.GetWithFallback(ctx, transform.ARPPathNXOS)
+	if err != nil {
+		log.Printf("  %s: ARP table unavailable: %v", sw.Name, err)
+		result.Errors = append(result.Errors, topology.PartialError{
+			Switch: sw.Name, Phase: "arp-table", Message: err.Error(),
+		})
+		return
+	}
+
+	result.ARPEntries = transform.ParseARPTableNXOS(notifs, sw.Name)
+	log.Printf("  %s: %d ARP entries (from %d notifications)", sw.Name, len(result.ARPEntries), len(notifs))
+	if len(result.ARPEntries) == 0 && len(notifs) > 0 {
+		for i, n := range notifs {
+			log.Printf("  %s: ARP notif[%d]: %d updates", sw.Name, i, len(n.Updates))
+			for j, u := range n.Updates {
+				if j < 3 {
+					raw := fmt.Sprintf("%v", u.Value)
+					if len(raw) > 300 {
+						raw = raw[:300] + "..."
+					}
+					log.Printf("  %s: ARP update[%d]: path=%q value=%s", sw.Name, j, u.Path, raw)
+				}
+			}
+		}
+	}
+}
+
+func collectVLANs(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
+	if sw.Platform != "nxos" {
+		return // VLAN collection only supported on NX-OS for now
+	}
+
+	notifs, err := client.GetWithFallback(ctx, transform.VLANPathNXOS)
+	if err != nil {
+		log.Printf("  %s: VLAN config unavailable: %v", sw.Name, err)
+		result.Errors = append(result.Errors, topology.PartialError{
+			Switch: sw.Name, Phase: "vlan-config", Message: err.Error(),
+		})
+		return
+	}
+
+	result.VLANs = transform.ParseVLANsNXOS(notifs, sw.Name)
+	log.Printf("  %s: %d VLANs", sw.Name, len(result.VLANs))
+}
+
+func buildTopology(results []switchResult, now time.Time, reverseDNS bool) *topology.Topology {
 	topo := &topology.Topology{
 		SchemaVersion: "1.0",
 		CollectedAt:   now,
@@ -196,14 +324,21 @@ func buildTopology(results []switchResult, now time.Time) *topology.Topology {
 	// Track all devices by ID to deduplicate
 	deviceMap := make(map[string]*topology.Device)
 
+	// Build a mapping from system hostname (FQDN) → config ID so that LLDP
+	// neighbors pointing to a switch we already queried are merged rather
+	// than creating a duplicate node.
+	systemNameToID := buildSystemNameIndex(results)
+
 	for _, r := range results {
 		topo.SourceSwitches = append(topo.SourceSwitches, r.SwitchID)
 		topo.PartialFailures = append(topo.PartialFailures, r.Errors...)
 
-		// Add the switch itself
+		// Add the switch itself (skip if connect failed and no device was built)
 		switchDev := r.Device
 		switchDev.Interfaces = r.Interfaces
-		deviceMap[switchDev.ID] = &switchDev
+		if switchDev.ID != "" {
+			deviceMap[switchDev.ID] = &switchDev
+		}
 
 		// Convert LLDP neighbors to links and remote devices
 		for _, nbr := range r.Neighbors {
@@ -214,6 +349,9 @@ func buildTopology(results []switchResult, now time.Time) *topology.Topology {
 			if remoteID == "" {
 				continue
 			}
+
+			// Resolve LLDP system name to a configured switch ID when possible
+			remoteID = resolveDeviceID(remoteID, systemNameToID)
 
 			// Add or merge remote device
 			if existing, ok := deviceMap[remoteID]; ok {
@@ -271,6 +409,73 @@ func buildTopology(results []switchResult, now time.Time) *topology.Topology {
 		topo.Devices = append(topo.Devices, *d)
 	}
 
+	// Collect VLANs from all switches (deduplicate by ID)
+	vlanMap := make(map[int]topology.VLAN)
+	for _, r := range results {
+		for _, v := range r.VLANs {
+			if _, exists := vlanMap[v.ID]; !exists {
+				vlanMap[v.ID] = v
+			}
+		}
+	}
+	for _, v := range vlanMap {
+		topo.VLANs = append(topo.VLANs, v)
+	}
+
+	// Enrich unknown devices using ARP-port correlation (L2/L3 switch data only)
+	var enrichInputs []transform.HostEnrichmentInput
+	for _, r := range results {
+		if len(r.MACEntries) > 0 || len(r.ARPEntries) > 0 {
+			enrichInputs = append(enrichInputs, transform.HostEnrichmentInput{
+				SwitchID:   r.SwitchID,
+				Neighbors:  r.Neighbors,
+				MACEntries: r.MACEntries,
+				ARPEntries: r.ARPEntries,
+			})
+		}
+	}
+	if len(enrichInputs) > 0 {
+		transform.EnrichDevicesFromSwitchData(topo, enrichInputs, transform.HostEnrichmentConfig{
+			ReverseDNS: reverseDNS,
+		})
+	}
+
+	// Correlate endpoints (VMs) from MAC/ARP/LLDP data
+	var correlationInputs []transform.CorrelationInput
+	for _, r := range results {
+		if len(r.MACEntries) > 0 {
+			correlationInputs = append(correlationInputs, transform.CorrelationInput{
+				SwitchID:   r.SwitchID,
+				Neighbors:  r.Neighbors,
+				MACEntries: r.MACEntries,
+				ARPEntries: r.ARPEntries,
+			})
+		}
+	}
+	if len(correlationInputs) > 0 {
+		topo.Endpoints = transform.CorrelateEndpoints(correlationInputs)
+
+		// Assign VLAN memberships to devices based on endpoint data
+		deviceVLANs := make(map[string]map[int]bool)
+		for _, ep := range topo.Endpoints {
+			if ep.HostDevice != "" {
+				if deviceVLANs[ep.HostDevice] == nil {
+					deviceVLANs[ep.HostDevice] = make(map[int]bool)
+				}
+				for _, vid := range ep.VLANs {
+					deviceVLANs[ep.HostDevice][vid] = true
+				}
+			}
+		}
+		for i := range topo.Devices {
+			if vlans, ok := deviceVLANs[topo.Devices[i].ID]; ok {
+				for vid := range vlans {
+					topo.Devices[i].VLANs = append(topo.Devices[i].VLANs, vid)
+				}
+			}
+		}
+	}
+
 	if topo.PartialFailures == nil {
 		topo.PartialFailures = []topology.PartialError{}
 	}
@@ -278,8 +483,31 @@ func buildTopology(results []switchResult, now time.Time) *topology.Topology {
 	return topo
 }
 
+// buildSystemNameIndex creates a mapping from each queried switch's FQDN
+// (SystemName) back to its config-level ID. This allows LLDP-discovered
+// neighbors to be merged with the switch device we already created.
+func buildSystemNameIndex(results []switchResult) map[string]string {
+	idx := make(map[string]string)
+	for _, r := range results {
+		sysName := r.Device.SystemName
+		if sysName != "" && sysName != r.SwitchID {
+			idx[sysName] = r.SwitchID
+		}
+	}
+	return idx
+}
+
+// resolveDeviceID maps an LLDP-discovered device name to a configured switch
+// ID if one exists, preventing duplicate nodes for the same physical switch.
+func resolveDeviceID(id string, systemNameToID map[string]string) string {
+	if mapped, ok := systemNameToID[id]; ok {
+		return mapped
+	}
+	return id
+}
+
 func classifyDevice(nbr transform.LLDPNeighbor) string {
-	return transform.ClassifyDevice(nbr.SystemDescription, nbr.SystemName)
+	return transform.ClassifyDevice(nbr.SystemDescription, nbr.SystemName, nbr.Capabilities)
 }
 
 func extractHost(address string) string {
