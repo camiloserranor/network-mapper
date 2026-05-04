@@ -67,15 +67,15 @@ const NetworkGraph = (() => {
                 'background-color': '#252423',
                 'border-color': '#0078d4',
                 'border-width': 2,
-                'padding': '14px',
+                'padding': '18px',
                 'text-valign': 'top',
                 'text-halign': 'center',
-                'text-margin-y': -6,
-                'font-size': '12px',
+                'text-margin-y': -8,
+                'font-size': '11px',
                 'font-weight': '600',
                 'color': '#ffffff',
-                'min-width': '120px',
-                'min-height': '60px',
+                'min-width': '140px',
+                'min-height': '50px',
             },
         },
         // Spine switch parent (bolder border)
@@ -287,9 +287,10 @@ const NetworkGraph = (() => {
             animate: true,
             animationDuration: 500,
             rankDir: 'TB',
-            nodeSep: 40,
-            rankSep: 200,
-            padding: 60,
+            nodeSep: 60,
+            rankSep: 180,
+            padding: 40,
+            spacingFactor: 1.4,
             // Sort spine above leaf
             sort: function(a, b) {
                 const roleOrder = { spine: 0, leaf: 1, '': 2 };
@@ -328,6 +329,7 @@ const NetworkGraph = (() => {
             minZoom: 0.1,
             maxZoom: 4,
             wheelSensitivity: 0.3,
+            autoungrabify: true,
         });
 
         setupInteraction();
@@ -362,6 +364,36 @@ const NetworkGraph = (() => {
 
     function fitToScreen() {
         if (cy) cy.fit(cy.elements(), 50);
+    }
+
+    // Arrange port nodes in two rows inside each switch parent (like a physical switch)
+    function arrangePortsInRows() {
+        if (!cy) return;
+        const parents = cy.nodes('[type="switch-parent"]');
+        parents.forEach((parent) => {
+            const children = parent.children().sort((a, b) => {
+                // Sort by port name naturally
+                const aName = a.data('portName') || '';
+                const bName = b.data('portName') || '';
+                return aName.localeCompare(bName, undefined, { numeric: true });
+            });
+            const count = children.length;
+            if (count === 0) return;
+
+            const portSize = 12;
+            const gap = 6;
+            const cols = Math.ceil(count / 2);
+            const totalWidth = cols * (portSize + gap) - gap;
+            const parentPos = parent.position();
+
+            children.forEach((child, i) => {
+                const row = i < cols ? 0 : 1;
+                const col = i < cols ? i : i - cols;
+                const x = parentPos.x - totalWidth / 2 + col * (portSize + gap) + portSize / 2;
+                const y = parentPos.y - portSize + row * (portSize + gap);
+                child.position({ x, y });
+            });
+        });
     }
 
     function searchNodes(query) {
@@ -412,6 +444,7 @@ const NetworkGraph = (() => {
         render,
         runLayout,
         fitToScreen,
+        arrangePortsInRows,
         searchNodes,
         exportPNG,
         exportJSON,
