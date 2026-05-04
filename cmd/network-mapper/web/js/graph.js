@@ -67,15 +67,15 @@ const NetworkGraph = (() => {
                 'background-color': '#252423',
                 'border-color': '#0078d4',
                 'border-width': 2,
-                'padding': '18px',
+                'padding': '12px',
                 'text-valign': 'top',
                 'text-halign': 'center',
                 'text-margin-y': -8,
-                'font-size': '11px',
+                'font-size': '10px',
                 'font-weight': '600',
                 'color': '#ffffff',
-                'min-width': '140px',
-                'min-height': '50px',
+                'min-width': '50px',
+                'min-height': '40px',
             },
         },
         // Spine switch parent (bolder border)
@@ -287,11 +287,10 @@ const NetworkGraph = (() => {
             animate: true,
             animationDuration: 500,
             rankDir: 'TB',
-            nodeSep: 60,
-            rankSep: 180,
-            padding: 40,
-            spacingFactor: 1.4,
-            // Sort spine above leaf
+            nodeSep: 30,
+            rankSep: 100,
+            padding: 20,
+            // Sort: spine first (lower value = higher rank in dagre TB)
             sort: function(a, b) {
                 const roleOrder = { spine: 0, leaf: 1, '': 2 };
                 const ra = roleOrder[a.data('role') || ''] || 2;
@@ -366,13 +365,12 @@ const NetworkGraph = (() => {
         if (cy) cy.fit(cy.elements(), 50);
     }
 
-    // Arrange port nodes in two rows inside each switch parent (like a physical switch)
+    // Arrange port nodes vertically inside each switch parent (like a rack-mounted switch)
     function arrangePortsInRows() {
         if (!cy) return;
         const parents = cy.nodes('[type="switch-parent"]');
         parents.forEach((parent) => {
             const children = parent.children().sort((a, b) => {
-                // Sort by port name naturally
                 const aName = a.data('portName') || '';
                 const bName = b.data('portName') || '';
                 return aName.localeCompare(bName, undefined, { numeric: true });
@@ -381,16 +379,19 @@ const NetworkGraph = (() => {
             if (count === 0) return;
 
             const portSize = 12;
-            const gap = 6;
-            const cols = Math.ceil(count / 2);
+            const gap = 4;
+            // Two columns, many rows (vertical orientation like a real switch)
+            const cols = 2;
+            const rows = Math.ceil(count / cols);
+            const totalHeight = rows * (portSize + gap) - gap;
             const totalWidth = cols * (portSize + gap) - gap;
             const parentPos = parent.position();
 
             children.forEach((child, i) => {
-                const row = i < cols ? 0 : 1;
-                const col = i < cols ? i : i - cols;
+                const col = i % cols;
+                const row = Math.floor(i / cols);
                 const x = parentPos.x - totalWidth / 2 + col * (portSize + gap) + portSize / 2;
-                const y = parentPos.y - portSize + row * (portSize + gap);
+                const y = parentPos.y - totalHeight / 2 + row * (portSize + gap) + portSize / 2;
                 child.position({ x, y });
             });
         });

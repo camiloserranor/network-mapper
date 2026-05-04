@@ -410,6 +410,21 @@ function renderFabricView() {
     });
 
     setTimeout(() => {
+        // Ensure spines are on top: if average spine Y > average leaf Y, flip all Y positions
+        const spines = cy.nodes('[type="switch-parent"][role="spine"]');
+        const leaves = cy.nodes('[type="switch-parent"][role="leaf"]');
+        if (spines.length > 0 && leaves.length > 0) {
+            const avgSpineY = spines.reduce((s, n) => s + n.position('y'), 0) / spines.length;
+            const avgLeafY = leaves.reduce((s, n) => s + n.position('y'), 0) / leaves.length;
+            if (avgSpineY > avgLeafY) {
+                // Flip all nodes around center Y
+                const allNodes = cy.nodes();
+                const centerY = (avgSpineY + avgLeafY) / 2;
+                allNodes.forEach(n => {
+                    n.position('y', 2 * centerY - n.position('y'));
+                });
+            }
+        }
         NetworkGraph.arrangePortsInRows();
         NetworkGraph.fitToScreen();
     }, 600);
