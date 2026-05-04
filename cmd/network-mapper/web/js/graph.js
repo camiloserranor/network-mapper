@@ -19,7 +19,7 @@ const NetworkGraph = (() => {
     function getNodeTier(node) {
         const type = node.data('type');
         if (type === 'switch') {
-            return node.data('switchRole') === 'spine' ? 0 : 1;
+            return node.data('role') === 'spine' ? 0 : 1;
         }
         return typeRank[type] ?? 3;
     }
@@ -304,15 +304,38 @@ const NetworkGraph = (() => {
                 'opacity': 0.9,
             },
         },
+        // Expandable node (has hidden children) — shows ▸ badge
+        {
+            selector: 'node.expandable',
+            style: {
+                'label': 'data(expandLabel)',
+                'text-wrap': 'wrap',
+                'text-max-width': '120px',
+            },
+        },
+        // Expanded node — bright pulsing glow to clearly indicate expanded state
+        {
+            selector: 'node.expanded',
+            style: {
+                'label': 'data(expandLabel)',
+                'text-wrap': 'wrap',
+                'text-max-width': '120px',
+                'border-width': 4,
+                'border-color': '#3aafff',
+                'border-opacity': 1,
+                'overlay-color': '#3aafff',
+                'overlay-opacity': 0.25,
+                'overlay-padding': 12,
+                'shadow-blur': 20,
+                'shadow-color': '#3aafff',
+                'shadow-offset-x': 0,
+                'shadow-offset-y': 0,
+                'shadow-opacity': 0.6,
+            },
+        },
     ];
 
-    // Rank tiers: spine switches (0), leaf switches (1), hosts/BMC (2), VMs bottom (3)
-    const typeRank = { bmc: 2, switch: 1, host: 2, vm: 3, unknown: 2 };
-
-    function getNodeRank(node) {
-        if (node.data('type') === 'switch' && node.data('role') === 'spine') return 0;
-        return typeRank[node.data('type')] ?? 2;
-    }
+    // (typeRank is defined at top of module)
 
     // Layout configurations
     const layouts = {
@@ -379,13 +402,18 @@ const NetworkGraph = (() => {
     function layoutVisibleTree(fitAfter) {
         if (!cy) return;
 
-        // Group nodes by tier (skip compound/parent nodes)
-        const tiers = { 0: [], 1: [], 2: [], 3: [] };
-        cy.nodes().forEach((n) => {
-            if (n.isParent()) return;
-            const rank = getNodeRank(n);
-            tiers[rank].push(n);
-        });
+        const visible = cy.nodes(':visible').filter(
+            n => !n.isParent() && n.data('type') !== 'vlan-summary'
+        );
+        if (visible.length === 0) return;
+
+        // --- 1. Find root nodes (not a child of any expanded node) ---
+        const isChild = new Set();
+        for (const children of Object.values(expandedChildren)) {
+            if (children) for (const cid of children) isChild.add(cid);
+        }
+        const roots = [];
+        visible.forEach(n => { if (!isChild.has(n.id())) roots.push(n); });
 
         // Sort: spines first, then other switches, then by label
         roots.sort((a, b) => {
@@ -395,7 +423,7 @@ const NetworkGraph = (() => {
         });
 
         function rootSortKey(n) {
-            if (n.data('type') === 'switch' && n.data('switchRole') === 'spine') return 0;
+            if (n.data('type') === 'switch' && n.data('role') === 'spine') return 0;
             if (n.data('type') === 'switch') return 1;
             if (n.data('type') === 'host') return 2;
             return 3;
@@ -885,7 +913,7 @@ const NetworkGraph = (() => {
 
         let badge = '';
         const type = node.data('type');
-        const role = node.data('switchRole');
+        const role = node.data('role');
 
         if (type === 'switch' && role === 'spine' && childCount > 0) {
             badge = isExpanded ? `\n▾ ${childCount} leaf switches` : `\n▸ ${childCount} leaf switches`;
@@ -960,7 +988,7 @@ const NetworkGraph = (() => {
     function getDeviceRole(deviceId) {
         if (!cy) return '';
         const node = cy.getElementById(deviceId);
-        if (node && node.length) return node.data('switchRole') || '';
+        if (node && node.length) return node.data('role') || '';
         return '';
     }
 

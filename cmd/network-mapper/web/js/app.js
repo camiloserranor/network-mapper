@@ -183,6 +183,10 @@ function countVMsPerHost(topology) {
 function topologyToCytoscape(topology) {
     const elements = [];
 
+    // Compute child map and VM counts for expand labels
+    const childMap = buildChildMap(topology);
+    const vmCounts = countVMsPerHost(topology);
+
     // Detect spine switches: switches that are only connected to other switches (not hosts/VMs/BMCs)
     const switchIds = new Set((topology.devices || []).filter(d => d.type === 'switch').map(d => d.id));
     const switchConnectsNonSwitch = new Set();
@@ -197,6 +201,7 @@ function topologyToCytoscape(topology) {
     for (const device of (topology.devices || [])) {
         const ifaces = device.interfaces || [];
         const ifacesUp = ifaces.filter((i) => i.oper_status === 'UP').length;
+        const childCount = (childMap[device.id] ? childMap[device.id].size : 0);
 
         // Determine role: spine switches only connect to other switches
         let role = '';

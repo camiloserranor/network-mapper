@@ -54,7 +54,7 @@ func Collect(ctx context.Context, cfg *config.Config) (*topology.Topology, error
 
 	wg.Wait()
 
-	topo := buildTopology(results, now)
+	topo := buildTopology(results, now, cfg.Collect.ReverseDNS)
 
 	// Enrich with deployment data if configured (non-fatal on failure)
 	if cfg.DeploymentJSON != "" {
