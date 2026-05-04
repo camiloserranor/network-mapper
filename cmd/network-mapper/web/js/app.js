@@ -409,7 +409,10 @@ function renderFabricView() {
         ViewManager.navigateTo('switch', evt.target.data('id'));
     });
 
-    setTimeout(() => NetworkGraph.fitToScreen(), 600);
+    setTimeout(() => {
+        NetworkGraph.arrangePortsInRows();
+        NetworkGraph.fitToScreen();
+    }, 600);
 }
 
 // Port tooltip helpers
