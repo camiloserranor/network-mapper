@@ -126,13 +126,14 @@ NM.views.renderFabric = function() {
         const cols = Math.ceil(children.length / rows);
         const totalW = cols * (portSize + portGap) - portGap;
         const totalH = rows * (portSize + portGap) - portGap;
+        const labelOffset = 8; // push ports down to leave room for label
 
         children.forEach((child, i) => {
             const col = i % cols;
             const row = Math.floor(i / cols);
             child.position({
                 x: center.x - totalW / 2 + col * (portSize + portGap) + portSize / 2,
-                y: center.y - totalH / 2 + row * (portSize + portGap) + portSize / 2,
+                y: center.y - totalH / 2 + row * (portSize + portGap) + portSize / 2 + labelOffset,
             });
         });
     });
