@@ -24,11 +24,14 @@ NM.views.renderFabric = function() {
         const ifacesUp = ifaces.filter(i => i.oper_status === 'UP').length;
 
         const healthPct = Math.round((ifacesUp / Math.max(ifaces.length, 1)) * 100);
+        let label = sw.system_name || sw.id;
+        label += '\n' + healthPct + '% UP';
+        if (hCount > 0) label += '  ·  ' + hCount + ' hosts';
 
         elements.push({
             data: {
                 id: sw.id,
-                label: '',
+                label: label,
                 type: 'switch-parent',
                 role: role,
                 deviceType: 'switch',
@@ -140,10 +143,6 @@ NM.views.renderFabric = function() {
 
     // Apply health-based pie background on switch nodes
     applyHealthStyles(cy);
-
-    // Render rich info overlays inside each switch (repositioned on zoom/pan)
-    renderSwitchInfoOverlays(cy);
-    cy.on('viewport', () => repositionOverlays(cy));
 
     // Add legend panel
     addLegendPanel();
@@ -257,62 +256,6 @@ function applyHealthStyles(cy) {
             'pie-1-background-opacity': 0.25,
             'pie-2-background-opacity': 0.15,
         });
-    });
-}
-
-function renderSwitchInfoOverlays(cy) {
-    // Remove previous overlays
-    document.querySelectorAll('.switch-info-overlay').forEach(el => el.remove());
-
-    const container = document.getElementById('cy');
-    if (!container) return;
-
-    cy.nodes('[type="switch-parent"]').forEach((node) => {
-        const data = node.data();
-        const pct = data.healthPct || 0;
-        const healthColor = pct > 80 ? '#4CAF50' : pct > 50 ? '#FF9800' : '#e94560';
-
-        const overlay = document.createElement('div');
-        overlay.className = 'switch-info-overlay';
-        overlay.dataset.nodeId = data.id;
-        overlay.style.position = 'absolute';
-        overlay.style.pointerEvents = 'none';
-        overlay.style.zIndex = '1';
-
-        overlay.innerHTML =
-            '<div class="sio-name">' + NM.core.escapeHtml(data.system_name) + '</div>' +
-            '<div class="sio-stats">' +
-                (data.hostCount > 0 ? '<span class="sio-badge sio-hosts">' + data.hostCount + ' hosts</span>' : '') +
-                '<span class="sio-badge sio-health" style="border-color:' + healthColor + ';color:' + healthColor + '">' + pct + '%</span>' +
-            '</div>';
-
-        container.appendChild(overlay);
-    });
-
-    repositionOverlays(cy);
-}
-
-function repositionOverlays(cy) {
-    const container = document.getElementById('cy');
-    if (!container) return;
-    const containerRect = container.getBoundingClientRect();
-
-    document.querySelectorAll('.switch-info-overlay').forEach((overlay) => {
-        const nodeId = overlay.dataset.nodeId;
-        const node = cy.getElementById(nodeId);
-        if (!node || node.length === 0) return;
-
-        const bb = node.renderedBoundingBox();
-        // Position at bottom of the switch node, inside the boundary
-        overlay.style.left = (bb.x1 + 4) + 'px';
-        overlay.style.top = (bb.y2 - 28) + 'px';
-        overlay.style.width = (bb.w - 8) + 'px';
-
-        // Hide if too small to read
-        const zoom = cy.zoom();
-        overlay.style.display = zoom < 0.4 ? 'none' : '';
-        overlay.style.transform = 'scale(' + Math.min(1, Math.max(0.6, zoom)) + ')';
-        overlay.style.transformOrigin = 'left bottom';
     });
 }
 
