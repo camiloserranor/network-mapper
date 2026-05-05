@@ -317,6 +317,14 @@ This project builds on patterns from [arc-switch](../arc-switch), specifically:
 - OpenConfig + NX-OS native LLDP response transformers
 - JSON_IETF module prefix stripping (RFC 7951)
 
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [DATA-COLLECTION.md](docs/DATA-COLLECTION.md) | What data is collected, gNMI paths, how each category is used |
+| [DEVICE-CORRELATION.md](docs/DEVICE-CORRELATION.md) | Device deduplication, MAC offset handling, enrichment passes |
+| [SWITCH-SETUP.md](docs/SWITCH-SETUP.md) | How to enable gNMI on TOR switches |
+
 ## Roadmap
 
 - [x] v0.1 — CLI `collect` command with JSON topology output
