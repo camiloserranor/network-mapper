@@ -133,6 +133,10 @@ NM.views.renderFabric = function() {
     });
 
     cy.fit(cy.elements(), 30);
+
+    // Add health sparkline overlays under each switch
+    addHealthOverlays(cy);
+
     wireInteractions(cy);
 };
 
@@ -223,6 +227,46 @@ function computeLayout(switches, portMaps, topology, elements) {
         spineIds,
         leafIds,
     };
+}
+
+function addHealthOverlays(cy) {
+    // Remove previous overlays
+    document.querySelectorAll('.health-overlay').forEach(el => el.remove());
+
+    const container = document.getElementById('cy');
+    if (!container) return;
+
+    cy.nodes('[type="switch-parent"]').forEach((parent) => {
+        const up = parent.data('interfaces_up') || 0;
+        const total = parent.data('interfaces_total') || 1;
+        const pct = Math.round((up / Math.max(total, 1)) * 100);
+
+        const bb = parent.renderedBoundingBox();
+        const barWidth = bb.w;
+        const barHeight = 4;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'health-overlay';
+        overlay.style.position = 'absolute';
+        overlay.style.left = bb.x1 + 'px';
+        overlay.style.top = (bb.y2 + 2) + 'px';
+        overlay.style.width = barWidth + 'px';
+        overlay.style.height = barHeight + 'px';
+        overlay.style.borderRadius = '2px';
+        overlay.style.background = '#323130';
+        overlay.style.overflow = 'hidden';
+        overlay.style.pointerEvents = 'none';
+
+        const fill = document.createElement('div');
+        fill.style.width = pct + '%';
+        fill.style.height = '100%';
+        fill.style.borderRadius = '2px';
+        fill.style.background = pct > 80 ? '#4CAF50' : pct > 50 ? '#FF9800' : '#e94560';
+        fill.style.transition = 'width 0.3s';
+        overlay.appendChild(fill);
+
+        container.appendChild(overlay);
+    });
 }
 
 function wireInteractions(cy) {
