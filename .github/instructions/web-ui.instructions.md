@@ -4,26 +4,79 @@ applyTo: "cmd/network-mapper/web/**"
 
 # Web UI Instructions
 
-- This is a vanilla HTML/CSS/JS frontend — no frameworks, no npm, no bundler.
+## Stack & Constraints
+
+- Vanilla HTML/CSS/JS — no frameworks, no npm, no bundler, no ES modules.
 - All third-party libraries are vendored in `web/lib/` and loaded via `<script>` tags.
-- The topology graph is rendered with Cytoscape.js using a multi-view architecture with three scoped views.
 - The web UI fetches data from `/api/topology` (JSON) served by the Go backend.
-- Follow the existing dark theme: background `#1b1a19`, graph area `#0d1117`, accent `#0078d4` (Azure portal blue).
-- Node types and their styles:
-  - **switch**: blue `#0078d4`, round-rectangle, with SVG icon
-  - **host**: green `#44b700`, round-rectangle, with SVG icon
-  - **bmc**: orange `#f7630c`, round-rectangle, with SVG icon
-  - **vm**: purple `#a36efd`, round-rectangle, with SVG icon
-  - **unknown**: gray `#8a8886`, ellipse
-- Multi-view architecture:
-  - **Fabric View** (default): shows only switches with host-count badges, spine on top, leaf below
-  - **Switch Detail**: shows a switch + its connected hosts with VM-count badges
-  - **Host Detail**: shows a host + connected switches above + VMs below (capped at 100)
-  - Navigation: double-click or breadcrumb bar to drill down/up
-- JS modules and their responsibilities:
-  - `app.js` — entry point, ViewManager, view renderers (fabric/switch/host), Inventory panel, data helpers
-  - `graph.js` — Cytoscape initialization, styles, layout (dagre/cose), search, export
-  - `sidebar.js` — detail panel for selected nodes/edges
-  - `toolbar.js` — refresh button, force layout toggle, search, fit, export buttons
-  - `popup.js` — floating card shown on node/edge click with drill-down button
-- When adding new UI features, extend the existing module that owns that concern rather than creating new files.
+- Script load order matters: namespace → core → data → graph → UI → views → app.
+
+## Architecture: Namespace-Based Module Pattern
+
+All modules attach to the global `window.NM` namespace object (defined in `core/namespace.js`).
+
+```
+NM
+├── core      — escapeHtml, showError, showWarnings
+├── state     — topology (shared data), ViewManager (navigation)
+├── data      — pure data functions (classifySwitches, buildPortMap, etc.)
+├── graph     — Cytoscape wrapper (init, render, layout, export)
+├── ui        — Sidebar, Popup, Toolbar, Inventory
+└── views     — renderFabric, renderSwitch, renderHost, renderVM
+```
+
+### File Structure
+
+```
+web/js/
+├── core/
+│   ├── namespace.js    — bootstraps window.NM structure
+│   ├── utils.js        — escapeHtml, showError, showWarnings
+│   └── state.js        — ViewManager (navigation, breadcrumb)
+├── data/
+│   └── topology.js     — pure data helpers (no DOM, no state)
+├── ui/
+│   └── inventory.js    — inventory panel with search + navigation
+├── views/
+│   ├── fabric.js       — fabric overview (Cytoscape compound nodes)
+│   ├── switch.js       — switch detail (port diagram)
+│   ├── host.js         — host detail (NIC diagram + VM cloud)
+│   └── vm.js           — VM info card
+├── graph.js            — Cytoscape init, styles, render, export
+├── sidebar.js          — detail panel for nodes/edges
+├── popup.js            — floating card on click
+├── toolbar.js          — search, refresh, export buttons
+└── app.js              — slim entry point (fetch, init, go)
+```
+
+## Design Principles
+
+1. **SOLID** — each module has a single responsibility.
+2. **Dependency direction** — views depend on data + state; data depends on nothing.
+3. **No global variables** — everything goes through `NM.*` namespace.
+4. **Pure data layer** — functions in `data/topology.js` take topology as input, return results, never touch DOM.
+
+## Multi-View Architecture
+
+- **Fabric View** (default): Cytoscape compound nodes — switches with port children, spine on top, leaf below.
+- **Switch Detail**: HTML port diagram with hover tooltips, click-to-navigate.
+- **Host Detail**: HTML NIC cards + VM cloud with chips.
+- **VM Detail**: HTML info card with location links.
+- Navigation: click ports/nodes, breadcrumb bar, or inventory panel.
+
+## Visual Theme
+
+- Dark theme: background `#1b1a19`, graph area `#0d1117`, accent `#0078d4` (Azure portal blue).
+- Device colors:
+  - **switch**: `#0078d4` (blue)
+  - **host**: `#44b700` (green)
+  - **bmc**: `#f7630c` (orange)
+  - **vm**: `#a36efd` (purple)
+  - **unknown**: `#8a8886` (gray)
+
+## Adding New Features
+
+- New views: create a file in `views/`, attach render function to `NM.views.*`, register in ViewManager.
+- New data helpers: add to `data/topology.js` on `NM.data.*`.
+- New UI components: create in `ui/` or extend existing sidebar/popup/toolbar.
+- Always reference other modules through `NM.*` — never use bare function names.

@@ -1,8 +1,8 @@
-// graph.js — Cytoscape.js renderer for multi-view topology visualization
+// graph.js — Cytoscape.js renderer for network topology visualization
 
 'use strict';
 
-const NetworkGraph = (() => {
+NM.graph = (() => {
     let cy = null;
     let currentLayoutMode = 'dagre'; // 'dagre' or 'cose'
     let storedTopology = null;
