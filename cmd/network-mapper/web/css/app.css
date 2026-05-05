@@ -1009,6 +1009,16 @@ select.btn {
 .type-badge.unknown { background: rgba(138, 136, 134, 0.2); color: var(--node-unknown); }
 .type-badge.vm { background: rgba(163, 110, 253, 0.2); color: var(--node-vm); }
 
+/* BGP state badges */
+.bgp-state {
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.bgp-state.bgp-up { background: rgba(68, 183, 0, 0.2); color: #44b700; }
+.bgp-state.bgp-down { background: rgba(233, 69, 96, 0.2); color: #e94560; }
+
 /* ---- Warning banner (partial failures) ---- */
 #warning-banner {
     background: rgba(252, 225, 0, 0.1);
