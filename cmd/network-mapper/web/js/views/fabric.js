@@ -23,9 +23,22 @@ NM.views.renderFabric = function() {
         const hCount = hostCounts[sw.id] || 0;
         const ifacesUp = ifaces.filter(i => i.oper_status === 'UP').length;
 
-        const healthPct = Math.round((ifacesUp / Math.max(ifaces.length, 1)) * 100);
+        // Derive health: use interface data if available, otherwise count active links
+        let healthPct, healthLabel;
+        if (ifaces.length > 0) {
+            healthPct = Math.round((ifacesUp / ifaces.length) * 100);
+            healthLabel = healthPct + '% UP';
+        } else {
+            // No interface data — count discovered links as active ports
+            const linkCount = (topology.links || []).filter(
+                l => l.local_device === sw.id || l.remote_device === sw.id
+            ).length;
+            healthPct = linkCount > 0 ? 100 : 0;
+            healthLabel = linkCount + ' active links';
+        }
+
         let label = sw.system_name || sw.id;
-        label += '\n' + healthPct + '% UP';
+        label += '\n' + healthLabel;
         if (hCount > 0) label += '  ·  ' + hCount + ' hosts';
 
         elements.push({
