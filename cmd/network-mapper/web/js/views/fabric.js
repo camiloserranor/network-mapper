@@ -1,122 +1,7 @@
-// views/fabric.js — Fabric overview: SVG front-panel switches with port hotspots
+// views/fabric.js — Fabric overview: Cytoscape compound nodes with ports
 // Responsibility: build graph elements, position them, wire interactions
 
 'use strict';
-
-// SVG geometry constants — shared between SVG generation and port positioning
-const FABRIC_PORT = {
-    W: 14,       // port width (px in SVG viewBox)
-    H: 10,       // port height
-    GAP_X: 2,    // horizontal gap between ports
-    GAP_Y: 3,    // vertical gap between rows
-    PAD_X: 40,   // left padding for port area
-    PAD_Y: 26,   // top padding for port area (below nameplate)
-    ROWS: 2,     // number of port rows
-};
-
-// Compute SVG chassis dimensions for a given port count
-function computeChassisDims(portCount) {
-    const cols = Math.ceil(portCount / FABRIC_PORT.ROWS);
-    const portsW = cols * (FABRIC_PORT.W + FABRIC_PORT.GAP_X) - FABRIC_PORT.GAP_X;
-    const portsH = FABRIC_PORT.ROWS * (FABRIC_PORT.H + FABRIC_PORT.GAP_Y) - FABRIC_PORT.GAP_Y;
-    const panelW = FABRIC_PORT.PAD_X * 2 + portsW;
-    const panelH = FABRIC_PORT.PAD_Y + portsH + 22; // 22px for health bar + bottom padding
-    return { panelW, panelH, cols, portsW, portsH };
-}
-
-// Get the position of a port relative to chassis center (0,0)
-function getPortCenter(index, portCount) {
-    const dims = computeChassisDims(portCount);
-    const col = index % dims.cols;
-    const row = Math.floor(index / dims.cols);
-    // Port top-left in SVG coordinates
-    const px = FABRIC_PORT.PAD_X + col * (FABRIC_PORT.W + FABRIC_PORT.GAP_X);
-    const py = FABRIC_PORT.PAD_Y + row * (FABRIC_PORT.H + FABRIC_PORT.GAP_Y);
-    // Center of port in SVG coords
-    const cx = px + FABRIC_PORT.W / 2;
-    const cy = py + FABRIC_PORT.H / 2;
-    // Convert to offset from chassis center
-    return {
-        x: cx - dims.panelW / 2,
-        y: cy - dims.panelH / 2,
-    };
-}
-
-// Generate simplified SVG for fabric view (no interactive elements, just visuals)
-function buildFabricChassisImage(sw, ifaces, portMap, role, ifacesUp, hostCount) {
-    const portCount = Math.max(ifaces.length, 1);
-    const dims = computeChassisDims(portCount);
-    const colors = { switch: '#0078d4', host: '#44b700', bmc: '#f7630c', unknown: '#8a8886' };
-
-    const chassisColor = role === 'spine' ? '#1e2a3a' : '#252423';
-    const borderColor = role === 'spine' ? '#2899f5' : '#0078d4';
-    const pct = Math.round((ifacesUp / Math.max(ifaces.length, 1)) * 100);
-    const healthColor = pct > 80 ? '#4CAF50' : pct > 50 ? '#FF9800' : '#e94560';
-
-    let svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + dims.panelW + ' ' + dims.panelH + '">';
-
-    // Chassis body
-    svg += '<rect x="1" y="1" width="' + (dims.panelW - 2) + '" height="' + (dims.panelH - 2) + '" rx="6" ry="6" ';
-    svg += 'fill="' + chassisColor + '" stroke="' + borderColor + '" stroke-width="1.5"/>';
-
-    // Ventilation grille (left decorative)
-    for (let i = 0; i < 2; i++) {
-        const gx = 10 + i * 10;
-        svg += '<rect x="' + gx + '" y="' + (dims.panelH / 2 - 8) + '" width="2" height="16" rx="1" fill="#3a3a3a" opacity="0.5"/>';
-    }
-
-    // LED indicator (top-right)
-    const ledColor = ifacesUp > 0 ? '#4CAF50' : '#e94560';
-    svg += '<circle cx="' + (dims.panelW - 14) + '" cy="12" r="3" fill="' + ledColor + '"/>';
-
-    // Nameplate text
-    const name = (sw.system_name || sw.id).substring(0, 20);
-    svg += '<text x="' + FABRIC_PORT.PAD_X + '" y="14" font-size="8" font-weight="600" fill="#ffffff" font-family="Segoe UI,sans-serif">';
-    svg += escSvg(name) + '</text>';
-
-    // Summary line
-    let summary = role.toUpperCase() + ' · ' + ifacesUp + '/' + ifaces.length + ' UP';
-    if (hostCount > 0) summary += ' · ' + hostCount + ' hosts';
-    svg += '<text x="' + FABRIC_PORT.PAD_X + '" y="22" font-size="5.5" fill="#8a8886" font-family="Segoe UI,sans-serif">';
-    svg += escSvg(summary) + '</text>';
-
-    // Ports
-    for (let i = 0; i < ifaces.length; i++) {
-        const iface = ifaces[i];
-        const portName = iface.name || '';
-        const conn = portMap[portName];
-        const isUp = iface.oper_status === 'UP';
-
-        const col = i % dims.cols;
-        const row = Math.floor(i / dims.cols);
-        const px = FABRIC_PORT.PAD_X + col * (FABRIC_PORT.W + FABRIC_PORT.GAP_X);
-        const py = FABRIC_PORT.PAD_Y + row * (FABRIC_PORT.H + FABRIC_PORT.GAP_Y);
-
-        let fillColor = '#484644';
-        if (!isUp) fillColor = '#2a2a2a';
-        else if (conn) fillColor = colors[conn.remoteType] || colors.unknown;
-
-        const borderCol = conn ? (colors[conn.remoteType] || '#605e5c') : (isUp ? '#605e5c' : '#3a3a3a');
-        const opacity = isUp ? '1' : '0.4';
-
-        svg += '<rect x="' + px + '" y="' + py + '" width="' + FABRIC_PORT.W + '" height="' + FABRIC_PORT.H + '" rx="2" ';
-        svg += 'fill="' + fillColor + '" stroke="' + borderCol + '" stroke-width="0.8" opacity="' + opacity + '"/>';
-    }
-
-    // Health bar (bottom)
-    const hbX = FABRIC_PORT.PAD_X;
-    const hbY = dims.panelH - 10;
-    const hbW = dims.panelW - FABRIC_PORT.PAD_X * 2;
-    svg += '<rect x="' + hbX + '" y="' + hbY + '" width="' + hbW + '" height="3" rx="1.5" fill="#3a3a3a"/>';
-    svg += '<rect x="' + hbX + '" y="' + hbY + '" width="' + Math.round(hbW * pct / 100) + '" height="3" rx="1.5" fill="' + healthColor + '"/>';
-
-    svg += '</svg>';
-    return svg;
-}
-
-function escSvg(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 
 NM.views.renderFabric = function() {
     const topology = NM.state.topology;
@@ -131,9 +16,6 @@ NM.views.renderFabric = function() {
         portMaps[sw.id] = NM.data.buildPortMap(topology, sw.id);
     }
 
-    // SVG images per switch (for background-image)
-    const switchSvgs = {};
-
     // Create compound switch nodes with port children
     for (const sw of switches) {
         const ifaces = sw.interfaces || [];
@@ -141,33 +23,28 @@ NM.views.renderFabric = function() {
         const hCount = hostCounts[sw.id] || 0;
         const ifacesUp = ifaces.filter(i => i.oper_status === 'UP').length;
 
-        // Derive health
-        let healthPct;
+        // Derive health: use interface data if available, otherwise count active links
+        let healthPct, healthLabel;
         if (ifaces.length > 0) {
             healthPct = Math.round((ifacesUp / ifaces.length) * 100);
+            healthLabel = healthPct + '% UP';
         } else {
+            // No interface data — count discovered links as active ports
             const linkCount = (topology.links || []).filter(
                 l => l.local_device === sw.id || l.remote_device === sw.id
             ).length;
             healthPct = linkCount > 0 ? 100 : 0;
+            healthLabel = linkCount + ' active links';
         }
 
-        // Generate SVG for this switch
-        const svgStr = buildFabricChassisImage(sw, ifaces, portMaps[sw.id], role, ifacesUp, hCount);
-        const svgDataUri = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgStr);
-        switchSvgs[sw.id] = svgDataUri;
-
-        // Compute chassis size for Cytoscape node dimensions
-        const dims = computeChassisDims(Math.max(ifaces.length, 1));
-        // Scale factor: map SVG units to Cytoscape model units
-        const scale = 1.8;
-        const nodeW = dims.panelW * scale;
-        const nodeH = dims.panelH * scale;
+        let label = sw.system_name || sw.id;
+        label += '\n' + healthLabel;
+        if (hCount > 0) label += '  ·  ' + hCount + ' hosts';
 
         elements.push({
             data: {
                 id: sw.id,
-                label: '',
+                label: label,
                 type: 'switch-parent',
                 role: role,
                 deviceType: 'switch',
@@ -177,13 +54,10 @@ NM.views.renderFabric = function() {
                 hostCount: hCount,
                 healthPct: healthPct,
                 mgmtAddress: sw.management_address || '',
-                nodeW: nodeW,
-                nodeH: nodeH,
-                portCount: ifaces.length,
             },
         });
 
-        // Port child nodes — invisible hitboxes positioned to match SVG ports
+        // Port child nodes — from interfaces or link data
         const createdPorts = new Set();
         const connectedPorts = ifaces.filter(iface => portMaps[sw.id][iface.name || ''] !== undefined);
 
@@ -250,28 +124,9 @@ NM.views.renderFabric = function() {
     NM.graph.render(elements, 'preset');
     const cy = NM.graph.getInstance();
 
-    // Apply SVG background images and size switch nodes
-    cy.nodes('[type="switch-parent"]').forEach((parent) => {
-        const id = parent.data('id');
-        const svgUri = switchSvgs[id];
-        if (!svgUri) return;
-
-        parent.style({
-            'background-image': svgUri,
-            'background-fit': 'cover',
-            'background-clip': 'node',
-            'background-opacity': 1,
-            'width': parent.data('nodeW'),
-            'height': parent.data('nodeH'),
-            'padding': '0px',
-            'border-width': 0,
-            'background-color': 'transparent',
-            'shape': 'round-rectangle',
-        });
-    });
-
-    // Position port child nodes to align with SVG port rectangles
-    const scale = 1.8;
+    // Arrange ports in 2 rows (horizontal) inside each switch — like a rack unit
+    const portSize = 10;
+    const portGap = 3;
     cy.nodes('[type="switch-parent"]').forEach((parent) => {
         const center = layout.centers[parent.data('id')];
         if (!center) return;
@@ -281,18 +136,26 @@ NM.views.renderFabric = function() {
         });
         if (children.length === 0) return;
 
-        const portCount = parent.data('portCount') || children.length;
+        const rows = 2;
+        const cols = Math.ceil(children.length / rows);
+        const totalW = cols * (portSize + portGap) - portGap;
+        const totalH = rows * (portSize + portGap) - portGap;
+        const labelOffset = 0;
 
         children.forEach((child, i) => {
-            const offset = getPortCenter(i, portCount);
+            const col = i % cols;
+            const row = Math.floor(i / cols);
             child.position({
-                x: center.x + offset.x * scale,
-                y: center.y + offset.y * scale,
+                x: center.x - totalW / 2 + col * (portSize + portGap) + portSize / 2,
+                y: center.y - totalH / 2 + row * (portSize + portGap) + portSize / 2 + labelOffset,
             });
         });
     });
 
     cy.fit(cy.elements(), 30);
+
+    // Apply health-based pie background on switch nodes
+    applyHealthStyles(cy);
 
     // Add legend panel
     addLegendPanel();
@@ -370,17 +233,9 @@ function computeLayout(switches, portMaps, topology, elements) {
         }
     }
 
-    // Compute max node width for spacing
-    let maxNodeW = 300;
-    for (const el of elements) {
-        if (el.data && el.data.nodeW && el.data.nodeW > maxNodeW) {
-            maxNodeW = el.data.nodeW;
-        }
-    }
-
-    // Position switches: spines top row, leaves bottom row
-    const hGap = maxNodeW + 60;
-    const vGap = 200;
+    // Position switches: spines top row, leaves bottom row (horizontal rack layout)
+    const hGap = 450;
+    const vGap = 150;
 
     function rowCenters(ids, yPos) {
         const totalWidth = (ids.length - 1) * hGap;
@@ -397,7 +252,25 @@ function computeLayout(switches, portMaps, topology, elements) {
     };
 }
 
-// Health styling is now part of the SVG background image — no separate style application needed
+function applyHealthStyles(cy) {
+    cy.nodes('[type="switch-parent"]').forEach((node) => {
+        const up = node.data('interfaces_up') || 0;
+        const total = node.data('interfaces_total') || 1;
+        const pct = Math.round((up / Math.max(total, 1)) * 100);
+        const healthColor = pct > 80 ? '#4CAF50' : pct > 50 ? '#FF9800' : '#e94560';
+
+        // Use pie-chart background as a health indicator ring
+        node.style({
+            'pie-size': '100%',
+            'pie-1-background-color': healthColor,
+            'pie-1-background-size': pct,
+            'pie-2-background-color': '#323130',
+            'pie-2-background-size': 100 - pct,
+            'pie-1-background-opacity': 0.25,
+            'pie-2-background-opacity': 0.15,
+        });
+    });
+}
 
 function addLegendPanel() {
     // Remove previous
