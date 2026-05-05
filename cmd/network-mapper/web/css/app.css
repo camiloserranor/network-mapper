@@ -375,7 +375,128 @@ select.btn {
     gap: 4px;
 }
 
-/* ---- Switch Port Diagram ---- */
+/* ---- Switch Diagram Chassis ---- */
+.switch-diagram-container {
+    margin-bottom: 24px;
+}
+
+.switch-diagram-chassis {
+    background: var(--bg-secondary);
+    border: 2px solid var(--node-switch);
+    border-radius: 8px;
+    padding: 16px 20px;
+}
+
+.switch-diagram-chassis.spine {
+    border-color: #2899f5;
+}
+
+.switch-diagram-nameplate {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.switch-diagram-nameplate strong {
+    font-size: 15px;
+    color: var(--text-primary);
+}
+
+.switch-diagram-summary {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* Switch info panels */
+.switch-info-panels {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.info-panel {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 16px;
+}
+
+.info-panel.wide {
+    grid-column: 1 / -1;
+}
+
+.info-panel-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+.info-panel-content {
+    word-break: break-all;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 12px;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-row-label {
+    color: var(--text-muted);
+}
+
+.info-row-value {
+    color: var(--text-primary);
+    font-weight: 500;
+    text-align: right;
+    max-width: 60%;
+    word-break: break-all;
+}
+
+/* Connection table */
+.conn-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+.conn-table th {
+    text-align: left;
+    padding: 6px 8px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+}
+
+.conn-table td {
+    padding: 5px 8px;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.conn-row {
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.conn-row:hover {
+    background: rgba(0, 120, 212, 0.08);
+}
+
+/* ---- Switch Port Diagram (ports) ---- */
 .port-diagram {
     background: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
