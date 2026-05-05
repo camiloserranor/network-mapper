@@ -192,10 +192,7 @@ func collectLLDP(ctx context.Context, client *gnmi.Client, sw config.SwitchConfi
 }
 
 func collectInterfaces(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, cfg *config.Config, result *switchResult) {
-	if cfg.Collect.SkipCounters {
-		return
-	}
-
+	// Collect interface state (oper-status, speed, MTU, name)
 	notifs, err := client.GetWithFallback(ctx, transform.InterfacesPathOpenConfig)
 	if err != nil {
 		log.Printf("WARN: interfaces for %s: %v", sw.Name, err)
@@ -206,6 +203,17 @@ func collectInterfaces(ctx context.Context, client *gnmi.Client, sw config.Switc
 	}
 
 	result.Interfaces = transform.ParseInterfacesOpenConfig(notifs)
+
+	// Collect counters separately (different path, often larger payload)
+	if !cfg.Collect.SkipCounters && len(result.Interfaces) > 0 {
+		counterNotifs, counterErr := client.GetWithFallback(ctx, transform.InterfacesCountersPathOpenConfig)
+		if counterErr != nil {
+			log.Printf("  %s: interface counters unavailable: %v", sw.Name, counterErr)
+		} else {
+			transform.MergeInterfaceCounters(result.Interfaces, counterNotifs)
+		}
+	}
+
 	log.Printf("  %s: %d interfaces", sw.Name, len(result.Interfaces))
 }
 
