@@ -375,7 +375,24 @@ select.btn {
     gap: 4px;
 }
 
-/* ---- Switch Diagram Chassis ---- */
+/* ---- Switch SVG Front Panel ---- */
+.switch-svg-container {
+    margin-bottom: 24px;
+}
+
+.switch-front-panel {
+    width: 100%;
+    max-height: 280px;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.switch-front-panel .svg-port:hover rect {
+    filter: brightness(1.4);
+    stroke-width: 2;
+}
+
+/* ---- Switch Diagram Chassis (legacy) ---- */
 .switch-diagram-container {
     margin-bottom: 24px;
 }

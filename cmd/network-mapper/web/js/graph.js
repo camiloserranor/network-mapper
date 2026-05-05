@@ -235,14 +235,23 @@ NM.graph = (() => {
                 'transition-duration': '0.2s',
             },
         },
-        // Switch-link edges (between ports)
+        // Switch-link edges (between ports) — status-driven
         {
             selector: 'edge[type="switch-link"]',
             style: {
-                'line-color': '#0078d4',
+                'line-color': '#4CAF50',
                 'width': 2,
-                'opacity': 0.6,
+                'opacity': 0.7,
                 'curve-style': 'bezier',
+            },
+        },
+        {
+            selector: 'edge[type="switch-link"][operStatus="DOWN"]',
+            style: {
+                'line-color': '#e94560',
+                'width': 2,
+                'opacity': 0.9,
+                'line-style': 'dashed',
             },
         },
         // Highlighted edges

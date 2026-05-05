@@ -1,4 +1,4 @@
-// views/switch.js — Switch detail: port diagram + full device info
+// views/switch.js — Switch detail: SVG front-panel + full device info
 
 'use strict';
 
@@ -18,67 +18,8 @@ NM.views.renderSwitch = function(switchId) {
 
     let html = '';
 
-    // --- Switch diagram (visual port block with name inside) ---
-    html += '<div class="switch-diagram-container">';
-    html += '<div class="switch-diagram-chassis ' + role + '">';
-    html += '<div class="switch-diagram-nameplate">';
-    html += '<strong>' + esc(swDev.system_name || swDev.id) + '</strong>';
-    html += '<span class="switch-diagram-summary">';
-    html += esc(role.toUpperCase()) + ' \u00B7 ' + ifacesUp + '/' + ifaces.length + ' ports UP';
-    if (hostCount > 0) html += ' \u00B7 ' + hostCount + ' hosts';
-    if (swDev.management_address) html += ' \u00B7 ' + esc(swDev.management_address);
-    html += '</span>';
-    html += '</div>';
-
-    // Port grid inside the chassis
-    html += '<div class="port-grid">';
-    for (const iface of ifaces) {
-        const portName = iface.name || '';
-        const conn = portMap[portName];
-        const isUp = iface.oper_status === 'UP';
-        let classes = 'port-slot';
-        if (conn) classes += ' connected conn-' + conn.remoteType;
-        if (!isUp) classes += ' down';
-
-        const shortName = portName.replace(/.*\//, '').replace(/Ethernet/, 'E');
-
-        html += '<div class="' + classes + '"';
-        if (conn) {
-            html += ' data-remote-id="' + esc(conn.remoteId) + '"';
-            html += ' data-remote-type="' + esc(conn.remoteType) + '"';
-        }
-        html += '>';
-        html += '<span>' + esc(shortName) + '</span>';
-
-        // Tooltip
-        html += '<div class="port-tooltip">';
-        html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Port:</span><span class="port-tooltip-value">' + esc(portName) + '</span></div>';
-        if (iface.speed) html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Speed:</span><span class="port-tooltip-value">' + esc(iface.speed) + '</span></div>';
-        if (iface.mtu) html += '<div class="port-tooltip-row"><span class="port-tooltip-label">MTU:</span><span class="port-tooltip-value">' + esc(String(iface.mtu)) + '</span></div>';
-        if (conn) {
-            html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Connected to:</span><span class="port-tooltip-value">' + esc(conn.remoteName) + '</span></div>';
-            html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Remote port:</span><span class="port-tooltip-value">' + esc(conn.remotePort) + '</span></div>';
-            html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Type:</span><span class="port-tooltip-value">' + esc(conn.remoteType) + '</span></div>';
-            if (conn.speed) html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Link speed:</span><span class="port-tooltip-value">' + esc(conn.speed) + '</span></div>';
-            html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Status:</span><span class="port-tooltip-value">' + (isUp ? 'UP' : 'DOWN') + '</span></div>';
-        } else {
-            html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Status:</span><span class="port-tooltip-value">' + (isUp ? 'UP (no LLDP)' : 'DOWN') + '</span></div>';
-        }
-        html += '</div>';
-        html += '</div>';
-    }
-    html += '</div>'; // port-grid
-
-    // Legend
-    html += '<div class="port-legend">';
-    html += '<div class="port-legend-item"><div class="port-legend-swatch" style="border-color:var(--node-switch);background:rgba(0,120,212,0.12)"></div>Switch</div>';
-    html += '<div class="port-legend-item"><div class="port-legend-swatch" style="border-color:var(--node-host);background:rgba(68,183,0,0.12)"></div>Host</div>';
-    html += '<div class="port-legend-item"><div class="port-legend-swatch" style="border-color:var(--node-bmc);background:rgba(247,99,12,0.12)"></div>BMC</div>';
-    html += '<div class="port-legend-item"><div class="port-legend-swatch" style="border-color:var(--node-unknown);background:rgba(138,136,134,0.12)"></div>Unknown</div>';
-    html += '<div class="port-legend-item"><div class="port-legend-swatch" style="border-color:var(--border);background:var(--bg-surface)"></div>Empty</div>';
-    html += '</div>';
-    html += '</div>'; // switch-diagram-chassis
-    html += '</div>'; // switch-diagram-container
+    // --- SVG Front Panel ---
+    html += buildFrontPanelSVG(swDev, ifaces, portMap, role, ifacesUp, hostCount, esc);
 
     // --- Full device information ---
     html += '<div class="switch-info-panels">';
@@ -105,13 +46,11 @@ NM.views.renderSwitch = function(switchId) {
     html += infoRow('DOWN', ifaces.length - ifacesUp);
     html += infoRow('Health', Math.round((ifacesUp / Math.max(ifaces.length, 1)) * 100) + '%');
     html += infoRow('Connected Hosts', hostCount);
-
-    // Count switch-to-switch links
     const switchLinks = Object.values(portMap).filter(c => c.remoteType === 'switch').length;
     html += infoRow('Switch Uplinks', switchLinks);
     html += '</div>';
 
-    // VLAN info if available
+    // VLAN info
     const vlans = swDev.vlans || [];
     if (vlans.length > 0) {
         html += '<div class="info-panel">';
@@ -146,8 +85,8 @@ NM.views.renderSwitch = function(switchId) {
             const remoteDev = (topology.devices || []).find(d => d.id === remoteDevId);
             const remoteName = remoteDev ? (remoteDev.system_name || remoteDev.id) : remoteDevId;
             const remoteType = remoteDev ? (remoteDev.type || 'unknown') : 'unknown';
-            const status = link.oper_status || '—';
-            const speed = link.speed || '—';
+            const status = link.oper_status || '\u2014';
+            const speed = link.speed || '\u2014';
 
             html += '<tr class="conn-row" data-remote-id="' + esc(remoteDevId) + '" data-remote-type="' + esc(remoteType) + '">';
             html += '<td>' + esc(localPort) + '</td>';
@@ -166,17 +105,18 @@ NM.views.renderSwitch = function(switchId) {
 
     container.innerHTML = html;
 
-    // Wire click events on port slots
-    container.querySelectorAll('.port-slot.connected').forEach(slot => {
-        slot.addEventListener('click', () => {
-            const remoteId = slot.dataset.remoteId;
-            const remoteType = slot.dataset.remoteType;
+    // Wire SVG port clicks
+    container.querySelectorAll('.svg-port[data-remote-id]').forEach(port => {
+        port.addEventListener('click', () => {
+            const remoteId = port.dataset.remoteId;
+            const remoteType = port.dataset.remoteType;
+            if (!remoteId) return;
             if (remoteType === 'switch') NM.state.ViewManager.navigateTo('switch', remoteId);
             else if (remoteType === 'host') NM.state.ViewManager.navigateTo('host', remoteId);
         });
     });
 
-    // Wire click events on connection rows
+    // Wire connection table rows
     container.querySelectorAll('.conn-row').forEach(row => {
         row.addEventListener('click', () => {
             const remoteId = row.dataset.remoteId;
@@ -185,7 +125,170 @@ NM.views.renderSwitch = function(switchId) {
             else if (remoteType === 'host') NM.state.ViewManager.navigateTo('host', remoteId);
         });
     });
+
+    // Wire SVG port hover tooltips
+    container.querySelectorAll('.svg-port').forEach(port => {
+        port.addEventListener('mouseenter', (e) => showSvgTooltip(e, port));
+        port.addEventListener('mouseleave', hideSvgTooltip);
+    });
 };
+
+function buildFrontPanelSVG(swDev, ifaces, portMap, role, ifacesUp, hostCount, esc) {
+    const portCount = ifaces.length;
+    const cols = Math.min(portCount, Math.max(24, portCount));
+    const rows = Math.ceil(portCount / cols);
+    const actualCols = Math.ceil(portCount / rows);
+
+    const portW = 28;
+    const portH = 18;
+    const portGapX = 4;
+    const portGapY = 6;
+    const paddingX = 80;
+    const paddingY = 50;
+    const panelW = paddingX * 2 + actualCols * (portW + portGapX) - portGapX;
+    const panelH = paddingY + rows * (portH + portGapY) - portGapY + 40;
+
+    const colors = { switch: '#0078d4', host: '#44b700', bmc: '#f7630c', unknown: '#8a8886' };
+
+    let svg = '<div class="switch-svg-container">';
+    svg += '<svg class="switch-front-panel" viewBox="0 0 ' + panelW + ' ' + panelH + '" preserveAspectRatio="xMidYMid meet">';
+
+    // Chassis body
+    const chassisColor = role === 'spine' ? '#1e2a3a' : '#252423';
+    const borderColor = role === 'spine' ? '#2899f5' : '#0078d4';
+    svg += '<rect x="2" y="2" width="' + (panelW - 4) + '" height="' + (panelH - 4) + '" rx="10" ry="10" ';
+    svg += 'fill="' + chassisColor + '" stroke="' + borderColor + '" stroke-width="2.5"/>';
+
+    // Ventilation grille (decorative)
+    for (let i = 0; i < 3; i++) {
+        const gx = 16 + i * 14;
+        svg += '<rect x="' + gx + '" y="' + (panelH / 2 - 12) + '" width="3" height="24" rx="1" fill="#3a3a3a" opacity="0.5"/>';
+    }
+
+    // Nameplate (top-left inside chassis)
+    svg += '<text x="' + paddingX + '" y="28" font-size="13" font-weight="600" fill="#ffffff" font-family="Segoe UI, sans-serif">';
+    svg += esc(swDev.system_name || swDev.id);
+    svg += '</text>';
+
+    // Summary line
+    let summary = role.toUpperCase() + ' \u00B7 ' + ifacesUp + '/' + ifaces.length + ' UP';
+    if (hostCount > 0) summary += ' \u00B7 ' + hostCount + ' hosts';
+    svg += '<text x="' + paddingX + '" y="42" font-size="9" fill="#8a8886" font-family="Segoe UI, sans-serif">';
+    svg += esc(summary);
+    svg += '</text>';
+
+    // Health bar
+    const healthBarX = paddingX;
+    const healthBarY = panelH - 14;
+    const healthBarW = panelW - paddingX * 2;
+    const pct = Math.round((ifacesUp / Math.max(ifaces.length, 1)) * 100);
+    const healthColor = pct > 80 ? '#4CAF50' : pct > 50 ? '#FF9800' : '#e94560';
+    svg += '<rect x="' + healthBarX + '" y="' + healthBarY + '" width="' + healthBarW + '" height="4" rx="2" fill="#3a3a3a"/>';
+    svg += '<rect x="' + healthBarX + '" y="' + healthBarY + '" width="' + Math.round(healthBarW * pct / 100) + '" height="4" rx="2" fill="' + healthColor + '"/>';
+
+    // LED indicator (top-right)
+    const ledColor = ifacesUp > 0 ? '#4CAF50' : '#e94560';
+    svg += '<circle cx="' + (panelW - 24) + '" cy="20" r="5" fill="' + ledColor + '"/>';
+    svg += '<circle cx="' + (panelW - 24) + '" cy="20" r="3" fill="' + ledColor + '" opacity="0.5"/>';
+
+    // Ports in rows
+    const portStartY = paddingY;
+    for (let i = 0; i < portCount; i++) {
+        const iface = ifaces[i];
+        const portName = iface.name || '';
+        const conn = portMap[portName];
+        const isUp = iface.oper_status === 'UP';
+
+        const col = i % actualCols;
+        const row = Math.floor(i / actualCols);
+        const px = paddingX + col * (portW + portGapX);
+        const py = portStartY + row * (portH + portGapY);
+
+        let fillColor = '#484644';
+        if (!isUp) fillColor = '#2a2a2a';
+        else if (conn) fillColor = colors[conn.remoteType] || colors.unknown;
+
+        const borderCol = conn ? (colors[conn.remoteType] || '#605e5c') : (isUp ? '#605e5c' : '#3a3a3a');
+        const opacity = isUp ? '1' : '0.4';
+
+        svg += '<g class="svg-port" data-port="' + esc(portName) + '"';
+        if (conn) {
+            svg += ' data-remote-id="' + esc(conn.remoteId) + '"';
+            svg += ' data-remote-type="' + esc(conn.remoteType) + '"';
+            svg += ' data-remote-name="' + esc(conn.remoteName) + '"';
+            svg += ' data-remote-port="' + esc(conn.remotePort) + '"';
+            svg += ' data-speed="' + esc(conn.speed || '') + '"';
+        }
+        svg += ' data-status="' + (isUp ? 'UP' : 'DOWN') + '"';
+        svg += ' style="cursor:' + (conn ? 'pointer' : 'default') + ';opacity:' + opacity + '">';
+
+        svg += '<rect x="' + px + '" y="' + py + '" width="' + portW + '" height="' + portH + '" rx="3" ';
+        svg += 'fill="' + fillColor + '" stroke="' + borderCol + '" stroke-width="1.2"/>';
+
+        // Port label (short)
+        const shortName = portName.replace(/.*\//, '').replace(/Ethernet/, 'E').substring(0, 4);
+        svg += '<text x="' + (px + portW / 2) + '" y="' + (py + portH / 2 + 3.5) + '" ';
+        svg += 'font-size="7" fill="#d2d0ce" text-anchor="middle" font-family="Cascadia Code, Consolas, monospace">';
+        svg += esc(shortName);
+        svg += '</text>';
+
+        svg += '</g>';
+    }
+
+    svg += '</svg>';
+
+    // Legend below SVG
+    svg += '<div class="port-legend">';
+    svg += '<div class="port-legend-item"><div class="port-legend-swatch" style="border-color:#0078d4;background:rgba(0,120,212,0.2)"></div>Switch</div>';
+    svg += '<div class="port-legend-item"><div class="port-legend-swatch" style="border-color:#44b700;background:rgba(68,183,0,0.2)"></div>Host</div>';
+    svg += '<div class="port-legend-item"><div class="port-legend-swatch" style="border-color:#f7630c;background:rgba(247,99,12,0.2)"></div>BMC</div>';
+    svg += '<div class="port-legend-item"><div class="port-legend-swatch" style="border-color:#8a8886;background:rgba(138,136,134,0.2)"></div>Unknown</div>';
+    svg += '<div class="port-legend-item"><div class="port-legend-swatch" style="border-color:#3a3a3a;background:#2a2a2a"></div>Down</div>';
+    svg += '</div>';
+    svg += '</div>';
+
+    return svg;
+}
+
+function showSvgTooltip(e, port) {
+    let tooltip = document.getElementById('svg-port-tooltip');
+    if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'svg-port-tooltip';
+        tooltip.className = 'port-hover-tooltip';
+        document.body.appendChild(tooltip);
+    }
+
+    const esc = NM.core.escapeHtml;
+    const portName = port.dataset.port || '';
+    const status = port.dataset.status || '';
+    const remoteId = port.dataset.remoteId || '';
+    const remoteName = port.dataset.remoteName || '';
+    const remotePort = port.dataset.remotePort || '';
+    const remoteType = port.dataset.remoteType || '';
+    const speed = port.dataset.speed || '';
+
+    let html = '<div class="port-tooltip-row"><span class="port-tooltip-label">Port:</span><span class="port-tooltip-value">' + esc(portName) + '</span></div>';
+    html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Status:</span><span class="port-tooltip-value">' + esc(status) + '</span></div>';
+    if (remoteId) {
+        html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Connected to:</span><span class="port-tooltip-value">' + esc(remoteName) + '</span></div>';
+        html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Remote port:</span><span class="port-tooltip-value">' + esc(remotePort) + '</span></div>';
+        html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Type:</span><span class="port-tooltip-value">' + esc(remoteType) + '</span></div>';
+        if (speed) html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Speed:</span><span class="port-tooltip-value">' + esc(speed) + '</span></div>';
+    }
+
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+
+    const rect = port.getBoundingClientRect();
+    tooltip.style.left = (rect.right + 8) + 'px';
+    tooltip.style.top = (rect.top - 4) + 'px';
+}
+
+function hideSvgTooltip() {
+    const tooltip = document.getElementById('svg-port-tooltip');
+    if (tooltip) tooltip.style.display = 'none';
+}
 
 function infoRow(label, value) {
     const esc = NM.core.escapeHtml;
