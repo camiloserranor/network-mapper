@@ -123,3 +123,20 @@ func NormalizeInterfaceName(name string) string {
 	}
 	return name
 }
+
+// GetBool extracts a boolean value from a map.
+func GetBool(m map[string]interface{}, key string) bool {
+	v, ok := m[key]
+	if !ok {
+		return false
+	}
+	switch b := v.(type) {
+	case bool:
+		return b
+	case string:
+		return b == "true" || b == "True" || b == "1"
+	case float64:
+		return b != 0
+	}
+	return false
+}

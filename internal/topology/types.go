@@ -30,7 +30,26 @@ type Device struct {
 	MemoryTotal       uint64            `json:"memory_total,omitempty"`      // bytes
 	VLANs             []int             `json:"vlans,omitempty"`             // VLAN IDs this device participates in
 	Interfaces        []Interface       `json:"interfaces,omitempty"`
+	BGPSessions       []BGPSession      `json:"bgp_sessions,omitempty"`
 	Annotations       map[string]string `json:"annotations,omitempty"`
+}
+
+// BGPSession holds the state of a BGP peering session on a device.
+type BGPSession struct {
+	NeighborAddress        string `json:"neighbor_address"`
+	PeerAS                 uint32 `json:"peer_as"`
+	LocalAS                uint32 `json:"local_as,omitempty"`
+	PeerType               string `json:"peer_type,omitempty"`    // INTERNAL, EXTERNAL
+	Description            string `json:"description,omitempty"`
+	SessionState           string `json:"session_state"`          // ESTABLISHED, IDLE, ACTIVE, etc.
+	Enabled                bool   `json:"enabled"`
+	EstablishedTransitions uint64 `json:"established_transitions,omitempty"`
+	LastEstablished        string `json:"last_established,omitempty"`
+	VRFName                string `json:"vrf_name,omitempty"`
+	MessagesReceived       int64  `json:"messages_received,omitempty"`
+	MessagesSent           int64  `json:"messages_sent,omitempty"`
+	PrefixesReceived       int64  `json:"prefixes_received,omitempty"`
+	PrefixesSent           int64  `json:"prefixes_sent,omitempty"`
 }
 
 // Interface represents a network interface on a device.
