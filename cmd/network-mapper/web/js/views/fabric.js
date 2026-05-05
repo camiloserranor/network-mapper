@@ -126,7 +126,7 @@ NM.views.renderFabric = function() {
         const cols = Math.ceil(children.length / rows);
         const totalW = cols * (portSize + portGap) - portGap;
         const totalH = rows * (portSize + portGap) - portGap;
-        const labelOffset = 8; // push ports down to leave room for label
+        const labelOffset = 0;
 
         children.forEach((child, i) => {
             const col = i % cols;
@@ -217,8 +217,8 @@ function computeLayout(switches, portMaps, topology, elements) {
     }
 
     // Position switches: spines top row, leaves bottom row (horizontal rack layout)
-    const hGap = 380;
-    const vGap = 120;
+    const hGap = 450;
+    const vGap = 150;
 
     function rowCenters(ids, yPos) {
         const totalWidth = (ids.length - 1) * hGap;
