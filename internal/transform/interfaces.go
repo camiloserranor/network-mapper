@@ -9,7 +9,8 @@ import (
 
 // Interface gNMI paths.
 const (
-	InterfacesPathOpenConfig = "/openconfig-interfaces:interfaces/interface"
+	InterfacesPathOpenConfig      = "/openconfig-interfaces:interfaces/interface/state"
+	InterfacesCountersPathOpenConfig = "/openconfig-interfaces:interfaces/interface/state/counters"
 )
 
 // ParseInterfacesOpenConfig extracts interface state from OpenConfig gNMI responses.
@@ -143,4 +144,44 @@ func normalizeSpeed(s string) string {
 		return fmt.Sprintf("%dM", mbps)
 	}
 	return s
+}
+
+// MergeInterfaceCounters merges counter data from a separate gNMI response into
+// existing interface objects. This supports the pattern where state and counters
+// are fetched from different paths (e.g., .../state vs .../state/counters).
+func MergeInterfaceCounters(ifaces []topology.Interface, notifs []gnmi.Notification) {
+	// Build lookup by normalized name
+	ifaceByName := make(map[string]*topology.Interface, len(ifaces))
+	for i := range ifaces {
+		ifaceByName[ifaces[i].Name] = &ifaces[i]
+	}
+
+	for _, n := range notifs {
+		for _, u := range n.Updates {
+			ifaceName := NormalizeInterfaceName(ExtractPathKey(u.Path, "name"))
+			if ifaceName == "" {
+				continue
+			}
+			iface, ok := ifaceByName[ifaceName]
+			if !ok {
+				continue
+			}
+
+			vals, ok := u.Value.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			iface.Counters = &topology.IfaceCounters{
+				InOctets:    GetNumber(vals, "in-octets"),
+				OutOctets:   GetNumber(vals, "out-octets"),
+				InPkts:      GetNumber(vals, "in-pkts") + GetNumber(vals, "in-unicast-pkts") + GetNumber(vals, "in-broadcast-pkts") + GetNumber(vals, "in-multicast-pkts"),
+				OutPkts:     GetNumber(vals, "out-pkts") + GetNumber(vals, "out-unicast-pkts") + GetNumber(vals, "out-broadcast-pkts") + GetNumber(vals, "out-multicast-pkts"),
+				InErrors:    GetNumber(vals, "in-errors"),
+				OutErrors:   GetNumber(vals, "out-errors"),
+				InDiscards:  GetNumber(vals, "in-discards"),
+				OutDiscards: GetNumber(vals, "out-discards"),
+			}
+		}
+	}
 }

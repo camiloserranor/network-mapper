@@ -38,6 +38,22 @@ NM.views.renderSwitch = function(switchId) {
     if (swDev.uptime) html += infoRow('Uptime', swDev.uptime);
     html += '</div>';
 
+    // Resource utilization
+    if (swDev.cpu_utilization || swDev.memory_total) {
+        html += '<div class="info-panel">';
+        html += '<div class="info-panel-title">Resources</div>';
+        if (swDev.cpu_utilization) {
+            html += infoRow('CPU', swDev.cpu_utilization.toFixed(1) + '%');
+        }
+        if (swDev.memory_total) {
+            const memPct = ((swDev.memory_used || 0) / swDev.memory_total * 100).toFixed(1);
+            const memUsedGB = ((swDev.memory_used || 0) / (1024*1024*1024)).toFixed(1);
+            const memTotalGB = (swDev.memory_total / (1024*1024*1024)).toFixed(1);
+            html += infoRow('Memory', memUsedGB + ' / ' + memTotalGB + ' GB (' + memPct + '%)');
+        }
+        html += '</div>';
+    }
+
     // Interface summary
     html += '<div class="info-panel">';
     html += '<div class="info-panel-title">Interface Summary</div>';
