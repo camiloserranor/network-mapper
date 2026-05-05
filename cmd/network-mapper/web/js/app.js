@@ -369,9 +369,7 @@ function renderFabricView() {
         });
     }
 
-    // Render with preset positions (manual placement for compact view)
-    // Classify: switches with the most total links are likely leaves (they connect to hosts/unknowns)
-    // Switches that only connect to other switches are spines
+    // Classify switches for spine/leaf placement
     const switchLinkCounts = {};
     const switchToSwitchCounts = {};
     for (const sw of switches) {
@@ -390,37 +388,44 @@ function renderFabricView() {
 
     // Spine = switch where ALL links go to other switches (or very few total links)
     // Leaf = switch with many non-switch connections
-    const spines = [];
-    const leaves = [];
+    const spineIds = [];
+    const leafIds = [];
     for (const sw of switches) {
         const total = switchLinkCounts[sw.id] || 0;
         const toSwitch = switchToSwitchCounts[sw.id] || 0;
         if (total <= toSwitch + 1) {
-            spines.push(sw.id);
+            spineIds.push(sw.id);
         } else {
-            leaves.push(sw.id);
+            leafIds.push(sw.id);
         }
     }
-    // If all are classified the same, just split by link count (fewer links = spine)
-    if (spines.length === 0 || leaves.length === 0) {
-        const sorted = [...switches].sort((a, b) => 
+    // If all classified the same, split by link count (fewer = spine)
+    if (spineIds.length === 0 || leafIds.length === 0) {
+        const sorted = [...switches].sort((a, b) =>
             (switchLinkCounts[a.id] || 0) - (switchLinkCounts[b.id] || 0)
         );
-        spines.length = 0;
-        leaves.length = 0;
+        spineIds.length = 0;
+        leafIds.length = 0;
         const splitAt = Math.max(1, Math.floor(sorted.length / 2));
         sorted.forEach((sw, i) => {
-            if (i < splitAt) spines.push(sw.id);
-            else leaves.push(sw.id);
+            if (i < splitAt) spineIds.push(sw.id);
+            else leafIds.push(sw.id);
         });
     }
 
-    // Calculate positions: compact grid
-    const hGap = 160;  // horizontal gap between switches
-    const vGap = 200;  // vertical gap between spine and leaf rows
+    // Update roles on elements
+    for (const el of elements) {
+        if (el.data && el.data.type === 'switch-parent') {
+            el.data.role = spineIds.includes(el.data.id) ? 'spine' : 'leaf';
+        }
+    }
 
-    // Center each row
-    function rowPositions(ids, yPos) {
+    // Calculate switch center positions
+    // hGap = space between switch centers, vGap = space between rows
+    const hGap = 220;
+    const vGap = 250;
+
+    function rowCenters(ids, yPos) {
         const totalWidth = (ids.length - 1) * hGap;
         const startX = -totalWidth / 2;
         const positions = {};
@@ -430,21 +435,22 @@ function renderFabricView() {
         return positions;
     }
 
-    const spinePositions = rowPositions(spines, 0);
-    const leafPositions = rowPositions(leaves, vGap);
-    const allPositions = { ...spinePositions, ...leafPositions };
+    const spinePositions = rowCenters(spineIds, 0);
+    const leafPositions = rowCenters(leafIds, vGap);
+    const switchCenters = { ...spinePositions, ...leafPositions };
 
-    // Set positions on parent switch elements
+    // Set positions on PORT nodes (children) — parent position is derived from children
+    // Arrange ports in 2 columns around the switch center
+    const portSize = 12;
+    const portGap = 4;
     for (const el of elements) {
-        if (el.data && el.data.type === 'switch-parent' && allPositions[el.data.id]) {
-            el.position = allPositions[el.data.id];
-        }
-    }
-
-    // Update roles on elements based on our classification
-    for (const el of elements) {
-        if (el.data && el.data.type === 'switch-parent') {
-            el.data.role = spines.includes(el.data.id) ? 'spine' : 'leaf';
+        if (el.data && el.data.type === 'port') {
+            const swId = el.data.parent;
+            const center = switchCenters[swId];
+            if (center) {
+                // Temporarily place all ports at center; arrangePortsInRows will fix
+                el.position = { x: center.x, y: center.y };
+            }
         }
     }
 
@@ -452,8 +458,36 @@ function renderFabricView() {
 
     const cy = NetworkGraph.getInstance();
 
-    // Position ports inside parents after render
-    NetworkGraph.arrangePortsInRows();
+    // Now properly arrange ports inside each switch using the calculated centers
+    const parents = cy.nodes('[type="switch-parent"]');
+    parents.forEach((parent) => {
+        const swId = parent.data('id');
+        const center = switchCenters[swId];
+        if (!center) return;
+
+        const children = parent.children().sort((a, b) => {
+            const aName = a.data('portName') || '';
+            const bName = b.data('portName') || '';
+            return aName.localeCompare(bName, undefined, { numeric: true });
+        });
+        const count = children.length;
+        if (count === 0) return;
+
+        const cols = 2;
+        const rows = Math.ceil(count / cols);
+        const totalHeight = rows * (portSize + portGap) - portGap;
+        const totalWidth = cols * (portSize + portGap) - portGap;
+
+        children.forEach((child, i) => {
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            const x = center.x - totalWidth / 2 + col * (portSize + portGap) + portSize / 2;
+            const y = center.y - totalHeight / 2 + row * (portSize + portGap) + portSize / 2;
+            child.position({ x, y });
+        });
+    });
+
+    cy.fit(cy.elements(), 30);
 
     // Remove previous fabric-specific handlers to avoid stacking
     cy.off('mouseover', 'node[type="port"]');
@@ -489,8 +523,6 @@ function renderFabricView() {
     cy.on('tap', 'node[type="switch-parent"]', (evt) => {
         ViewManager.navigateTo('switch', evt.target.data('id'));
     });
-
-    setTimeout(() => NetworkGraph.fitToScreen(), 100);
 }
 
 // Port tooltip helpers
