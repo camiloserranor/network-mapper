@@ -18,15 +18,16 @@ import (
 
 // switchResult holds all data collected from a single switch.
 type switchResult struct {
-	SwitchName string
-	SwitchID   string
-	Device     topology.Device
-	Neighbors  []transform.LLDPNeighbor
-	Interfaces []topology.Interface
-	MACEntries []transform.MACEntry
-	ARPEntries []transform.ARPEntry
-	VLANs      []topology.VLAN
-	Errors     []topology.PartialError
+	SwitchName   string
+	SwitchID     string
+	Device       topology.Device
+	Neighbors    []transform.LLDPNeighbor
+	Interfaces   []topology.Interface
+	MACEntries   []transform.MACEntry
+	ARPEntries   []transform.ARPEntry
+	VLANs        []topology.VLAN
+	BGPNeighbors []transform.BGPNeighbor
+	Errors       []topology.PartialError
 }
 
 // Collect connects to all configured switches, queries gNMI for LLDP, interface,
@@ -143,6 +144,9 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 
 	// 7. Collect VLAN configuration
 	collectVLANs(ctx, client, sw, &result)
+
+	// 8. Collect BGP neighbor state
+	collectBGP(ctx, client, sw, &result)
 
 	log.Printf("  %s: collection completed in %s", sw.Name, time.Since(start))
 
@@ -315,6 +319,37 @@ func collectVLANs(ctx context.Context, client *gnmi.Client, sw config.SwitchConf
 	log.Printf("  %s: %d VLANs", sw.Name, len(result.VLANs))
 }
 
+func collectBGP(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
+	var notifs []gnmi.Notification
+	var err error
+
+	switch sw.Platform {
+	case "nxos":
+		notifs, err = client.GetWithFallback(ctx, transform.BGPNeighborsPathNXOS)
+		if err != nil {
+			log.Printf("  %s: BGP data unavailable: %v", sw.Name, err)
+			result.Errors = append(result.Errors, topology.PartialError{
+				Switch: sw.Name, Phase: "bgp", Message: err.Error(),
+			})
+			return
+		}
+		result.BGPNeighbors = transform.ParseBGPNXOS(notifs)
+	default:
+		// OpenConfig / SONiC
+		notifs, err = client.GetWithFallback(ctx, transform.BGPNeighborsPathOpenConfig)
+		if err != nil {
+			log.Printf("  %s: BGP data unavailable: %v", sw.Name, err)
+			result.Errors = append(result.Errors, topology.PartialError{
+				Switch: sw.Name, Phase: "bgp", Message: err.Error(),
+			})
+			return
+		}
+		result.BGPNeighbors = transform.ParseBGPOpenConfig(notifs)
+	}
+
+	log.Printf("  %s: %d BGP neighbors", sw.Name, len(result.BGPNeighbors))
+}
+
 func buildTopology(results []switchResult, now time.Time, reverseDNS bool) *topology.Topology {
 	topo := &topology.Topology{
 		SchemaVersion: "1.0",
@@ -336,6 +371,7 @@ func buildTopology(results []switchResult, now time.Time, reverseDNS bool) *topo
 		// Add the switch itself (skip if connect failed and no device was built)
 		switchDev := r.Device
 		switchDev.Interfaces = r.Interfaces
+		switchDev.BGPSessions = bgpNeighborsToSessions(r.BGPNeighbors)
 		if switchDev.ID != "" {
 			deviceMap[switchDev.ID] = &switchDev
 		}
@@ -517,4 +553,31 @@ func extractHost(address string) string {
 		}
 	}
 	return address
+}
+
+// bgpNeighborsToSessions converts transform.BGPNeighbor to topology.BGPSession.
+func bgpNeighborsToSessions(neighbors []transform.BGPNeighbor) []topology.BGPSession {
+	if len(neighbors) == 0 {
+		return nil
+	}
+	sessions := make([]topology.BGPSession, len(neighbors))
+	for i, n := range neighbors {
+		sessions[i] = topology.BGPSession{
+			NeighborAddress:        n.NeighborAddress,
+			PeerAS:                 n.PeerAS,
+			LocalAS:                n.LocalAS,
+			PeerType:               n.PeerType,
+			Description:            n.Description,
+			SessionState:           n.SessionState,
+			Enabled:                n.Enabled,
+			EstablishedTransitions: n.EstablishedTransitions,
+			LastEstablished:        n.LastEstablished,
+			VRFName:                n.VRFName,
+			MessagesReceived:       n.MessagesReceived,
+			MessagesSent:           n.MessagesSent,
+			PrefixesReceived:       n.PrefixesReceived,
+			PrefixesSent:           n.PrefixesSent,
+		}
+	}
+	return sessions
 }
