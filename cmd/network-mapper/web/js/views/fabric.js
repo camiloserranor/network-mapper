@@ -26,13 +26,15 @@ NM.views.renderFabric = function() {
         elements.push({
             data: {
                 id: sw.id,
-                label: (sw.system_name || sw.id) + (hCount > 0 ? ' (' + hCount + ' hosts)' : ''),
+                label: (sw.system_name || sw.id) + '\n' + (hCount > 0 ? hCount + ' hosts' : '') + (sw.management_address ? ' \u00B7 ' + sw.management_address : ''),
                 type: 'switch-parent',
                 role: role,
                 deviceType: 'switch',
                 system_name: sw.system_name || '',
                 interfaces_up: ifacesUp,
                 interfaces_total: ifaces.length,
+                hostCount: hCount,
+                mgmtAddress: sw.management_address || '',
             },
         });
 
@@ -76,10 +78,15 @@ NM.views.renderFabric = function() {
                 source: sourcePort,
                 target: targetPort,
                 type: 'switch-link',
+                localDevice: link.local_device,
+                remoteDevice: link.remote_device,
                 localPort: link.local_port || '',
                 remotePort: link.remote_port || '',
                 speed: link.speed || '',
                 operStatus: link.oper_status || 'UP',
+                mtu: link.mtu || '',
+                sourceType: link.source_type || '',
+                discoveredAt: link.discovered_at || '',
             },
         });
     }
@@ -223,6 +230,7 @@ function wireInteractions(cy) {
     cy.off('mouseout', 'node[type="port"]');
     cy.off('tap', 'node[type="port"]');
     cy.off('tap', 'node[type="switch-parent"]');
+    cy.off('tap', 'edge[type="switch-link"]');
 
     cy.on('mouseover', 'node[type="port"]', (evt) => {
         const node = evt.target;
@@ -246,6 +254,9 @@ function wireInteractions(cy) {
     });
     cy.on('tap', 'node[type="switch-parent"]', (evt) => {
         NM.state.ViewManager.navigateTo('switch', evt.target.data('id'));
+    });
+    cy.on('tap', 'edge[type="switch-link"]', (evt) => {
+        showLinkDetail(evt.target);
     });
 }
 
@@ -281,4 +292,48 @@ function showFabricTooltip(node) {
 function hideFabricTooltip() {
     const tooltip = document.getElementById('port-hover-tooltip');
     if (tooltip) tooltip.style.display = 'none';
+}
+
+function showLinkDetail(edge) {
+    const data = edge.data();
+    const esc = NM.core.escapeHtml;
+    const topology = NM.state.topology;
+
+    // Find device names
+    const localDev = (topology.devices || []).find(d => d.id === data.localDevice);
+    const remoteDev = (topology.devices || []).find(d => d.id === data.remoteDevice);
+    const localName = localDev ? (localDev.system_name || localDev.id) : data.localDevice;
+    const remoteName = remoteDev ? (remoteDev.system_name || remoteDev.id) : data.remoteDevice;
+
+    let tooltip = document.getElementById('port-hover-tooltip');
+    if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'port-hover-tooltip';
+        tooltip.className = 'port-hover-tooltip';
+        document.body.appendChild(tooltip);
+    }
+
+    let html = '<div class="port-tooltip-row"><span class="port-tooltip-label">Link</span><span class="port-tooltip-value" style="color:#0078d4">\u2501</span></div>';
+    html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Source:</span><span class="port-tooltip-value">' + esc(localName) + ' : ' + esc(data.localPort) + '</span></div>';
+    html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Target:</span><span class="port-tooltip-value">' + esc(remoteName) + ' : ' + esc(data.remotePort) + '</span></div>';
+    if (data.operStatus) html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Status:</span><span class="port-tooltip-value">' + esc(data.operStatus) + '</span></div>';
+    if (data.speed) html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Speed:</span><span class="port-tooltip-value">' + esc(data.speed) + '</span></div>';
+    if (data.mtu) html += '<div class="port-tooltip-row"><span class="port-tooltip-label">MTU:</span><span class="port-tooltip-value">' + esc(data.mtu) + '</span></div>';
+    if (data.sourceType) html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Discovery:</span><span class="port-tooltip-value">' + esc(data.sourceType) + '</span></div>';
+    if (data.discoveredAt) html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Discovered:</span><span class="port-tooltip-value">' + esc(data.discoveredAt) + '</span></div>';
+
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+
+    const midpoint = edge.renderedMidpoint();
+    const cyContainer = document.getElementById('cy');
+    const rect = cyContainer.getBoundingClientRect();
+    tooltip.style.left = (rect.left + midpoint.x + 12) + 'px';
+    tooltip.style.top = (rect.top + midpoint.y - 10) + 'px';
+
+    // Dismiss on next tap/click anywhere
+    setTimeout(() => {
+        const dismiss = () => { hideFabricTooltip(); document.removeEventListener('click', dismiss); };
+        document.addEventListener('click', dismiss, { once: true });
+    }, 100);
 }
