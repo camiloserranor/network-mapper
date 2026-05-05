@@ -135,8 +135,11 @@ NM.views.renderSwitch = function(switchId) {
 
 function buildFrontPanelSVG(swDev, ifaces, portMap, role, ifacesUp, hostCount, esc) {
     const portCount = ifaces.length;
-    const cols = Math.min(portCount, Math.max(24, portCount));
-    const rows = Math.ceil(portCount / cols);
+    if (portCount === 0) {
+        return '<div class="switch-svg-container"><p style="color:var(--text-secondary);padding:16px">No interface data available</p></div>';
+    }
+
+    const rows = portCount <= 48 ? 2 : Math.ceil(portCount / 24);
     const actualCols = Math.ceil(portCount / rows);
 
     const portW = 28;
