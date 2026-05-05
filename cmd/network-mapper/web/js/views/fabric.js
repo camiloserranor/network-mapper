@@ -24,21 +24,19 @@ NM.views.renderFabric = function() {
         const ifacesUp = ifaces.filter(i => i.oper_status === 'UP').length;
 
         const healthPct = Math.round((ifacesUp / Math.max(ifaces.length, 1)) * 100);
-        let labelParts = [sw.system_name || sw.id];
-        if (hCount > 0) labelParts.push(hCount + ' hosts');
-        labelParts.push(healthPct + '% healthy');
 
         elements.push({
             data: {
                 id: sw.id,
-                label: labelParts.join('\n'),
+                label: '',
                 type: 'switch-parent',
                 role: role,
                 deviceType: 'switch',
-                system_name: sw.system_name || '',
+                system_name: sw.system_name || sw.id,
                 interfaces_up: ifacesUp,
                 interfaces_total: ifaces.length,
                 hostCount: hCount,
+                healthPct: healthPct,
                 mgmtAddress: sw.management_address || '',
             },
         });
@@ -142,6 +140,13 @@ NM.views.renderFabric = function() {
 
     // Apply health-based pie background on switch nodes
     applyHealthStyles(cy);
+
+    // Render rich info overlays inside each switch (repositioned on zoom/pan)
+    renderSwitchInfoOverlays(cy);
+    cy.on('viewport', () => repositionOverlays(cy));
+
+    // Add legend panel
+    addLegendPanel();
 
     wireInteractions(cy);
 };
@@ -253,6 +258,97 @@ function applyHealthStyles(cy) {
             'pie-2-background-opacity': 0.15,
         });
     });
+}
+
+function renderSwitchInfoOverlays(cy) {
+    // Remove previous overlays
+    document.querySelectorAll('.switch-info-overlay').forEach(el => el.remove());
+
+    const container = document.getElementById('cy');
+    if (!container) return;
+
+    cy.nodes('[type="switch-parent"]').forEach((node) => {
+        const data = node.data();
+        const pct = data.healthPct || 0;
+        const healthColor = pct > 80 ? '#4CAF50' : pct > 50 ? '#FF9800' : '#e94560';
+
+        const overlay = document.createElement('div');
+        overlay.className = 'switch-info-overlay';
+        overlay.dataset.nodeId = data.id;
+        overlay.style.position = 'absolute';
+        overlay.style.pointerEvents = 'none';
+        overlay.style.zIndex = '1';
+
+        overlay.innerHTML =
+            '<div class="sio-name">' + NM.core.escapeHtml(data.system_name) + '</div>' +
+            '<div class="sio-stats">' +
+                (data.hostCount > 0 ? '<span class="sio-badge sio-hosts">' + data.hostCount + ' hosts</span>' : '') +
+                '<span class="sio-badge sio-health" style="border-color:' + healthColor + ';color:' + healthColor + '">' + pct + '%</span>' +
+            '</div>';
+
+        container.appendChild(overlay);
+    });
+
+    repositionOverlays(cy);
+}
+
+function repositionOverlays(cy) {
+    const container = document.getElementById('cy');
+    if (!container) return;
+    const containerRect = container.getBoundingClientRect();
+
+    document.querySelectorAll('.switch-info-overlay').forEach((overlay) => {
+        const nodeId = overlay.dataset.nodeId;
+        const node = cy.getElementById(nodeId);
+        if (!node || node.length === 0) return;
+
+        const bb = node.renderedBoundingBox();
+        // Position at bottom of the switch node, inside the boundary
+        overlay.style.left = (bb.x1 + 4) + 'px';
+        overlay.style.top = (bb.y2 - 28) + 'px';
+        overlay.style.width = (bb.w - 8) + 'px';
+
+        // Hide if too small to read
+        const zoom = cy.zoom();
+        overlay.style.display = zoom < 0.4 ? 'none' : '';
+        overlay.style.transform = 'scale(' + Math.min(1, Math.max(0.6, zoom)) + ')';
+        overlay.style.transformOrigin = 'left bottom';
+    });
+}
+
+function addLegendPanel() {
+    // Remove previous
+    const existing = document.getElementById('fabric-legend');
+    if (existing) existing.remove();
+
+    const container = document.getElementById('cy');
+    if (!container) return;
+
+    const legend = document.createElement('div');
+    legend.id = 'fabric-legend';
+    legend.className = 'fabric-legend';
+    legend.innerHTML =
+        '<div class="legend-title">Legend</div>' +
+        '<div class="legend-section">' +
+            '<div class="legend-subtitle">Ports</div>' +
+            '<div class="legend-item"><span class="legend-swatch" style="background:#0078d4"></span>Switch uplink</div>' +
+            '<div class="legend-item"><span class="legend-swatch" style="background:#44b700"></span>Host connection</div>' +
+            '<div class="legend-item"><span class="legend-swatch" style="background:#f7630c"></span>BMC</div>' +
+            '<div class="legend-item"><span class="legend-swatch" style="background:#8a8886"></span>Unknown</div>' +
+            '<div class="legend-item"><span class="legend-swatch" style="background:#323130;border:1px solid #484644"></span>Down</div>' +
+        '</div>' +
+        '<div class="legend-section">' +
+            '<div class="legend-subtitle">Edges</div>' +
+            '<div class="legend-item"><span class="legend-line" style="background:#4CAF50"></span>Link UP</div>' +
+            '<div class="legend-item"><span class="legend-line dashed" style="background:#e94560"></span>Link DOWN</div>' +
+        '</div>' +
+        '<div class="legend-section">' +
+            '<div class="legend-subtitle">Switches</div>' +
+            '<div class="legend-item"><span class="legend-swatch" style="background:#1e2a3a;border:2px solid #2899f5"></span>Spine</div>' +
+            '<div class="legend-item"><span class="legend-swatch" style="background:#252423;border:2px solid #0078d4"></span>Leaf</div>' +
+        '</div>';
+
+    container.appendChild(legend);
 }
 
 function wireInteractions(cy) {

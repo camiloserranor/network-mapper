@@ -256,9 +256,10 @@ NM.graph = (() => {
             selector: 'edge[type="switch-link"]',
             style: {
                 'line-color': '#4CAF50',
-                'width': 2,
+                'width': 2.5,
                 'opacity': 0.7,
                 'curve-style': 'bezier',
+                'overlay-padding': 6,
             },
         },
         {

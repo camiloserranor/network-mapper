@@ -1294,6 +1294,115 @@ select.btn {
     color: var(--text-primary);
 }
 
+/* ---- Switch Info Overlays (fabric view) ---- */
+.switch-info-overlay {
+    font-family: 'Segoe UI', sans-serif;
+    padding: 2px 4px;
+    overflow: hidden;
+}
+
+.sio-name {
+    font-size: 10px;
+    font-weight: 600;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sio-stats {
+    display: flex;
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.sio-badge {
+    font-size: 8px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    border: 1px solid;
+    white-space: nowrap;
+}
+
+.sio-hosts {
+    color: #44b700;
+    border-color: #44b700;
+}
+
+.sio-health {
+    font-weight: 600;
+}
+
+/* ---- Fabric Legend Panel ---- */
+.fabric-legend {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(26, 26, 46, 0.92);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    color: var(--text-secondary);
+    z-index: 10;
+    pointer-events: none;
+    max-width: 160px;
+}
+
+.legend-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.legend-section {
+    margin-bottom: 8px;
+}
+
+.legend-section:last-child {
+    margin-bottom: 0;
+}
+
+.legend-subtitle {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 3px;
+    font-size: 10px;
+}
+
+.legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.legend-line {
+    width: 16px;
+    height: 2px;
+    border-radius: 1px;
+    flex-shrink: 0;
+}
+
+.legend-line.dashed {
+    background: repeating-linear-gradient(
+        90deg,
+        #e94560 0px, #e94560 4px,
+        transparent 4px, transparent 7px
+    ) !important;
+}
+
 .inv-item.active {
     background: rgba(0, 120, 212, 0.15);
     color: var(--accent);
