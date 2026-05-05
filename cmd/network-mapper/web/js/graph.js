@@ -64,29 +64,22 @@ NM.graph = (() => {
             selector: 'node[type="switch-parent"]',
             style: {
                 'shape': 'round-rectangle',
-                'background-color': '#252423',
-                'border-color': '#0078d4',
-                'border-width': 2,
-                'padding': '24px',
-                'text-valign': 'bottom',
-                'text-halign': 'center',
-                'text-margin-y': -16,
-                'font-size': '9px',
-                'font-weight': '500',
-                'color': '#d2d0ce',
-                'text-wrap': 'wrap',
-                'text-max-width': '300px',
+                'background-color': 'transparent',
+                'border-color': 'transparent',
+                'border-width': 0,
+                'padding': '0px',
+                'label': '',
                 'min-width': '100px',
                 'min-height': '30px',
+                'compound-sizing-wrt-labels': 'exclude',
             },
         },
-        // Spine switch parent (bolder border)
+        // Spine switch parent
         {
             selector: 'node[type="switch-parent"][role="spine"]',
             style: {
-                'border-color': '#2899f5',
-                'border-width': 2.5,
-                'background-color': '#1e2a3a',
+                'border-color': 'transparent',
+                'border-width': 0,
             },
         },
         // Switch hover effect (indicates clickable)
@@ -105,68 +98,52 @@ NM.graph = (() => {
                 'overlay-opacity': 0.12,
             },
         },
-        // Port nodes (small squares inside switch)
+        // Port nodes (invisible hotspots — visual ports are rendered in SVG background)
         {
             selector: 'node[type="port"]',
             style: {
-                'width': 10,
+                'width': 14,
                 'height': 10,
-                'shape': 'round-rectangle',
+                'shape': 'rectangle',
                 'label': '',
-                'background-color': '#484644',
-                'border-width': 1,
-                'border-color': '#605e5c',
-                'overlay-padding': 3,
+                'background-color': 'transparent',
+                'background-opacity': 0,
+                'border-width': 0,
+                'overlay-padding': 4,
+                'opacity': 0,
             },
         },
-        // Port connected to switch
+        // Port connection-type styles (invisible — for edge coloring reference only)
         {
             selector: 'node[type="port"][connType="switch"]',
-            style: {
-                'background-color': '#0078d4',
-                'border-color': '#2899f5',
-            },
+            style: { 'background-opacity': 0 },
         },
-        // Port connected to host
         {
             selector: 'node[type="port"][connType="host"]',
-            style: {
-                'background-color': '#44b700',
-                'border-color': '#5ed600',
-            },
+            style: { 'background-opacity': 0 },
         },
-        // Port connected to BMC
         {
             selector: 'node[type="port"][connType="bmc"]',
-            style: {
-                'background-color': '#f7630c',
-                'border-color': '#ff8c40',
-            },
+            style: { 'background-opacity': 0 },
         },
-        // Port connected to unknown
         {
             selector: 'node[type="port"][connType="unknown"]',
-            style: {
-                'background-color': '#8a8886',
-                'border-color': '#a19f9d',
-            },
+            style: { 'background-opacity': 0 },
         },
-        // Port that is down
         {
             selector: 'node[type="port"][connType="down"]',
-            style: {
-                'background-color': '#323130',
-                'border-color': '#484644',
-                'opacity': 0.4,
-            },
+            style: { 'background-opacity': 0 },
         },
-        // Port hover highlight
+        // Port hover highlight (reveals hotspot with glow)
         {
             selector: 'node[type="port"].highlight',
             style: {
-                'border-width': 2,
+                'opacity': 1,
+                'background-color': '#ffffff',
+                'background-opacity': 0.4,
+                'border-width': 1.5,
                 'border-color': '#ffffff',
-                'overlay-opacity': 0.25,
+                'overlay-opacity': 0.3,
                 'overlay-color': '#ffffff',
             },
         },
