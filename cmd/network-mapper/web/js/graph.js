@@ -89,6 +89,22 @@ NM.graph = (() => {
                 'background-color': '#1e2a3a',
             },
         },
+        // Switch hover effect (indicates clickable)
+        {
+            selector: 'node[type="switch-parent"].hover',
+            style: {
+                'border-width': 3,
+                'overlay-color': '#0078d4',
+                'overlay-opacity': 0.08,
+            },
+        },
+        {
+            selector: 'node[type="switch-parent"]:active',
+            style: {
+                'overlay-color': '#0078d4',
+                'overlay-opacity': 0.12,
+            },
+        },
         // Port nodes (small dots inside switch)
         {
             selector: 'node[type="port"]',

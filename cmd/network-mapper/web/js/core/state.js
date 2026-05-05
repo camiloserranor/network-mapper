@@ -13,12 +13,21 @@ NM.state.ViewManager = (function() {
 
     function navigateTo(view, deviceId) {
         currentView = { view, deviceId: deviceId || null };
+        hideAllTooltips();
         updateBreadcrumb();
         renderCurrentView();
     }
 
     function navigateToFabric() {
         navigateTo('fabric', null);
+    }
+
+    function hideAllTooltips() {
+        var ids = ['port-hover-tooltip', 'svg-port-tooltip'];
+        for (var i = 0; i < ids.length; i++) {
+            var el = document.getElementById(ids[i]);
+            if (el) el.style.display = 'none';
+        }
     }
 
     function updateBreadcrumb() {
