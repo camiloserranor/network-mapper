@@ -272,7 +272,8 @@ Stages marked "No" under Required are best-effort — failures are logged but do
 |----------|-----------|----------|
 | System | `/openconfig-system:system/state` | JSON_IETF |
 | LLDP | `/openconfig-lldp:lldp/interfaces/interface/neighbors` | JSON_IETF |
-| Interfaces | `/openconfig-interfaces:interfaces/interface` | JSON_IETF |
+| Interfaces | `/openconfig-interfaces:interfaces/interface/state` | JSON_IETF |
+| Interface Counters | `/openconfig-interfaces:interfaces/interface/state/counters` | JSON_IETF |
 | CPU | `/openconfig-system:system/cpus/cpu[index=ALL]/state` | JSON_IETF |
 | Memory | `/openconfig-system:system/memory/state` | JSON_IETF |
 | BGP | `/openconfig-network-instance:network-instances/network-instance/protocols/protocol/bgp/neighbors` | JSON_IETF |
