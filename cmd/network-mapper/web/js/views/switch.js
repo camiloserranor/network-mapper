@@ -59,6 +59,29 @@ NM.views.renderSwitch = function(switchId) {
         html += '</div>';
     }
 
+    // BGP sessions
+    const bgpSessions = swDev.bgp_sessions || [];
+    if (bgpSessions.length > 0) {
+        const established = bgpSessions.filter(s => s.session_state === 'ESTABLISHED').length;
+        html += '<div class="info-panel wide">';
+        html += '<div class="info-panel-title">BGP Sessions (' + established + '/' + bgpSessions.length + ' Established)</div>';
+        html += '<table class="conn-table"><thead><tr><th>Neighbor</th><th>AS</th><th>State</th><th>VRF</th><th>Pfx Rcvd</th><th>Pfx Sent</th><th>Description</th></tr></thead><tbody>';
+        for (const sess of bgpSessions) {
+            const stateClass = sess.session_state === 'ESTABLISHED' ? 'bgp-up' : 'bgp-down';
+            html += '<tr>';
+            html += '<td>' + esc(sess.neighbor_address) + '</td>';
+            html += '<td>' + (sess.peer_as || '\u2014') + '</td>';
+            html += '<td><span class="bgp-state ' + stateClass + '">' + esc(sess.session_state || 'UNKNOWN') + '</span></td>';
+            html += '<td>' + esc(sess.vrf_name || 'default') + '</td>';
+            html += '<td>' + (sess.prefixes_received || 0) + '</td>';
+            html += '<td>' + (sess.prefixes_sent || 0) + '</td>';
+            html += '<td>' + esc(sess.description || '\u2014') + '</td>';
+            html += '</tr>';
+        }
+        html += '</tbody></table>';
+        html += '</div>';
+    }
+
     // Annotations
     const annotations = swDev.annotations || {};
     const annotationKeys = Object.keys(annotations);
