@@ -99,9 +99,7 @@ NM.views.renderFabric = function() {
     // Classify for layout: spine (few non-switch links) vs leaf (many)
     const layout = computeLayout(switches, portMaps, topology, elements);
 
-    // Position port nodes at calculated positions
-    const portSize = 12;
-    const portGap = 4;
+    // Position port nodes at initial center positions
     for (const el of elements) {
         if (el.data && el.data.type === 'port') {
             const center = layout.centers[el.data.parent];
@@ -112,7 +110,9 @@ NM.views.renderFabric = function() {
     NM.graph.render(elements, 'preset');
     const cy = NM.graph.getInstance();
 
-    // Arrange ports in 2 columns inside each switch
+    // Arrange ports in 2 rows (horizontal) inside each switch — like a rack unit
+    const portSize = 10;
+    const portGap = 3;
     cy.nodes('[type="switch-parent"]').forEach((parent) => {
         const center = layout.centers[parent.data('id')];
         if (!center) return;
@@ -122,10 +122,10 @@ NM.views.renderFabric = function() {
         });
         if (children.length === 0) return;
 
-        const cols = 2;
-        const rows = Math.ceil(children.length / cols);
-        const totalH = rows * (portSize + portGap) - portGap;
+        const rows = 2;
+        const cols = Math.ceil(children.length / rows);
         const totalW = cols * (portSize + portGap) - portGap;
+        const totalH = rows * (portSize + portGap) - portGap;
 
         children.forEach((child, i) => {
             const col = i % cols;
@@ -215,9 +215,9 @@ function computeLayout(switches, portMaps, topology, elements) {
         }
     }
 
-    // Position switches: spines top row, leaves bottom row
-    const hGap = 220;
-    const vGap = 250;
+    // Position switches: spines top row, leaves bottom row (horizontal rack layout)
+    const hGap = 380;
+    const vGap = 120;
 
     function rowCenters(ids, yPos) {
         const totalWidth = (ids.length - 1) * hGap;
