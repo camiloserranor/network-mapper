@@ -2,7 +2,7 @@
 
 'use strict';
 
-const Popup = (() => {
+NM.ui.Popup = (() => {
     const card = () => document.getElementById('popup-card');
     const titleEl = () => document.getElementById('popup-title');
     const bodyEl = () => document.getElementById('popup-body');
@@ -35,8 +35,8 @@ const Popup = (() => {
                     const type = currentNodeData.type;
                     const id = currentNodeData.id;
                     hide();
-                    if (type === 'switch') ViewManager.navigateTo('switch', id);
-                    else if (type === 'host') ViewManager.navigateTo('host', id);
+                    if (type === 'switch') NM.state.ViewManager.navigateTo('switch', id);
+                    else if (type === 'host') NM.state.ViewManager.navigateTo('host', id);
                 }
             });
         }
@@ -49,9 +49,9 @@ const Popup = (() => {
             hide();
             requestAnimationFrame(() => {
                 if (nodeData) {
-                    Sidebar.showNode(nodeData);
+                    NM.ui.Sidebar.showNode(nodeData);
                 } else if (edgeData) {
-                    Sidebar.showEdge(edgeData);
+                    NM.ui.Sidebar.showEdge(edgeData);
                 }
             });
         });
