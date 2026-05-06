@@ -8,11 +8,16 @@ NM.views.renderHost = function(hostId) {
     if (!hostDev) return;
 
     const container = document.getElementById('detail-view');
-    const ifaces = hostDev.interfaces || [];
-    const ifacesUp = ifaces.filter(i => i.oper_status === 'UP').length;
-    const vms = NM.data.getHostVMs(topology, hostId);
     const portMap = NM.data.buildPortMap(topology, hostId);
     const esc = NM.core.escapeHtml;
+
+    // NICs are derived from LLDP links (host has no gNMI agent)
+    const nics = Object.entries(portMap).map(([portName, conn]) => ({
+        name: portName,
+        conn: conn,
+        isUp: (conn.operStatus || '').toUpperCase() === 'UP' || !!conn.remoteId,
+    }));
+    const vms = NM.data.getHostVMs(topology, hostId);
 
     let html = '';
 
@@ -22,34 +27,35 @@ NM.views.renderHost = function(hostId) {
     html += '<div class="device-header-info">';
     html += '<div class="device-header-name">' + esc(hostDev.system_name || hostDev.id) + '</div>';
     html += '<div class="device-header-meta">';
-    html += '<span>NICs: <strong>' + ifacesUp + '/' + ifaces.length + ' UP</strong></span>';
+    html += '<span>Connections: <strong>' + nics.length + '</strong></span>';
     html += '<span>VMs: <strong>' + vms.length + '</strong></span>';
     if (hostDev.management_address) html += '<span>Mgmt: <strong>' + esc(hostDev.management_address) + '</strong></span>';
     if (hostDev.system_description) html += '<span>' + esc(hostDev.system_description) + '</span>';
     html += '</div></div></div>';
 
-    // NIC diagram
+    // NIC diagram — built from LLDP-discovered links
     html += '<div class="nic-diagram">';
-    html += '<div class="nic-diagram-title">Network Interfaces</div>';
+    html += '<div class="nic-diagram-title">Network Connections <span style="color:var(--text-muted);font-size:11px">(discovered via LLDP)</span></div>';
     html += '<div class="nic-list">';
 
-    for (const iface of ifaces) {
-        const portName = iface.name || '';
-        const conn = portMap[portName];
-        const isUp = iface.oper_status === 'UP';
+    for (const nic of nics) {
+        const conn = nic.conn;
         const typeClass = conn ? conn.remoteType : '';
 
         html += '<div class="nic-card" data-remote-id="' + (conn ? esc(conn.remoteId) : '') + '" data-remote-type="' + (conn ? esc(conn.remoteType) : '') + '">';
-        html += '<div class="nic-card-status ' + (isUp ? 'up' : 'down') + '"></div>';
-        html += '<div class="nic-card-port">' + esc(portName) + '</div>';
+        html += '<div class="nic-card-status ' + (nic.isUp ? 'up' : 'down') + '"></div>';
+        html += '<div class="nic-card-port">' + esc(nic.name) + '</div>';
 
         if (conn) {
             html += '<div class="nic-card-remote">\u2192 ' + esc(conn.remoteName) + ' (' + esc(conn.remotePort) + ')</div>';
             html += '<div class="nic-card-type ' + esc(typeClass) + '">' + esc(conn.remoteType) + '</div>';
-        } else {
-            html += '<div class="nic-card-remote" style="color:var(--text-muted)">' + (isUp ? 'No LLDP neighbor' : 'Down') + '</div>';
+            if (conn.speed) html += '<div class="nic-card-speed">' + esc(conn.speed) + '</div>';
         }
         html += '</div>';
+    }
+
+    if (nics.length === 0) {
+        html += '<div style="color:var(--text-muted);padding:12px">No LLDP connections discovered for this host</div>';
     }
     html += '</div></div>';
 

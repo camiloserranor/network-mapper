@@ -173,11 +173,45 @@ NM.views.renderSwitch = function(switchId) {
 };
 
 function buildFrontPanelSVG(swDev, ifaces, portMap, role, ifacesUp, hostCount, esc) {
-    const portCount = ifaces.length;
-    if (portCount === 0) {
+    if (ifaces.length === 0) {
         return '<div class="switch-svg-container"><p style="color:var(--text-secondary);padding:16px">No interface data available</p></div>';
     }
 
+    // Classify interfaces: physical vs logical
+    const physical = [];
+    const logical = [];
+    for (const iface of ifaces) {
+        const name = (iface.name || '').toLowerCase();
+        if (name.match(/^(ethernet|eth|mgmt|management|e\d)/i) || name.match(/^\d+\/\d+/)) {
+            physical.push(iface);
+        } else {
+            logical.push(iface);
+        }
+    }
+
+    // Sort physical ports numerically
+    physical.sort((a, b) => {
+        const na = (a.name || '').replace(/[^\d/]/g, '');
+        const nb = (b.name || '').replace(/[^\d/]/g, '');
+        return na.localeCompare(nb, undefined, { numeric: true });
+    });
+
+    // Sort logical: loopback first, then vlan, then port-channel, then others
+    const logicalOrder = (name) => {
+        const n = name.toLowerCase();
+        if (n.startsWith('loopback') || n.startsWith('lo')) return 0;
+        if (n.startsWith('vlan')) return 1;
+        if (n.startsWith('port-channel') || n.startsWith('po')) return 2;
+        return 3;
+    };
+    logical.sort((a, b) => {
+        const oa = logicalOrder(a.name || '');
+        const ob = logicalOrder(b.name || '');
+        if (oa !== ob) return oa - ob;
+        return (a.name || '').localeCompare(b.name || '', undefined, { numeric: true });
+    });
+
+    const portCount = physical.length || 1;
     const rows = portCount <= 48 ? 2 : Math.ceil(portCount / 24);
     const actualCols = Math.ceil(portCount / rows);
 
@@ -188,7 +222,7 @@ function buildFrontPanelSVG(swDev, ifaces, portMap, role, ifacesUp, hostCount, e
     const paddingX = 80;
     const paddingY = 50;
     const panelW = paddingX * 2 + actualCols * (portW + portGapX) - portGapX;
-    const panelH = paddingY + rows * (portH + portGapY) - portGapY + 40;
+    const panelH = paddingY + rows * (portH + portGapY) - portGapY + 20;
 
     const colors = { switch: '#0078d4', host: '#44b700', bmc: '#f7630c', unknown: '#8a8886' };
 
@@ -213,30 +247,21 @@ function buildFrontPanelSVG(swDev, ifaces, portMap, role, ifacesUp, hostCount, e
     svg += '</text>';
 
     // Summary line
-    let summary = role.toUpperCase() + ' \u00B7 ' + ifacesUp + '/' + ifaces.length + ' UP';
+    let summary = role.toUpperCase();
     if (hostCount > 0) summary += ' \u00B7 ' + hostCount + ' hosts';
     svg += '<text x="' + paddingX + '" y="42" font-size="9" fill="#8a8886" font-family="Segoe UI, sans-serif">';
     svg += esc(summary);
     svg += '</text>';
-
-    // Health bar
-    const healthBarX = paddingX;
-    const healthBarY = panelH - 14;
-    const healthBarW = panelW - paddingX * 2;
-    const pct = Math.round((ifacesUp / Math.max(ifaces.length, 1)) * 100);
-    const healthColor = pct > 80 ? '#4CAF50' : pct > 50 ? '#FF9800' : '#e94560';
-    svg += '<rect x="' + healthBarX + '" y="' + healthBarY + '" width="' + healthBarW + '" height="4" rx="2" fill="#3a3a3a"/>';
-    svg += '<rect x="' + healthBarX + '" y="' + healthBarY + '" width="' + Math.round(healthBarW * pct / 100) + '" height="4" rx="2" fill="' + healthColor + '"/>';
 
     // LED indicator (top-right)
     const ledColor = ifacesUp > 0 ? '#4CAF50' : '#e94560';
     svg += '<circle cx="' + (panelW - 24) + '" cy="20" r="5" fill="' + ledColor + '"/>';
     svg += '<circle cx="' + (panelW - 24) + '" cy="20" r="3" fill="' + ledColor + '" opacity="0.5"/>';
 
-    // Ports in rows
+    // Physical ports in rows
     const portStartY = paddingY;
-    for (let i = 0; i < portCount; i++) {
-        const iface = ifaces[i];
+    for (let i = 0; i < physical.length; i++) {
+        const iface = physical[i];
         const portName = iface.name || '';
         const conn = portMap[portName];
         const isUp = iface.oper_status === 'UP';
@@ -287,6 +312,26 @@ function buildFrontPanelSVG(swDev, ifaces, portMap, role, ifacesUp, hostCount, e
     svg += '<div class="port-legend-item"><div class="port-legend-swatch" style="border-color:#8a8886;background:rgba(138,136,134,0.2)"></div>Unknown</div>';
     svg += '<div class="port-legend-item"><div class="port-legend-swatch" style="border-color:#3a3a3a;background:#2a2a2a"></div>Down</div>';
     svg += '</div>';
+
+    // Logical interfaces section (VLAN, Loopback, Port-Channel)
+    if (logical.length > 0) {
+        svg += '<div class="logical-interfaces">';
+        svg += '<div class="logical-interfaces-title">Logical Interfaces</div>';
+        svg += '<div class="logical-interfaces-grid">';
+        for (const iface of logical) {
+            const name = iface.name || '';
+            const isUp = iface.oper_status === 'UP';
+            const typeClass = name.toLowerCase().startsWith('vlan') ? 'vlan' :
+                              name.toLowerCase().startsWith('loopback') || name.toLowerCase().startsWith('lo') ? 'loopback' :
+                              name.toLowerCase().startsWith('port-channel') || name.toLowerCase().startsWith('po') ? 'port-channel' : 'other';
+            svg += '<div class="logical-iface ' + typeClass + ' ' + (isUp ? 'up' : 'down') + '">';
+            svg += '<span class="logical-iface-status"></span>';
+            svg += '<span class="logical-iface-name">' + esc(name) + '</span>';
+            svg += '</div>';
+        }
+        svg += '</div></div>';
+    }
+
     svg += '</div>';
 
     return svg;
