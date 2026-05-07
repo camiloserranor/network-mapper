@@ -1,10 +1,15 @@
 # Binaries
 *.exe
 *.exe~
+network-mapper
 
 # Collected data (generated, not committed)
 topology-collected.json
 topology.json
+
+# Test/local config (may contain credentials)
+examples/config.test.yaml
+config.test.yaml
 
 # TLS certificate cache
 .certs/
