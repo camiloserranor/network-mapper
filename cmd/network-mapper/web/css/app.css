@@ -810,6 +810,76 @@ select.btn {
 .nic-card-type.host { background: rgba(68, 183, 0, 0.2); color: var(--node-host); }
 .nic-card-type.unknown { background: rgba(138, 136, 134, 0.2); color: var(--node-unknown); }
 
+.nic-card-counters {
+    display: flex;
+    gap: 10px;
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: 'Cascadia Code', Consolas, monospace;
+}
+.nic-card-counters .counter-errors {
+    color: var(--danger);
+}
+.nic-card-speed {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: 'Cascadia Code', Consolas, monospace;
+}
+
+/* ---- Host VLAN Membership ---- */
+.host-vlans {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+.host-vlans-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+}
+.host-vlans-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.vlan-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid #a36efd;
+    border-radius: 4px;
+    padding: 8px 12px;
+    min-width: 120px;
+}
+.vlan-card-id {
+    font-size: 12px;
+    font-weight: 600;
+    color: #a36efd;
+    font-family: 'Cascadia Code', Consolas, monospace;
+}
+.vlan-card-name {
+    font-size: 11px;
+    color: var(--text-primary);
+    margin-top: 2px;
+}
+.vlan-card-meta {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+    font-size: 10px;
+    color: var(--text-muted);
+}
+.vlan-card-gw {
+    font-family: 'Cascadia Code', Consolas, monospace;
+}
+.vlan-card-vms {
+    color: var(--node-vm);
+}
+
 /* ---- VM Cloud Summary ---- */
 .vm-cloud {
     background: var(--bg-secondary);
