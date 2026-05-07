@@ -18,6 +18,9 @@ import (
 	"github.com/camiloserranor/network-mapper/internal/topology"
 )
 
+// version is set at build time via -ldflags.
+var version = "dev"
+
 //go:embed web
 var embeddedWeb embed.FS
 
@@ -42,9 +45,18 @@ func main() {
 	serveCmd.Flags().Int("interval", 30, "Collection interval in seconds for live mode")
 	serveCmd.Flags().Bool("profile", false, "Enable /debug/pprof/* profiling endpoints")
 
+	versionCmd := &cobra.Command{
+		Use:   "version",
+		Short: "Print the version number",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("network-mapper %s\n", version)
+		},
+	}
+
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(collectCmd())
 	rootCmd.AddCommand(testConnectionCmd())
+	rootCmd.AddCommand(versionCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
