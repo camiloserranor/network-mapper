@@ -1,6 +1,7 @@
 package deployment
 
 import (
+	"os"
 	"testing"
 
 	"github.com/camiloserranor/network-mapper/internal/topology"
@@ -212,7 +213,11 @@ func TestEnrichTopology_HostnameMatch(t *testing.T) {
 }
 
 func TestLoad_RealFormat(t *testing.T) {
-	dd, err := Load("../../examples/sample-deployment.json")
+	const samplePath = "../../examples/sample-deployment.json"
+	if _, err := os.Stat(samplePath); os.IsNotExist(err) {
+		t.Skip("sample-deployment.json not available; skipping integration test")
+	}
+	dd, err := Load(samplePath)
 	if err != nil {
 		t.Fatalf("Load failed: %v", err)
 	}
