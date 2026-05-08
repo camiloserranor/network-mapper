@@ -11,6 +11,9 @@ topology.json
 config.*test*.yaml
 **/config.*test*.yaml
 
+# Real deployment data (contains internal hostnames/IPs)
+examples/sample-deployment.json
+
 # TLS certificate cache
 .certs/
 
