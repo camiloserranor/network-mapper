@@ -213,9 +213,9 @@ func TestEnrichTopology_HostnameMatch(t *testing.T) {
 }
 
 func TestLoad_RealFormat(t *testing.T) {
-	const samplePath = "../../examples/sample-deployment.json"
+	const samplePath = "../../testdata/sample-deployment.json"
 	if _, err := os.Stat(samplePath); os.IsNotExist(err) {
-		t.Skip("sample-deployment.json not available; skipping integration test")
+		t.Skip("testdata/sample-deployment.json not available; skipping")
 	}
 	dd, err := Load(samplePath)
 	if err != nil {
@@ -224,14 +224,13 @@ func TestLoad_RealFormat(t *testing.T) {
 	if len(dd.HostNodes) == 0 {
 		t.Fatal("expected host nodes from sample deployment JSON")
 	}
-	// The sample has 64 physical nodes
+	// The synthetic sample has 64 physical nodes
 	if len(dd.HostNodes) != 64 {
 		t.Errorf("got %d host nodes, want 64", len(dd.HostNodes))
 	}
-	// First node should have NIC details from PhysicalNodesV2
 	first := dd.HostNodes[0]
-	if first.Name != "ASRR1N42R14U01" {
-		t.Errorf("first host name = %q, want 'ASRR1N42R14U01'", first.Name)
+	if first.Name != "TESTNODE01" {
+		t.Errorf("first host name = %q, want 'TESTNODE01'", first.Name)
 	}
 	if len(first.NICs) < 4 {
 		t.Errorf("first host NIC count = %d, want at least 4", len(first.NICs))
