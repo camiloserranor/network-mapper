@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"sync"
 	"time"
 
@@ -211,6 +212,18 @@ func collectInterfaces(ctx context.Context, client *gnmi.Client, sw config.Switc
 			log.Printf("  %s: interface counters unavailable: %v", sw.Name, counterErr)
 		} else {
 			transform.MergeInterfaceCounters(result.Interfaces, counterNotifs)
+		}
+	}
+
+	// Collect per-port VLAN configuration (NX-OS only)
+	if sw.Platform == "nxos" && len(result.Interfaces) > 0 {
+		vlanNotifs, vlanErr := client.GetWithFallback(ctx, transform.InterfaceVLANPathNXOS)
+		if vlanErr != nil {
+			log.Printf("  %s: interface VLAN config unavailable: %v", sw.Name, vlanErr)
+		} else {
+			vlanConfigs := transform.ParseInterfaceVLANsNXOS(vlanNotifs)
+			transform.MergeInterfaceVLANConfigs(result.Interfaces, vlanConfigs)
+			log.Printf("  %s: %d interface VLAN configs", sw.Name, len(vlanConfigs))
 		}
 	}
 
@@ -524,6 +537,9 @@ func buildTopology(results []switchResult, now time.Time, reverseDNS bool) *topo
 		topo.PartialFailures = []topology.PartialError{}
 	}
 
+	// Populate ObservedVLANs on interfaces from MAC table data
+	enrichInterfaceObservedVLANs(topo, results)
+
 	return topo
 }
 
@@ -552,6 +568,53 @@ func resolveDeviceID(id string, systemNameToID map[string]string) string {
 
 func classifyDevice(nbr transform.LLDPNeighbor) string {
 	return transform.ClassifyDevice(nbr.SystemDescription, nbr.SystemName, nbr.Capabilities)
+}
+
+// enrichInterfaceObservedVLANs aggregates VLAN IDs from MAC table entries
+// onto the corresponding switch interfaces. This shows which VLANs have
+// active traffic on each port, derived from observed MAC learning.
+func enrichInterfaceObservedVLANs(topo *topology.Topology, results []switchResult) {
+	// Build per-switch, per-port VLAN sets from MAC entries
+	// Key: switchID → portName → set of VLAN IDs
+	type portVLANs map[string]map[int]bool
+	switchPortVLANs := make(map[string]portVLANs)
+
+	for _, r := range results {
+		for _, mac := range r.MACEntries {
+			if mac.Port == "" || mac.VLAN == 0 {
+				continue
+			}
+			port := transform.NormalizeInterfaceName(mac.Port)
+			if switchPortVLANs[r.SwitchID] == nil {
+				switchPortVLANs[r.SwitchID] = make(portVLANs)
+			}
+			if switchPortVLANs[r.SwitchID][port] == nil {
+				switchPortVLANs[r.SwitchID][port] = make(map[int]bool)
+			}
+			switchPortVLANs[r.SwitchID][port][mac.VLAN] = true
+		}
+	}
+
+	// Merge onto device interfaces
+	for i := range topo.Devices {
+		dev := &topo.Devices[i]
+		pvs, ok := switchPortVLANs[dev.ID]
+		if !ok {
+			continue
+		}
+		for j := range dev.Interfaces {
+			vlanSet, ok := pvs[dev.Interfaces[j].Name]
+			if !ok {
+				continue
+			}
+			var vlans []int
+			for v := range vlanSet {
+				vlans = append(vlans, v)
+			}
+			sort.Ints(vlans)
+			dev.Interfaces[j].ObservedVLANs = vlans
+		}
+	}
 }
 
 func extractHost(address string) string {

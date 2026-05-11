@@ -504,6 +504,12 @@ select.btn {
     border-bottom: 1px solid var(--border-subtle);
 }
 
+.conn-table td.vlan-list {
+    max-width: 200px;
+    word-break: break-word;
+    font-size: 10px;
+}
+
 .conn-row {
     cursor: pointer;
     transition: background 0.1s;

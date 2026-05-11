@@ -66,12 +66,30 @@ NM.views.renderSwitch = function(switchId) {
     html += infoRow('Switch Uplinks', switchLinks);
     html += '</div>';
 
-    // VLAN info
+    // VLAN info — show topology-level VLAN details and per-interface VLAN assignments
     const vlans = swDev.vlans || [];
-    if (vlans.length > 0) {
-        html += '<div class="info-panel">';
-        html += '<div class="info-panel-title">VLANs (' + vlans.length + ')</div>';
-        html += '<div class="info-panel-content" style="font-size:12px;color:var(--text-secondary)">' + esc(vlans.join(', ')) + '</div>';
+    var ifaceVlanData = buildInterfaceVLANSummary(swDev);
+    if (vlans.length > 0 || ifaceVlanData.length > 0) {
+        html += '<div class="info-panel wide">';
+        html += '<div class="info-panel-title">VLAN Assignments</div>';
+
+        if (ifaceVlanData.length > 0) {
+            html += '<table class="conn-table"><thead><tr><th>Port</th><th>Mode</th><th>Access</th><th>Native</th><th>Active VLANs</th></tr></thead><tbody>';
+            for (var vi = 0; vi < ifaceVlanData.length; vi++) {
+                var vd = ifaceVlanData[vi];
+                html += '<tr>';
+                html += '<td>' + esc(vd.name) + '</td>';
+                html += '<td>' + esc(vd.mode || '\u2014') + '</td>';
+                html += '<td>' + (vd.accessVlan || '\u2014') + '</td>';
+                html += '<td>' + (vd.nativeVlan || '\u2014') + '</td>';
+                html += '<td class="vlan-list">' + esc(vd.observedVlans || '\u2014') + '</td>';
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+        } else if (vlans.length > 0) {
+            html += '<div class="info-panel-content" style="font-size:12px;color:var(--text-secondary)">' + esc(vlans.join(', ')) + '</div>';
+        }
+
         html += '</div>';
     }
 
@@ -337,6 +355,57 @@ function buildFrontPanelSVG(swDev, ifaces, portMap, role, ifacesUp, hostCount, e
     return svg;
 }
 
+function getPortVLANInfo(portName) {
+    var topology = NM.state.topology;
+    if (!topology || !topology.devices) return null;
+    for (var i = 0; i < topology.devices.length; i++) {
+        var dev = topology.devices[i];
+        if (dev.type !== 'switch' || !dev.interfaces) continue;
+        for (var j = 0; j < dev.interfaces.length; j++) {
+            var iface = dev.interfaces[j];
+            if (iface.name !== portName) continue;
+            var info = {};
+            if (iface.mode) info.mode = iface.mode;
+            if (iface.access_vlan) info.accessVlan = iface.access_vlan;
+            if (iface.native_vlan) info.nativeVlan = iface.native_vlan;
+            if (iface.observed_vlans && iface.observed_vlans.length > 0) {
+                info.observedVlans = iface.observed_vlans.join(', ');
+            }
+            if (iface.trunk_vlans && iface.trunk_vlans.length > 0) {
+                info.trunkVlans = iface.trunk_vlans.length + ' VLANs';
+            }
+            return Object.keys(info).length > 0 ? info : null;
+        }
+    }
+    return null;
+}
+
+// buildInterfaceVLANSummary returns interfaces that have any VLAN config or observed VLAN data.
+function buildInterfaceVLANSummary(swDev) {
+    var results = [];
+    var ifaces = swDev.interfaces || [];
+    for (var i = 0; i < ifaces.length; i++) {
+        var iface = ifaces[i];
+        var hasVlanData = iface.mode || iface.access_vlan || iface.native_vlan ||
+            (iface.trunk_vlans && iface.trunk_vlans.length > 0) ||
+            (iface.observed_vlans && iface.observed_vlans.length > 0);
+        if (!hasVlanData) continue;
+
+        results.push({
+            name: iface.name,
+            mode: iface.mode || '',
+            accessVlan: iface.access_vlan || 0,
+            nativeVlan: iface.native_vlan || 0,
+            observedVlans: (iface.observed_vlans || []).join(', ')
+        });
+    }
+    // Sort: physical ports first, then by name
+    results.sort(function(a, b) {
+        return a.name.localeCompare(b.name, undefined, { numeric: true });
+    });
+    return results;
+}
+
 function showSvgTooltip(e, port) {
     let tooltip = document.getElementById('svg-port-tooltip');
     if (!tooltip) {
@@ -362,6 +431,23 @@ function showSvgTooltip(e, port) {
         html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Remote port:</span><span class="port-tooltip-value">' + esc(remotePort) + '</span></div>';
         html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Type:</span><span class="port-tooltip-value">' + esc(remoteType) + '</span></div>';
         if (speed) html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Speed:</span><span class="port-tooltip-value">' + esc(speed) + '</span></div>';
+    }
+
+    // VLAN info from interface data
+    var portVlanInfo = getPortVLANInfo(portName);
+    if (portVlanInfo) {
+        if (portVlanInfo.mode) {
+            html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Mode:</span><span class="port-tooltip-value">' + esc(portVlanInfo.mode) + '</span></div>';
+        }
+        if (portVlanInfo.accessVlan) {
+            html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Access VLAN:</span><span class="port-tooltip-value">' + portVlanInfo.accessVlan + '</span></div>';
+        }
+        if (portVlanInfo.nativeVlan) {
+            html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Native VLAN:</span><span class="port-tooltip-value">' + portVlanInfo.nativeVlan + '</span></div>';
+        }
+        if (portVlanInfo.observedVlans) {
+            html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Active VLANs:</span><span class="port-tooltip-value">' + esc(portVlanInfo.observedVlans) + '</span></div>';
+        }
     }
 
     tooltip.innerHTML = html;
