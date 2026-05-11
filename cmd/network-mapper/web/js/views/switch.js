@@ -423,9 +423,9 @@ function buildVLANVisualization(swDev, portMap, esc) {
 
     var colors = ['#0078d4', '#44b700', '#f7630c', '#a36efd', '#d13438', '#00b7c3', '#8764b8', '#ca5010', '#57a300', '#4f6bed'];
 
-    var html = '<div class="info-panel wide">';
-    html += '<div class="info-panel-title">VLAN Membership <span class="vlan-viz-count">' + vlanIds.length + ' VLANs</span></div>';
-    html += '<div class="vlan-sets-container">';
+    var html = '<div class="info-panel wide collapsible">';
+    html += '<div class="info-panel-title">VLAN Membership <span class="vlan-viz-count">' + vlanIds.length + ' VLANs</span><span class="panel-chevron">▾</span></div>';
+    html += '<div class="panel-body"><div class="vlan-sets-container">';
 
     for (var k = 0; k < vlanIds.length; k++) {
         var vid = vlanIds[k];
@@ -451,7 +451,7 @@ function buildVLANVisualization(swDev, portMap, esc) {
         html += '</div></div>';
     }
 
-    html += '</div></div>';
+    html += '</div></div></div>';
     return html;
 }
 

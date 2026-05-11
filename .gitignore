@@ -1,7 +1,7 @@
 # Binaries
 *.exe
 *.exe~
-network-mapper
+/network-mapper
 
 # Collected data (generated, not committed)
 topology-collected.json

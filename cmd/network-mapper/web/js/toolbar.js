@@ -33,7 +33,7 @@ NM.ui.Toolbar = (() => {
         document.getElementById('refresh-btn').addEventListener('click', async () => {
             const btn = document.getElementById('refresh-btn');
             btn.disabled = true;
-            btn.textContent = '\u21BB Refreshing...';
+            btn.innerHTML = NM.core.icons.refresh + ' Refreshing...';
             try {
                 const resp = await fetch('/api/topology');
                 if (resp.ok) {
@@ -50,7 +50,7 @@ NM.ui.Toolbar = (() => {
                 console.error('Refresh failed:', err);
             } finally {
                 btn.disabled = false;
-                btn.textContent = '\u27F3 Refresh';
+                btn.innerHTML = NM.core.icons.refresh + ' Refresh';
             }
         });
 
@@ -58,6 +58,26 @@ NM.ui.Toolbar = (() => {
         document.getElementById('export-json-btn').addEventListener('click', () => {
             NM.graph.exportJSON();
         });
+
+        // Theme toggle
+        const themeBtn = document.getElementById('theme-toggle-btn');
+        if (themeBtn) {
+            const saved = localStorage.getItem('nm-theme');
+            if (saved === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+
+            themeBtn.addEventListener('click', function() {
+                const current = document.documentElement.getAttribute('data-theme');
+                if (current === 'dark') {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('nm-theme', 'light');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('nm-theme', 'dark');
+                }
+            });
+        }
     }
 
     return { init };

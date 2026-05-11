@@ -1,29 +1,30 @@
 /* ============================================================
-   Network Mapper — Azure Portal Dark Theme
+   Network Mapper — Azure Portal Theme
    Microsoft Fluent 2 Design System tokens
+   Light theme (default) with dark theme via [data-theme="dark"]
    ============================================================ */
 
 :root {
-    /* Fluent 2 Dark Theme Tokens */
-    --colorNeutralBackground1: #1b1a19;
-    --colorNeutralBackground2: #252423;
-    --colorNeutralBackground3: #323130;
+    /* Fluent 2 Light Theme Tokens (DEFAULT) */
+    --colorNeutralBackground1: #ffffff;
+    --colorNeutralBackground2: #faf9f8;
+    --colorNeutralBackground3: #f3f2f1;
     --colorBrandBackground: #0078d4;
     --colorBrandBackgroundHover: #106ebe;
-    --colorNeutralForeground1: #ffffff;
-    --colorNeutralForeground2: #d2d0ce;
+    --colorNeutralForeground1: #323130;
+    --colorNeutralForeground2: #605e5c;
     --colorNeutralForeground3: #a19f9d;
-    --colorNeutralStroke1: #484644;
-    --colorNeutralStroke2: #3b3a39;
-    --colorPaletteGreenForeground1: #57a300;
-    --colorPaletteRedForeground1: #d13438;
-    --colorPaletteYellowForeground1: #fce100;
+    --colorNeutralStroke1: #edebe9;
+    --colorNeutralStroke2: #f3f2f1;
+    --colorPaletteGreenForeground1: #107c10;
+    --colorPaletteRedForeground1: #a4262c;
+    --colorPaletteYellowForeground1: #797673;
 
-    /* Fluent 2 elevation (dark theme) */
-    --shadow2: 0 1px 2px rgba(0,0,0,0.24);
-    --shadow4: 0 2px 4px rgba(0,0,0,0.24), 0 0 2px rgba(0,0,0,0.12);
-    --shadow8: 0 4px 8px rgba(0,0,0,0.28), 0 0 2px rgba(0,0,0,0.12);
-    --shadow16: 0 8px 16px rgba(0,0,0,0.28), 0 0 2px rgba(0,0,0,0.12);
+    /* Fluent 2 elevation (light theme) */
+    --shadow2: 0 1px 2px rgba(0,0,0,0.08);
+    --shadow4: 0 2px 4px rgba(0,0,0,0.08), 0 0 2px rgba(0,0,0,0.04);
+    --shadow8: 0 4px 8px rgba(0,0,0,0.12), 0 0 2px rgba(0,0,0,0.06);
+    --shadow16: 0 8px 16px rgba(0,0,0,0.14), 0 0 2px rgba(0,0,0,0.06);
 
     /* Fluent 2 border radius tokens */
     --borderRadiusSmall: 2px;
@@ -42,18 +43,18 @@
     --bg-graph: var(--colorNeutralBackground1);
     --accent: var(--colorBrandBackground);
     --accent-hover: var(--colorBrandBackgroundHover);
-    --accent-glow: rgba(0, 120, 212, 0.25);
+    --accent-glow: rgba(0, 120, 212, 0.15);
     --text-primary: var(--colorNeutralForeground1);
     --text-secondary: var(--colorNeutralForeground2);
     --text-muted: var(--colorNeutralForeground3);
     --border: var(--colorNeutralStroke1);
     --border-subtle: var(--colorNeutralStroke2);
     --node-switch: #0078d4;
-    --node-host: #44b700;
-    --node-bmc: #f7630c;
-    --node-vm: #a36efd;
+    --node-host: #107c10;
+    --node-bmc: #ca5010;
+    --node-vm: #8764b8;
     --node-unknown: #8a8886;
-    --edge-default: #605e5c;
+    --edge-default: #c8c6c4;
     --edge-highlight: #0078d4;
     --danger: var(--colorPaletteRedForeground1);
     --success: var(--colorPaletteGreenForeground1);
@@ -62,6 +63,55 @@
     --toolbar-height: 48px;
     --radius: var(--borderRadiusMedium);
     --transition: 0.2s ease;
+
+    /* Theme-aware helpers for hardcoded hover/border colors */
+    --hover-bg: #f3f2f1;
+    --subtle-divider: rgba(0, 0, 0, 0.06);
+    --overlay-bg: rgba(255, 255, 255, 0.92);
+    --scrollbar-thumb: #c8c6c4;
+    --scrollbar-thumb-hover: #a19f9d;
+    --logical-iface-bg: #e8e8e8;
+    --focus-outer: #ffffff;
+    --focus-inner: #000000;
+}
+
+[data-theme="dark"] {
+    --colorNeutralBackground1: #1b1a19;
+    --colorNeutralBackground2: #252423;
+    --colorNeutralBackground3: #323130;
+    --colorBrandBackground: #0078d4;
+    --colorBrandBackgroundHover: #106ebe;
+    --colorNeutralForeground1: #ffffff;
+    --colorNeutralForeground2: #d2d0ce;
+    --colorNeutralForeground3: #a19f9d;
+    --colorNeutralStroke1: #484644;
+    --colorNeutralStroke2: #3b3a39;
+    --colorPaletteGreenForeground1: #57a300;
+    --colorPaletteRedForeground1: #d13438;
+    --colorPaletteYellowForeground1: #fce100;
+
+    --shadow2: 0 1px 2px rgba(0,0,0,0.24);
+    --shadow4: 0 2px 4px rgba(0,0,0,0.24), 0 0 2px rgba(0,0,0,0.12);
+    --shadow8: 0 4px 8px rgba(0,0,0,0.28), 0 0 2px rgba(0,0,0,0.12);
+    --shadow16: 0 8px 16px rgba(0,0,0,0.28), 0 0 2px rgba(0,0,0,0.12);
+
+    --accent-glow: rgba(0, 120, 212, 0.25);
+    --node-switch: #0078d4;
+    --node-host: #44b700;
+    --node-bmc: #f7630c;
+    --node-vm: #a36efd;
+    --node-unknown: #8a8886;
+    --edge-default: #605e5c;
+    --edge-highlight: #0078d4;
+
+    --hover-bg: #3b3a39;
+    --subtle-divider: rgba(255, 255, 255, 0.04);
+    --overlay-bg: rgba(27, 26, 25, 0.92);
+    --scrollbar-thumb: #484644;
+    --scrollbar-thumb-hover: #605e5c;
+    --logical-iface-bg: #2a2a2a;
+    --focus-outer: #000000;
+    --focus-inner: #ffffff;
 }
 
 /* Reset */
@@ -122,6 +172,13 @@ body {
     font-weight: 600;
     color: var(--text-primary);
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.icon-logo {
+    flex-shrink: 0;
 }
 
 .badge {
@@ -169,6 +226,8 @@ body {
 .timeline-icon {
     font-size: 14px;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
 }
 
 #timeline-slider {
@@ -231,6 +290,8 @@ body {
 
 .historical-icon {
     font-size: 14px;
+    display: inline-flex;
+    align-items: center;
 }
 
 #historical-return-btn {
@@ -314,7 +375,7 @@ body {
 }
 
 .btn:hover {
-    background: #3b3a39;
+    background: var(--hover-bg);
     color: var(--text-primary);
 }
 
@@ -689,7 +750,7 @@ select.btn {
 }
 
 .conn-row:hover {
-    background: #3b3a39;
+    background: var(--hover-bg);
 }
 
 /* ---- VLAN Membership Visualization ---- */
@@ -981,7 +1042,7 @@ select.btn {
     font-family: var(--fontFamilyMonospace);
     padding: 2px 8px;
     border-radius: 4px;
-    background: #2a2a2a;
+    background: var(--logical-iface-bg);
     color: var(--text-secondary);
 }
 .logical-iface.up { color: var(--text-primary); }
@@ -990,7 +1051,7 @@ select.btn {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #e94560;
+    background: var(--danger);
 }
 .logical-iface.up .logical-iface-status { background: #4CAF50; }
 .logical-iface.vlan { border-left: 2px solid #a36efd; }
@@ -1246,7 +1307,7 @@ select.btn {
     display: flex;
     justify-content: space-between;
     padding: 6px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid var(--subtle-divider);
     font-size: 13px;
 }
 
@@ -1332,7 +1393,7 @@ select.btn {
     display: flex;
     justify-content: space-between;
     padding: 4px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid var(--subtle-divider);
     font-size: 14px;
     line-height: 20px;
 }
@@ -1342,7 +1403,7 @@ select.btn {
 }
 
 .detail-row[title]:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--hover-bg);
     border-radius: 4px;
 }
 
@@ -1363,7 +1424,7 @@ select.btn {
 
 .interface-list li {
     padding: 6px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid var(--subtle-divider);
     font-size: 13px;
     display: flex;
     justify-content: space-between;
@@ -1430,6 +1491,8 @@ select.btn {
 .warning-icon {
     font-size: 14px;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
 }
 
 #warning-summary {
@@ -1746,7 +1809,7 @@ select.btn {
     position: absolute;
     bottom: 12px;
     right: 12px;
-    background: rgba(27, 26, 25, 0.92);
+    background: var(--overlay-bg);
     border: 1px solid var(--border-subtle);
     border-radius: var(--borderRadiusLarge);
     padding: 12px 16px;
@@ -1902,12 +1965,12 @@ select.btn {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #484644;
+    background: var(--scrollbar-thumb);
     border-radius: var(--radius);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #605e5c;
+    background: var(--scrollbar-thumb-hover);
 }
 
 /* ---- Floating Popup Card ---- */
@@ -1969,7 +2032,7 @@ select.btn {
     align-items: center;
     padding: 4px 0;
     font-size: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--subtle-divider);
 }
 
 .popup-row[title] {
@@ -2029,18 +2092,18 @@ select.btn {
 
 /* ---- Fluent 2 Focus States ---- */
 :focus-visible {
-    outline: 2px solid #000;
+    outline: 2px solid var(--focus-outer);
     outline-offset: -2px;
-    box-shadow: inset 0 0 0 1px #fff;
+    box-shadow: inset 0 0 0 1px var(--focus-inner);
 }
 
-/* Buttons override focus for better dark-theme visibility */
+/* Buttons override focus for better visibility */
 .btn:focus-visible,
 .btn-icon:focus-visible,
 .btn-sm:focus-visible {
-    outline: 2px solid #000;
+    outline: 2px solid var(--focus-outer);
     outline-offset: -2px;
-    box-shadow: inset 0 0 0 1px #fff;
+    box-shadow: inset 0 0 0 1px var(--focus-inner);
 }
 
 /* Inputs use bottom-border accent on focus */
