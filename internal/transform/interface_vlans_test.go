@@ -76,6 +76,33 @@ func TestParseInterfaceVLANsNXOS(t *testing.T) {
 				{Name: "Eth1/4", Mode: "trunk", NativeVLAN: 1, TrunkVLANs: []int{100, 200}},
 			},
 		},
+		{
+			name: "NX-OS nested phys-items structure",
+			input: []gnmi.Notification{{
+				Updates: []gnmi.Update{{
+					Path: "PhysIf-list[id=eth1/1]",
+					Value: map[string]interface{}{
+						"id":          "eth1/1",
+						"switchingSt": "disabled",
+						"phys-items": map[string]interface{}{
+							"operMode":     "trunk",
+							"accessVlan":   "vlan-1",
+							"nativeVlan":   "vlan-1007",
+							"allowedVlans": "1006-1007,1201-1203",
+						},
+					},
+				}},
+			}},
+			want: []InterfaceVLANConfig{
+				{
+					Name:       "Eth1/1",
+					Mode:       "trunk",
+					AccessVLAN: 1,
+					NativeVLAN: 1007,
+					TrunkVLANs: []int{1006, 1007, 1201, 1202, 1203},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
