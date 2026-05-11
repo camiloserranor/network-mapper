@@ -25,8 +25,9 @@ NM.views.renderSwitch = function(switchId) {
     html += '<div class="switch-info-panels">';
 
     // Device identity
-    html += '<div class="info-panel">';
-    html += '<div class="info-panel-title">Device Identity</div>';
+    html += '<div class="info-panel collapsible">';
+    html += '<div class="info-panel-title">Device Identity <span class="panel-chevron">▾</span></div>';
+    html += '<div class="panel-body">';
     html += infoRow('ID', swDev.id);
     if (swDev.system_name) html += infoRow('System Name', swDev.system_name);
     if (swDev.chassis_id) html += infoRow('Chassis ID', swDev.chassis_id);
@@ -36,12 +37,13 @@ NM.views.renderSwitch = function(switchId) {
     if (swDev.system_description) html += infoRow('Description', swDev.system_description);
     if (swDev.software_version) html += infoRow('Software Version', swDev.software_version);
     if (swDev.uptime) html += infoRow('Uptime', swDev.uptime);
-    html += '</div>';
+    html += '</div></div>';
 
     // Resource utilization
     if (swDev.cpu_utilization || swDev.memory_total) {
-        html += '<div class="info-panel">';
-        html += '<div class="info-panel-title">Resources</div>';
+        html += '<div class="info-panel collapsible">';
+        html += '<div class="info-panel-title">Resources <span class="panel-chevron">▾</span></div>';
+        html += '<div class="panel-body">';
         if (swDev.cpu_utilization) {
             html += infoRow('CPU', swDev.cpu_utilization.toFixed(1) + '%');
         }
@@ -51,12 +53,13 @@ NM.views.renderSwitch = function(switchId) {
             const memTotalGB = (swDev.memory_total / (1024*1024*1024)).toFixed(1);
             html += infoRow('Memory', memUsedGB + ' / ' + memTotalGB + ' GB (' + memPct + '%)');
         }
-        html += '</div>';
+        html += '</div></div>';
     }
 
     // Interface summary
-    html += '<div class="info-panel">';
-    html += '<div class="info-panel-title">Interface Summary</div>';
+    html += '<div class="info-panel collapsible">';
+    html += '<div class="info-panel-title">Interface Summary <span class="panel-chevron">▾</span></div>';
+    html += '<div class="panel-body">';
     html += infoRow('Total Interfaces', ifaces.length);
     html += infoRow('UP', ifacesUp);
     html += infoRow('DOWN', ifaces.length - ifacesUp);
@@ -64,14 +67,18 @@ NM.views.renderSwitch = function(switchId) {
     html += infoRow('Connected Hosts', hostCount);
     const switchLinks = Object.values(portMap).filter(c => c.remoteType === 'switch').length;
     html += infoRow('Switch Uplinks', switchLinks);
-    html += '</div>';
+    html += '</div></div>';
+
+    // VLAN membership visualization (Venn-like cards)
+    html += buildVLANVisualization(swDev, portMap, esc);
 
     // VLAN info — show topology-level VLAN details and per-interface VLAN assignments
     const vlans = swDev.vlans || [];
     var ifaceVlanData = buildInterfaceVLANSummary(swDev);
     if (vlans.length > 0 || ifaceVlanData.length > 0) {
-        html += '<div class="info-panel wide">';
-        html += '<div class="info-panel-title">VLAN Assignments</div>';
+        html += '<div class="info-panel wide collapsible">';
+        html += '<div class="info-panel-title">VLAN Assignments <span class="panel-chevron">▾</span></div>';
+        html += '<div class="panel-body">';
 
         if (ifaceVlanData.length > 0) {
             html += '<table class="conn-table"><thead><tr><th>Port</th><th>Mode</th><th>Access</th><th>Native</th><th>Active VLANs</th></tr></thead><tbody>';
@@ -90,15 +97,16 @@ NM.views.renderSwitch = function(switchId) {
             html += '<div class="info-panel-content" style="font-size:12px;color:var(--text-secondary)">' + esc(vlans.join(', ')) + '</div>';
         }
 
-        html += '</div>';
+        html += '</div></div>';
     }
 
     // BGP sessions
     const bgpSessions = swDev.bgp_sessions || [];
     if (bgpSessions.length > 0) {
         const established = bgpSessions.filter(s => s.session_state === 'ESTABLISHED').length;
-        html += '<div class="info-panel wide">';
-        html += '<div class="info-panel-title">BGP Sessions (' + established + '/' + bgpSessions.length + ' Established)</div>';
+        html += '<div class="info-panel wide collapsible">';
+        html += '<div class="info-panel-title">BGP Sessions (' + established + '/' + bgpSessions.length + ' Established) <span class="panel-chevron">▾</span></div>';
+        html += '<div class="panel-body">';
         html += '<table class="conn-table"><thead><tr><th>Neighbor</th><th>AS</th><th>State</th><th>VRF</th><th>Pfx Rcvd</th><th>Pfx Sent</th><th>Description</th></tr></thead><tbody>';
         for (const sess of bgpSessions) {
             const stateClass = sess.session_state === 'ESTABLISHED' ? 'bgp-up' : 'bgp-down';
@@ -113,26 +121,33 @@ NM.views.renderSwitch = function(switchId) {
             html += '</tr>';
         }
         html += '</tbody></table>';
-        html += '</div>';
+        html += '</div></div>';
     }
 
     // Annotations
     const annotations = swDev.annotations || {};
     const annotationKeys = Object.keys(annotations);
     if (annotationKeys.length > 0) {
-        html += '<div class="info-panel">';
-        html += '<div class="info-panel-title">Annotations</div>';
+        html += '<div class="info-panel collapsible">';
+        html += '<div class="info-panel-title">Annotations <span class="panel-chevron">▾</span></div>';
+        html += '<div class="panel-body">';
         for (const key of annotationKeys) {
             html += infoRow(key, String(annotations[key]));
         }
-        html += '</div>';
+        html += '</div></div>';
     }
 
     // Connections table
     const links = (topology.links || []).filter(l => l.local_device === switchId || l.remote_device === switchId);
+    links.sort(function(a, b) {
+        const aPort = a.local_device === switchId ? a.local_port : a.remote_port;
+        const bPort = b.local_device === switchId ? b.local_port : b.remote_port;
+        return aPort.localeCompare(bPort, undefined, { numeric: true });
+    });
     if (links.length > 0) {
-        html += '<div class="info-panel wide">';
-        html += '<div class="info-panel-title">Connections (' + links.length + ')</div>';
+        html += '<div class="info-panel wide collapsible">';
+        html += '<div class="info-panel-title">Connections (' + links.length + ') <span class="panel-chevron">▾</span></div>';
+        html += '<div class="panel-body">';
         html += '<table class="conn-table"><thead><tr><th>Local Port</th><th>Remote Device</th><th>Remote Port</th><th>Type</th><th>Status</th><th>Speed</th></tr></thead><tbody>';
         for (const link of links) {
             const isLocal = link.local_device === switchId;
@@ -155,12 +170,19 @@ NM.views.renderSwitch = function(switchId) {
             html += '</tr>';
         }
         html += '</tbody></table>';
-        html += '</div>';
+        html += '</div></div>';
     }
 
     html += '</div>'; // switch-info-panels
 
     container.innerHTML = html;
+
+    // Wire collapsible panel toggles
+    container.querySelectorAll('.info-panel.collapsible .info-panel-title').forEach(function(title) {
+        title.addEventListener('click', function() {
+            title.parentElement.classList.toggle('collapsed');
+        });
+    });
 
     // Wire SVG port clicks
     container.querySelectorAll('.svg-port[data-remote-id]').forEach(port => {
@@ -187,6 +209,16 @@ NM.views.renderSwitch = function(switchId) {
     container.querySelectorAll('.svg-port').forEach(port => {
         port.addEventListener('mouseenter', (e) => showSvgTooltip(e, port));
         port.addEventListener('mouseleave', hideSvgTooltip);
+    });
+
+    // Wire VLAN member chip clicks
+    container.querySelectorAll('.vlan-member-chip[data-device-id]').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+            var devId = chip.dataset.deviceId;
+            var devType = chip.dataset.deviceType;
+            if (devType === 'host') NM.state.ViewManager.navigateTo('host', devId);
+            else if (devType === 'switch') NM.state.ViewManager.navigateTo('switch', devId);
+        });
     });
 };
 
@@ -353,6 +385,74 @@ function buildFrontPanelSVG(swDev, ifaces, portMap, role, ifacesUp, hostCount, e
     svg += '</div>';
 
     return svg;
+}
+
+// buildVLANVisualization creates colored VLAN membership cards showing hosts/ports per VLAN.
+function buildVLANVisualization(swDev, portMap, esc) {
+    var vlanMembers = {}; // vlanId → [{port, host, hostId, hostType}]
+    var ifaces = swDev.interfaces || [];
+
+    for (var i = 0; i < ifaces.length; i++) {
+        var iface = ifaces[i];
+        var conn = portMap[iface.name];
+        if (!conn) continue;
+
+        var vlans = [];
+        if (iface.access_vlan) vlans.push(iface.access_vlan);
+        if (iface.trunk_vlans) vlans = vlans.concat(iface.trunk_vlans);
+        if (iface.observed_vlans) {
+            for (var v = 0; v < iface.observed_vlans.length; v++) {
+                if (vlans.indexOf(iface.observed_vlans[v]) === -1) vlans.push(iface.observed_vlans[v]);
+            }
+        }
+
+        for (var j = 0; j < vlans.length; j++) {
+            var vid = vlans[j];
+            if (!vlanMembers[vid]) vlanMembers[vid] = [];
+            vlanMembers[vid].push({
+                port: iface.name,
+                host: conn.remoteName || conn.remoteId,
+                hostId: conn.remoteId,
+                hostType: conn.remoteType
+            });
+        }
+    }
+
+    var vlanIds = Object.keys(vlanMembers).sort(function(a, b) { return parseInt(a) - parseInt(b); });
+    if (vlanIds.length === 0) return '';
+
+    var colors = ['#0078d4', '#44b700', '#f7630c', '#a36efd', '#d13438', '#00b7c3', '#8764b8', '#ca5010', '#57a300', '#4f6bed'];
+
+    var html = '<div class="info-panel wide">';
+    html += '<div class="info-panel-title">VLAN Membership <span class="vlan-viz-count">' + vlanIds.length + ' VLANs</span></div>';
+    html += '<div class="vlan-sets-container">';
+
+    for (var k = 0; k < vlanIds.length; k++) {
+        var vid = vlanIds[k];
+        var members = vlanMembers[vid];
+        var color = colors[k % colors.length];
+
+        html += '<div class="vlan-set" style="border-color:' + color + '">';
+        html += '<div class="vlan-set-header" style="background:' + color + '20;color:' + color + '">';
+        html += '<span class="vlan-set-id">VLAN ' + esc(String(vid)) + '</span>';
+        html += '<span class="vlan-set-count">' + members.length + ' port' + (members.length !== 1 ? 's' : '') + '</span>';
+        html += '</div>';
+        html += '<div class="vlan-set-members">';
+
+        for (var m = 0; m < members.length; m++) {
+            var member = members[m];
+            var chipClass = 'vlan-member-chip ' + (member.hostType || 'unknown');
+            html += '<div class="' + chipClass + '" data-device-id="' + esc(member.hostId) + '" data-device-type="' + esc(member.hostType) + '">';
+            html += '<span class="vlan-member-name">' + esc(member.host) + '</span>';
+            html += '<span class="vlan-member-port">' + esc(member.port) + '</span>';
+            html += '</div>';
+        }
+
+        html += '</div></div>';
+    }
+
+    html += '</div></div>';
+    return html;
 }
 
 function getPortVLANInfo(portName) {
