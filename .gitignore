@@ -17,6 +17,9 @@ examples/sample-deployment.json
 # TLS certificate cache
 .certs/
 
+# Raw gNMI data dumps (diagnostic, may contain sensitive data)
+gnmi-raw-data/
+
 # IDE / OS
 .vs/
 .vscode/

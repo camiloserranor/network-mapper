@@ -89,20 +89,29 @@ func parseOneInterfaceVLAN(vals map[string]interface{}, nameHint string) Interfa
 		Name: NormalizeInterfaceName(name),
 	}
 
-	// Switchport mode: NX-OS uses "mode" or "switchportMode"
-	mode := GetFirstString(vals, "mode", "switchportMode", "layer")
+	// NX-OS nests switchport config under "phys-items". Try that first,
+	// then fall back to top-level fields for other response shapes.
+	source := vals
+	if physItems, ok := vals["phys-items"]; ok {
+		if pm, ok := physItems.(map[string]interface{}); ok {
+			source = pm
+		}
+	}
+
+	// Switchport mode: NX-OS uses "operMode", "mode", or "switchportMode"
+	mode := GetFirstString(source, "operMode", "mode", "switchportMode", "layer")
 	cfg.Mode = normalizeSwitchportMode(mode)
 
-	// Access VLAN
-	accessStr := GetFirstString(vals, "accessVlan", "access_vlan")
+	// Access VLAN (NX-OS: "accessVlan" or "cfgAccessVlan")
+	accessStr := GetFirstString(source, "accessVlan", "cfgAccessVlan", "access_vlan")
 	cfg.AccessVLAN = parseVLANIDFromEncap(accessStr)
 
-	// Native VLAN (trunk)
-	nativeStr := GetFirstString(vals, "nativeVlan", "native_vlan")
+	// Native VLAN (NX-OS: "nativeVlan" or "cfgNativeVlan")
+	nativeStr := GetFirstString(source, "nativeVlan", "cfgNativeVlan", "native_vlan")
 	cfg.NativeVLAN = parseVLANIDFromEncap(nativeStr)
 
-	// Trunk VLANs (may be a comma-separated string like "1-100,200-300" or a list)
-	trunkStr := GetFirstString(vals, "trunkVlans", "trunk_vlans", "allowedVlans")
+	// Trunk VLANs (NX-OS: "allowedVlans" or "trunkVlans")
+	trunkStr := GetFirstString(source, "allowedVlans", "trunkVlans", "trunk_vlans")
 	if trunkStr != "" {
 		cfg.TrunkVLANs = parseTrunkVLANRange(trunkStr)
 	}
