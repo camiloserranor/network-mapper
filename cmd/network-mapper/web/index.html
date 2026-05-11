@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Network Mapper — Topology</title>
+    <!-- Apply saved theme before CSS loads to prevent flash -->
+    <script>
+        if (localStorage.getItem('nm-theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
     <!-- Segoe UI Variable: ships with Windows 11+, used by Fluent 2 -->
     <style>
         @font-face {
@@ -19,17 +25,22 @@
     <!-- Toolbar -->
     <header id="toolbar">
         <div class="toolbar-left">
-            <h1 class="logo">⬡ Network Mapper</h1>
+            <h1 class="logo"><svg class="icon-logo" width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l7.66 4.42v8.84L10 18.68l-7.66-4.42V5.42L10 1zm0 1.15L3.34 5.96v8.08L10 17.53l6.66-3.49V5.96L10 2.15z"/><circle cx="10" cy="10" r="2.5"/><path d="M10 4v3.5M10 12.5V16M4.5 7L7.5 8.75M12.5 11.25L15.5 13M4.5 13L7.5 11.25M12.5 8.75L15.5 7" stroke="currentColor" stroke-width="1" fill="none"/></svg> Network Mapper</h1>
         </div>
         <div class="toolbar-center">
             <input type="text" id="search-input" placeholder="Search devices..." autocomplete="off">
         </div>
         <div class="toolbar-right">
             <div class="btn-group">
-                <button class="btn" id="refresh-btn" title="Refresh topology data">⟳ Refresh</button>
+                <button class="btn" id="refresh-btn" title="Refresh topology data"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: -3px;"><path d="M11.534 7h3.932a.25.25 0 01.192.41l-1.966 2.36a.25.25 0 01-.384 0l-1.966-2.36A.25.25 0 0111.534 7zm-7.068 2H.534a.25.25 0 00-.192.41l1.966 2.36a.25.25 0 00.384 0l1.966-2.36A.25.25 0 004.466 9z"/><path d="M8 3a5 5 0 014.546 2.914.5.5 0 00.908-.418A6 6 0 002 8a6 6 0 00.442 2.27.5.5 0 10.936-.35A5 5 0 018 3zm0 10a5 5 0 01-4.546-2.914.5.5 0 00-.908.418A6 6 0 0014 8a6 6 0 00-.442-2.27.5.5 0 10-.936.35A5 5 0 018 13z"/></svg> Refresh</button>
                 <button class="btn" id="fit-btn" title="Scroll to top">⤢ Top</button>
                 <button class="btn" id="export-json-btn" title="Export topology as JSON">{ } JSON</button>
             </div>
+            <button class="btn btn-icon" id="theme-toggle-btn" title="Toggle dark/light theme">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 12.5V2.5a5.5 5.5 0 010 11z"/>
+                </svg>
+            </button>
         </div>
     </header>
 
@@ -41,7 +52,7 @@
     <!-- Warning banner for partial failures -->
     <div id="warning-banner" class="hidden">
         <div class="warning-banner-content">
-            <span class="warning-icon">⚠</span>
+            <span class="warning-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M7.134 1.496a1 1 0 011.732 0l6.267 10.847A1 1 0 0114.267 14H1.733a1 1 0 01-.866-1.5L7.134 1.496zM8 5a.5.5 0 00-.5.5v3a.5.5 0 001 0v-3A.5.5 0 008 5zm0 6.5a.75.75 0 100-1.5.75.75 0 000 1.5z"/></svg></span>
             <span id="warning-summary"></span>
             <button id="warning-toggle" class="btn-icon" title="Show details">▾</button>
             <button id="warning-dismiss" class="btn-icon" title="Dismiss">✕</button>
@@ -51,7 +62,7 @@
 
     <!-- Timeline slider for historical snapshots -->
     <div id="timeline-bar" class="hidden">
-        <span class="timeline-icon" title="Snapshot history">🕐</span>
+        <span class="timeline-icon" title="Snapshot history"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a6 6 0 100 12A6 6 0 008 2zM1 8a7 7 0 1114 0A7 7 0 011 8zm7.5-3.5a.5.5 0 00-1 0V8a.5.5 0 00.146.354l2 2a.5.5 0 00.708-.708L8.5 7.793V4.5z"/></svg></span>
         <input type="range" id="timeline-slider" min="0" max="1" value="1">
         <span id="timeline-label" class="live">● Live</span>
         <button class="btn btn-sm" id="timeline-live-btn" title="Return to live data">↻ Live</button>
@@ -59,9 +70,9 @@
 
     <!-- Historical data banner -->
     <div id="historical-banner" class="hidden">
-        <span class="historical-icon">📜</span>
+        <span class="historical-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 11-4.95 2.05.5.5 0 01.7.71A6 6 0 108 2V4.5a.5.5 0 01-.854.354l-2-2a.5.5 0 010-.708l2-2A.5.5 0 018 .5V1z"/><path d="M8.5 4.5a.5.5 0 00-1 0V8a.5.5 0 00.146.354l2 2a.5.5 0 00.708-.708L8.5 7.793V4.5z"/></svg></span>
         Viewing historical snapshot from <strong id="historical-timestamp"></strong>
-        <button class="btn btn-sm" id="historical-return-btn" onclick="NM.ui.Timeline && NM.ui.Timeline.init && document.getElementById('timeline-live-btn').click()">Return to Live</button>
+        <button class="btn btn-sm" id="historical-return-btn">Return to Live</button>
     </div>
 
     <!-- Main content -->
@@ -69,7 +80,7 @@
         <!-- Inventory panel (left side) -->
         <aside id="inventory-panel">
             <div class="inventory-header">
-                <h2>📋 Inventory</h2>
+                <h2><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: -2px; margin-right: 4px;"><path d="M2.5 3a.5.5 0 000 1h11a.5.5 0 000-1h-11zm0 3a.5.5 0 000 1h11a.5.5 0 000-1h-11zm0 3a.5.5 0 000 1h11a.5.5 0 000-1h-11zm0 3a.5.5 0 000 1h11a.5.5 0 000-1h-11z"/></svg>Inventory</h2>
                 <button id="inventory-toggle" class="btn-icon" title="Collapse panel">◀</button>
             </div>
             <div id="inventory-content">
@@ -115,7 +126,7 @@
     <!-- Error overlay -->
     <div id="error-overlay" class="hidden">
         <div class="error-card">
-            <h2>⚠ No Topology Data</h2>
+            <h2><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: -2px; margin-right: 4px;"><path d="M7.134 1.496a1 1 0 011.732 0l6.267 10.847A1 1 0 0114.267 14H1.733a1 1 0 01-.866-1.5L7.134 1.496zM8 5a.5.5 0 00-.5.5v3a.5.5 0 001 0v-3A.5.5 0 008 5zm0 6.5a.75.75 0 100-1.5.75.75 0 000 1.5z"/></svg> No Topology Data</h2>
             <p id="error-message">Could not load topology.json</p>
             <button class="btn" onclick="location.reload()">Retry</button>
         </div>
@@ -129,6 +140,7 @@
     <!-- Core (namespace must load first) -->
     <script src="/js/core/namespace.js"></script>
     <script src="/js/core/utils.js"></script>
+    <script src="/js/core/icons.js"></script>
     <script src="/js/core/state.js"></script>
 
     <!-- Data layer -->
