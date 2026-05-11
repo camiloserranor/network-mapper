@@ -85,6 +85,14 @@ collect:
   timeout_sec: 30              # Per-switch timeout
   parallel: 2                  # Max concurrent switch connections
   skip_counters: false         # Skip interface counter collection
+
+# Storage & retention (for live mode with --config)
+storage:
+  data_dir: "./data"           # Base directory for snapshots + logs
+  retention_days: 7            # Delete snapshots/logs older than this
+  max_snapshots: 1000          # Hard cap on snapshot count (safety valve)
+  log_to_file: true            # Enable file-based logging with rotation
+  log_max_size_mb: 50          # Max single log file size before rotation
 ```
 
 ## Authentication & Credentials
@@ -144,12 +152,39 @@ auth:
 # Collect topology from configured switches
 network-mapper collect --config config.yaml --output topology.json
 
-# Serve the interactive web UI
+# Serve the interactive web UI (static mode — serves a single JSON file)
 network-mapper serve --topology topology.json --port 8080
+
+# Serve with live collection (hybrid mode — ON_CHANGE + periodic polling)
+network-mapper serve --config config.yaml --port 8080 --interval 300
 
 # Flags
 network-mapper collect --help
 network-mapper serve --help
+```
+
+## Historical Snapshots & Retention
+
+When running in live mode (`serve --config`), the tool automatically:
+
+- **Saves topology snapshots** to `data/snapshots/` whenever the network topology changes
+- **Subscribes to gNMI ON_CHANGE** for LLDP and interface state — changes are detected in near real-time
+- **Polls periodically** (default 5 min) as fallback for data that doesn't support ON_CHANGE
+- **Prunes old data** — snapshots and log files older than `retention_days` are automatically deleted
+
+The web UI displays a **timeline slider** when snapshots are available, letting you browse historical topology states and compare them with the current live view.
+
+### Data Directory Structure
+
+```
+data/
+├── snapshots/
+│   ├── topology-2026-05-11T10-30-00Z.json
+│   ├── topology-2026-05-11T11-45-22Z.json
+│   └── ...
+└── logs/
+    ├── network-mapper-2026-05-11.log
+    └── ...
 ```
 
 ## Data Collected

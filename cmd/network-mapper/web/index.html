@@ -40,6 +40,21 @@
         <div id="warning-details" class="hidden"></div>
     </div>
 
+    <!-- Timeline slider for historical snapshots -->
+    <div id="timeline-bar" class="hidden">
+        <span class="timeline-icon" title="Snapshot history">🕐</span>
+        <input type="range" id="timeline-slider" min="0" max="1" value="1">
+        <span id="timeline-label" class="live">● Live</span>
+        <button class="btn btn-sm" id="timeline-live-btn" title="Return to live data">↻ Live</button>
+    </div>
+
+    <!-- Historical data banner -->
+    <div id="historical-banner" class="hidden">
+        <span class="historical-icon">📜</span>
+        Viewing historical snapshot from <strong id="historical-timestamp"></strong>
+        <button class="btn btn-sm" id="historical-return-btn" onclick="NM.ui.Timeline && NM.ui.Timeline.init && document.getElementById('timeline-live-btn').click()">Return to Live</button>
+    </div>
+
     <!-- Main content -->
     <div id="main">
         <!-- Inventory panel (left side) -->
@@ -118,6 +133,7 @@
     <script src="/js/popup.js"></script>
     <script src="/js/toolbar.js"></script>
     <script src="/js/ui/inventory.js"></script>
+    <script src="/js/ui/timeline.js"></script>
 
     <!-- Views -->
     <script src="/js/views/fabric.js"></script>

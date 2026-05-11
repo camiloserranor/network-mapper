@@ -20,6 +20,7 @@ Auth           AuthConfig     `yaml:"auth"`            // global auth (inherited
 Switches       []SwitchConfig `yaml:"switches"`
 TLS            TLSConfig      `yaml:"tls"`
 Collect        CollectConfig  `yaml:"collect"`
+Storage        StorageConfig  `yaml:"storage"`         // snapshot and log storage settings
 DeploymentJSON string         `yaml:"deployment_json"` // optional path to Azure Local deployment design JSON
 }
 
@@ -57,6 +58,15 @@ TimeoutSec   int  `yaml:"timeout_sec"`   // per-switch timeout (default 30)
 Parallel     int  `yaml:"parallel"`      // max concurrent switch connections (default 2)
 SkipCounters bool `yaml:"skip_counters"` // skip interface counter collection
 ReverseDNS   bool `yaml:"reverse_dns"`   // attempt reverse DNS for host IP→hostname (default false)
+}
+
+// StorageConfig defines settings for topology snapshot and log file management.
+type StorageConfig struct {
+DataDir       string `yaml:"data_dir"`        // base directory for snapshots and logs (default: "./data")
+RetentionDays int    `yaml:"retention_days"`  // delete snapshots/logs older than this (default: 7)
+MaxSnapshots  int    `yaml:"max_snapshots"`   // hard cap on number of stored snapshots (default: 1000)
+LogToFile     bool   `yaml:"log_to_file"`     // write logs to file in addition to stdout (default: true)
+LogMaxSizeMB  int    `yaml:"log_max_size_mb"` // max single log file size in MB before rotation (default: 50)
 }
 
 // Load reads and parses a configuration file.
@@ -286,5 +296,18 @@ c.Collect.Parallel = 2
 
 if c.TLS.CertDir == "" {
 c.TLS.CertDir = ".certs"
+}
+
+if c.Storage.DataDir == "" {
+c.Storage.DataDir = "./data"
+}
+if c.Storage.RetentionDays <= 0 {
+c.Storage.RetentionDays = 7
+}
+if c.Storage.MaxSnapshots <= 0 {
+c.Storage.MaxSnapshots = 1000
+}
+if c.Storage.LogMaxSizeMB <= 0 {
+c.Storage.LogMaxSizeMB = 50
 }
 }
