@@ -20,6 +20,9 @@ examples/sample-deployment.json
 # Raw gNMI data dumps (diagnostic, may contain sensitive data)
 gnmi-raw-data/
 
+# Runtime data directory (snapshots + logs, generated at runtime)
+data/
+
 # IDE / OS
 .vs/
 .vscode/
