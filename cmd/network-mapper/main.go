@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/camiloserranor/network-mapper/internal/config"
 	"github.com/camiloserranor/network-mapper/internal/gnmi"
 	"github.com/camiloserranor/network-mapper/internal/server"
+	"github.com/camiloserranor/network-mapper/internal/storage"
 	"github.com/camiloserranor/network-mapper/internal/topology"
 )
 
@@ -77,7 +79,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Network Mapper UI starting at %s\n", addr)
 
 	if cfgPath != "" {
-		// Live mode: periodic gNMI collection + WebSocket push
+		// Live mode: gNMI collection + WebSocket push
 		cfg, err := config.Load(cfgPath)
 		if err != nil {
 			return fmt.Errorf("loading config: %w", err)
@@ -85,6 +87,31 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 		interval := time.Duration(intervalSec) * time.Second
 		fmt.Printf("Live mode: collecting from %d switch(es) every %s\n", len(cfg.Switches), interval)
+
+		// Set up storage (snapshots + logging)
+		snapStore, err := storage.NewSnapshotStore(cfg.Storage.DataDir)
+		if err != nil {
+			return fmt.Errorf("initializing snapshot store: %w", err)
+		}
+		srv.SetSnapshots(snapStore)
+
+		// Set up file-based logging with rotation
+		if cfg.Storage.LogToFile {
+			logWriter, err := storage.NewLogWriter(cfg.Storage.DataDir, cfg.Storage.LogMaxSizeMB)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "WARNING: failed to set up file logging: %v\n", err)
+			} else {
+				logWriter.Install()
+				defer logWriter.Close()
+				log.Printf("File logging enabled: %s/logs/", cfg.Storage.DataDir)
+			}
+		}
+
+		// Start retention pruner in background
+		pruner := storage.NewRetentionPruner(snapStore, cfg.Storage.DataDir, cfg.Storage.RetentionDays, cfg.Storage.MaxSnapshots)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		go pruner.Start(ctx)
 
 		// Perform initial collection synchronously so the API is ready before the browser opens
 		fmt.Println("Running initial topology collection...")
@@ -99,16 +126,20 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 		srv.SetLiveMode(initialTopo)
 
-		sc := collector.NewStreamingCollector(cfg, interval, func(topo *topology.Topology) {
+		// Save initial snapshot
+		if _, err := snapStore.Save(initialTopo); err != nil {
+			log.Printf("WARNING: failed to save initial snapshot: %v", err)
+		}
+
+		// Start hybrid collector (ON_CHANGE + periodic poll)
+		hc := collector.NewHybridCollector(cfg, interval, snapStore, func(topo *topology.Topology) {
 			srv.UpdateTopology(topo)
+			srv.NotifySnapshotSaved()
 		})
 
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-
 		go func() {
-			if err := sc.Start(ctx); err != nil && err != context.Canceled {
-				fmt.Fprintf(os.Stderr, "Streaming collector error: %v\n", err)
+			if err := hc.Start(ctx); err != nil && err != context.Canceled {
+				fmt.Fprintf(os.Stderr, "Hybrid collector error: %v\n", err)
 			}
 		}()
 	} else {
