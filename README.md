@@ -16,23 +16,26 @@ Azure Local deployments rely on physical cabling between hosts and TOR switches.
 ## How It Works
 
 ```
-┌─────────────┐     gNMI Get/Subscribe       ┌──────────────┐
-│  TOR Switch  │ ◄────────────────────────── │              │
-│ (SONiC/NX-OS)│  LLDP · Interfaces · Sys    │   Network    │
-└─────────────┘                              │   Mapper     │ ──► topology.json
-                                             │              │
-┌─────────────┐     gNMI Get/Subscribe       │              │ ──► Web UI (localhost)
-│  TOR Switch  │ ◄────────────────────────── │              │
-│ (SONiC/NX-OS)│  LLDP · Interfaces · Sys    │              │
-└─────────────┘                              └──────────────┘
+  Stage 1: Collect               Stage 2: Build               Stage 3: Render
+┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐
+│  gNMI Collector  │         │ Topology Builder │         │   Web UI / CLI  │
+│                  │ ──────► │                  │ ──────► │                 │
+│ Raw switch data  │ Result  │ V2 hierarchical  │  JSON   │ Interactive     │
+│ per switch       │         │ topology JSON    │         │ visualization   │
+└─────────────────┘         └─────────────────┘         └─────────────────┘
+     ▲                                                        ▲
+     │ gNMI Get/Subscribe                                     │ HTTP + WS
+┌─────────────┐                                          ┌──────────┐
+│ TOR Switches │                                          │ Browser  │
+│ (SONiC/NX-OS)│                                          └──────────┘
+└─────────────┘
 ```
 
-1. **Connect** to each TOR switch via gNMI (gRPC + TLS)
-2. **Query** LLDP neighbor tables, interface state/counters, and system info
-3. **Normalize** data across vendor variations (SONiC OpenConfig, Cisco NX-OS native)
-4. **Build** a topology graph with devices, interfaces, and physical links
-5. **Export** the topology as a versioned JSON document
-6. **Visualize** the topology in an interactive web UI with hierarchical layout
+The project is organized as a 3-stage data pipeline. Each stage is independently testable and mockable:
+
+1. **gNMI Collector** (`internal/collector/`) — Connects to TOR switches via gNMI, collects raw LLDP, interface, system, VLAN, MAC, ARP, and BGP data. Returns a `CollectionResult` with per-switch raw data.
+2. **Topology Builder** (`internal/builder/`) — Pure function that transforms the raw `CollectionResult` into a hierarchical v2 topology JSON. Handles device classification, link correlation, VLAN cross-referencing, and endpoint attribution. No I/O, no side effects.
+3. **Network Mapper UI** (`cmd/network-mapper/web/`) — Embedded web UI that consumes the v2 topology JSON and renders an interactive visualization with fabric, switch, host, and VM views.
 
 ## Quick Start
 
@@ -199,41 +202,59 @@ The tool queries each TOR switch for 3 categories of data via gNMI:
 
 For Cisco NX-OS switches, native paths are used: `/System/lldp-items/inst-items/if-items/If-list`
 
-## Topology JSON Output
+## Topology JSON Output (v2 Schema)
+
+The topology JSON uses a hierarchical v2 schema designed to be both machine-processable and human-readable. It serves as the primary artifact of the tool — a complete summary of the physical network topology.
 
 ```json
 {
-  "schema_version": "1.0",
-  "collected_at": "2026-04-24T12:00:00Z",
-  "source_switches": ["TOR-1", "TOR-2"],
-  "partial_failures": [],
-  "devices": [
-    {
-      "id": "TOR-1",
-      "type": "switch",
-      "system_name": "TOR-1",
-      "software_version": "SONiC.4.1.5",
-      "management_address": "10.0.0.1",
-      "interfaces": [
-        { "name": "Ethernet1", "oper_status": "UP", "speed": "25G", "mtu": 9100 }
-      ]
-    }
-  ],
-  "links": [
-    {
-      "local_device": "TOR-1",
-      "local_port": "Ethernet1",
-      "remote_device": "host-01",
-      "remote_port": "NIC1",
-      "remote_chassis_id": "11:22:33:44:55:01",
-      "source": "lldp",
-      "oper_status": "UP",
-      "speed": "25G",
-      "counters": { "in_octets": 1234567890, "out_octets": 987654321 }
-    }
-  ]
+  "schema_version": "2.0",
+  "metadata": {
+    "collected_at": "2026-05-18T10:30:00Z",
+    "source_switches": ["TOR-1", "TOR-2"],
+    "collector_version": "0.4.0"
+  },
+  "summary": {
+    "total_switches": 2,
+    "total_hosts": 4,
+    "total_peer_links": 8,
+    "total_host_links": 16,
+    "total_vlans": 3,
+    "total_unknown_devices": 0
+  },
+  "fabric": {
+    "switches": [
+      {
+        "id": "TOR-1",
+        "name": "TOR-1",
+        "chassis_id": "aa:bb:cc:dd:ee:01",
+        "management_address": "10.0.0.1",
+        "software_version": "SONiC.4.1.5",
+        "interfaces": [ ... ],
+        "peer_links": [ ... ],
+        "connected_hosts": [ ... ],
+        "bgp_sessions": [ ... ]
+      }
+    ]
+  },
+  "compute": {
+    "hosts": [
+      {
+        "id": "host-01",
+        "name": "ASRR1N42R14U01",
+        "connections": [ ... ],
+        "endpoints": [ ... ]
+      }
+    ]
+  },
+  "vlans": { "items": [ ... ] },
+  "warnings": []
 }
 ```
+
+For the full schema reference, see [`docs/topology-schema.md`](docs/topology-schema.md).
+
+Use `--schema v1` with the `collect` command to output the legacy flat schema if needed.
 
 ## Web UI Features
 
@@ -320,27 +341,33 @@ network-mapper/
 │   ├── main.go                # CLI entry (cobra): collect + serve commands
 │   └── web/                   # Embedded web UI (go:embed)
 │       ├── index.html
-│       ├── css/app.css        # Dark theme
+│       ├── css/app.css        # Azure portal-inspired theme (light + dark)
 │       ├── js/
-│       │   ├── graph.js       # Cytoscape.js init, tree layout, expand/collapse, VLAN view
-│       │   ├── sidebar.js     # Detail panel with interface health and tooltips
-│       │   ├── popup.js       # Floating card near clicked elements
-│       │   ├── toolbar.js     # Layout, search, export (PNG + JSON) controls
-│       │   ├── live.js        # WebSocket connection for live topology updates
-│       │   └── app.js         # Main entry, topology transform, inventory panel
+│       │   ├── app.js         # Entry point, v2 adapter, WebSocket
+│       │   ├── graph.js       # Cytoscape.js init, layouts, expand/collapse
+│       │   ├── data/topology.js # V2→V1 adapter + data helpers
+│       │   ├── views/         # Fabric, switch, host, VM views
+│       │   └── ui/            # Sidebar, popup, toolbar, timeline, inventory
 │       └── lib/               # Vendored: cytoscape.min.js, dagre.min.js
 ├── internal/
 │   ├── config/                # YAML config loading + env-var resolution
 │   ├── gnmi/                  # gNMI client, TLS/TOFU, path parsing
 │   ├── transform/             # LLDP, interface, system data parsers
-│   ├── collector/             # Orchestrator: connect, collect, build topology
-│   ├── topology/              # Core types: Device, Interface, Link, Topology
+│   ├── collector/             # Stage 1: gNMI collection → CollectionResult
+│   ├── builder/               # Stage 2: CollectionResult → TopologyV2
+│   ├── topology/              # Core types: v1 (Topology) + v2 (TopologyV2)
 │   ├── deployment/            # Deployment JSON enrichment (experimental)
 │   ├── secrets/               # Azure Key Vault credential resolution
-│   └── server/                # HTTP server: embedded web + REST API
+│   ├── server/                # HTTP server: embedded web + REST API
+│   └── storage/               # Snapshot persistence + retention pruning
+├── docs/
+│   ├── topology-schema.md     # V2 schema reference documentation
+│   ├── DATA-COLLECTION.md     # gNMI paths and data categories
+│   ├── DEVICE-CORRELATION.md  # Dedup, MAC matching, enrichment
+│   └── SWITCH-SETUP.md        # gNMI setup on TOR switches
 └── examples/
     ├── config.yaml            # Sample config for 2 TOR switches
-    └── sample-topology.json   # Sample output with enriched data
+    └── topology-v2-sample.json # Sample v2 output from real switches
 ```
 
 ## Related Projects
@@ -356,6 +383,7 @@ This project builds on patterns from [arc-switch](../arc-switch), specifically:
 
 | Document | Description |
 |----------|-------------|
+| [topology-schema.md](docs/topology-schema.md) | V2 topology JSON schema — field-by-field reference |
 | [DATA-COLLECTION.md](docs/DATA-COLLECTION.md) | What data is collected, gNMI paths, how each category is used |
 | [DEVICE-CORRELATION.md](docs/DEVICE-CORRELATION.md) | Device deduplication, MAC offset handling, enrichment passes |
 | [SWITCH-SETUP.md](docs/SWITCH-SETUP.md) | How to enable gNMI on TOR switches |
@@ -364,11 +392,9 @@ This project builds on patterns from [arc-switch](../arc-switch), specifically:
 
 - [x] v0.1 — CLI `collect` command with JSON topology output
 - [x] v0.2 — Embedded web UI with interactive graph visualization
-- [ ] v0.3 — Topology diff / drift detection
-
-
-
-- [ ] v0.4 — Real-time streaming / auto-refresh
+- [x] v0.3 — Historical snapshots with timeline UI and retention policy
+- [x] v0.4 — V2 hierarchical topology schema with 3-stage pipeline
+- [ ] v0.5 — Topology diff / drift detection
 - [ ] v1.0 — Production hardening, comprehensive tests, CI/CD
 
 
