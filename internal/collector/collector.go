@@ -31,8 +31,59 @@ type switchResult struct {
 	Errors       []topology.PartialError
 }
 
+// CollectRaw connects to all configured switches, queries gNMI for LLDP,
+// interface, system data, and returns the raw per-switch results. This is
+// the stage-1 output of the pipeline — pass the result to builder.Build()
+// to produce the v2 topology.
+func CollectRaw(ctx context.Context, cfg *config.Config) (*CollectionResult, error) {
+	now := time.Now()
+
+	results := make([]switchResult, len(cfg.Switches))
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, cfg.Collect.Parallel)
+
+	for i, sw := range cfg.Switches {
+		wg.Add(1)
+		go func(idx int, sw config.SwitchConfig) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			swCtx, cancel := context.WithTimeout(ctx, time.Duration(cfg.Collect.TimeoutSec)*time.Second)
+			defer cancel()
+
+			results[idx] = collectSwitch(swCtx, sw, cfg, now)
+		}(i, sw)
+	}
+
+	wg.Wait()
+
+	cr := &CollectionResult{
+		CollectedAt: now,
+		Switches:    make([]SwitchData, len(results)),
+	}
+	for i, r := range results {
+		cr.Switches[i] = SwitchData{
+			SwitchName:   r.SwitchName,
+			SwitchID:     r.SwitchID,
+			Device:       r.Device,
+			Neighbors:    r.Neighbors,
+			Interfaces:   r.Interfaces,
+			MACEntries:   r.MACEntries,
+			ARPEntries:   r.ARPEntries,
+			VLANs:        r.VLANs,
+			BGPNeighbors: r.BGPNeighbors,
+			Errors:       r.Errors,
+		}
+	}
+
+	return cr, nil
+}
+
 // Collect connects to all configured switches, queries gNMI for LLDP, interface,
 // and system data, and returns a complete Topology.
+//
+// Deprecated: Use CollectRaw + builder.Build for the v2 pipeline.
 func Collect(ctx context.Context, cfg *config.Config) (*topology.Topology, error) {
 	now := time.Now()
 

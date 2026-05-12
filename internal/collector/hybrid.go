@@ -10,7 +10,6 @@ import (
 	"github.com/camiloserranor/network-mapper/internal/config"
 	"github.com/camiloserranor/network-mapper/internal/storage"
 	"github.com/camiloserranor/network-mapper/internal/subscribe"
-	"github.com/camiloserranor/network-mapper/internal/topology"
 )
 
 const (
@@ -19,6 +18,11 @@ const (
 	debounceInterval = 5 * time.Second
 )
 
+// BuildFunc transforms a CollectionResult into a topology value (v2) that
+// can be serialized to JSON and served to clients. This callback decouples
+// the collector from the builder package to avoid import cycles.
+type BuildFunc func(*CollectionResult) interface{}
+
 // HybridCollector combines gNMI ON_CHANGE subscriptions with periodic polling.
 // ON_CHANGE detects LLDP/interface changes in near real-time; periodic polling
 // catches everything else (MAC, ARP, counters, VLANs, BGP).
@@ -26,21 +30,24 @@ type HybridCollector struct {
 	cfg          *config.Config
 	pollInterval time.Duration
 	snapshots    *storage.SnapshotStore
+	buildFn      BuildFunc
 
 	mu       sync.RWMutex
-	current  *topology.Topology
-	snapshot []byte // JSON for change detection
+	current  interface{} // current topology (v2)
+	snapshot []byte      // JSON for change detection
 
-	onChange func(*topology.Topology)
+	onChange func(interface{})
 }
 
 // NewHybridCollector creates a collector that reacts to ON_CHANGE events
-// and also polls periodically as a fallback.
-func NewHybridCollector(cfg *config.Config, pollInterval time.Duration, snapshots *storage.SnapshotStore, onChange func(*topology.Topology)) *HybridCollector {
+// and also polls periodically as a fallback. buildFn converts raw collection
+// results into a serializable topology (typically builder.Build).
+func NewHybridCollector(cfg *config.Config, pollInterval time.Duration, snapshots *storage.SnapshotStore, buildFn BuildFunc, onChange func(interface{})) *HybridCollector {
 	return &HybridCollector{
 		cfg:          cfg,
 		pollInterval: pollInterval,
 		snapshots:    snapshots,
+		buildFn:      buildFn,
 		onChange:     onChange,
 	}
 }
@@ -94,7 +101,7 @@ func (hc *HybridCollector) Start(ctx context.Context) error {
 }
 
 // GetTopology returns the current topology snapshot (thread-safe).
-func (hc *HybridCollector) GetTopology() *topology.Topology {
+func (hc *HybridCollector) GetTopology() interface{} {
 	hc.mu.RLock()
 	defer hc.mu.RUnlock()
 	return hc.current
@@ -104,12 +111,13 @@ func (hc *HybridCollector) collectAndSave(ctx context.Context) {
 	start := time.Now()
 	log.Println("[hybrid] Starting collection cycle...")
 
-	topo, err := Collect(ctx, hc.cfg)
+	cr, err := CollectRaw(ctx, hc.cfg)
 	if err != nil {
 		log.Printf("[hybrid] Collection error: %v", err)
 		return
 	}
 
+	topo := hc.buildFn(cr)
 	elapsed := time.Since(start)
 	log.Printf("[hybrid] Collection cycle completed in %s", elapsed)
 
@@ -126,7 +134,7 @@ func (hc *HybridCollector) collectAndSave(ctx context.Context) {
 	hc.mu.Unlock()
 
 	if changed {
-		log.Printf("[hybrid] Topology changed: %d devices, %d links (collected in %s)", len(topo.Devices), len(topo.Links), elapsed)
+		log.Printf("[hybrid] Topology changed (collected in %s, %d bytes)", elapsed, len(newSnapshot))
 
 		// Save snapshot to disk
 		if hc.snapshots != nil {

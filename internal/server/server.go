@@ -19,7 +19,6 @@ import (
 	"github.com/coder/websocket/wsjson"
 
 	"github.com/camiloserranor/network-mapper/internal/storage"
-	"github.com/camiloserranor/network-mapper/internal/topology"
 )
 
 // Server serves the embedded web UI and the topology API.
@@ -34,7 +33,7 @@ type Server struct {
 
 	// Live mode state
 	mu        sync.RWMutex
-	liveTopo  *topology.Topology
+	liveTopo  interface{} // *topology.Topology (v1) or *topology.TopologyV2
 	clients   map[*wsClient]struct{}
 	clientsMu sync.Mutex
 }
@@ -61,7 +60,9 @@ func (s *Server) SetPprof(enable bool) {
 }
 
 // SetLiveMode enables live streaming mode (topology served from memory, WebSocket push).
-func (s *Server) SetLiveMode(initial *topology.Topology) {
+// SetLiveMode puts the server into live mode with initial topology data.
+// topo can be *topology.Topology (v1) or *topology.TopologyV2 (v2).
+func (s *Server) SetLiveMode(initial interface{}) {
 	s.live = true
 	s.liveTopo = initial
 }
@@ -72,7 +73,8 @@ func (s *Server) SetSnapshots(store *storage.SnapshotStore) {
 }
 
 // UpdateTopology updates the in-memory topology and broadcasts to all WebSocket clients.
-func (s *Server) UpdateTopology(topo *topology.Topology) {
+// topo can be *topology.Topology (v1) or *topology.TopologyV2 (v2).
+func (s *Server) UpdateTopology(topo interface{}) {
 	s.mu.Lock()
 	s.liveTopo = topo
 	s.mu.Unlock()

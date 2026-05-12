@@ -13,11 +13,11 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/camiloserranor/network-mapper/internal/collector"
+	"github.com/camiloserranor/network-mapper/internal/builder"
 	"github.com/camiloserranor/network-mapper/internal/config"
 	"github.com/camiloserranor/network-mapper/internal/gnmi"
 	"github.com/camiloserranor/network-mapper/internal/server"
 	"github.com/camiloserranor/network-mapper/internal/storage"
-	"github.com/camiloserranor/network-mapper/internal/topology"
 )
 
 // version is set at build time via -ldflags.
@@ -116,13 +116,18 @@ func runServe(cmd *cobra.Command, args []string) error {
 		// Perform initial collection synchronously so the API is ready before the browser opens
 		fmt.Println("Running initial topology collection...")
 		initCtx, initCancel := context.WithTimeout(context.Background(), time.Duration(cfg.Collect.TimeoutSec)*time.Second+30*time.Second)
-		initialTopo, err := collector.Collect(initCtx, cfg)
+		builder.ToolVersion = version
+		cr, err := collector.CollectRaw(initCtx, cfg)
 		initCancel()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: initial collection failed: %v\n", err)
-			initialTopo = &topology.Topology{CollectedAt: time.Now().UTC()}
+			cr = &collector.CollectionResult{CollectedAt: time.Now().UTC()}
 		}
-		fmt.Printf("Initial collection complete: %d devices, %d links\n", len(initialTopo.Devices), len(initialTopo.Links))
+		initialTopo := builder.Build(cr)
+		fmt.Printf("Initial collection complete: %d switches, %d hosts, %d links\n",
+			initialTopo.Metadata.Summary.SwitchCount,
+			initialTopo.Metadata.Summary.HostCount,
+			initialTopo.Metadata.Summary.TotalLinks)
 
 		srv.SetLiveMode(initialTopo)
 
@@ -132,7 +137,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 		}
 
 		// Start hybrid collector (ON_CHANGE + periodic poll)
-		hc := collector.NewHybridCollector(cfg, interval, snapStore, func(topo *topology.Topology) {
+		buildFn := func(cr *collector.CollectionResult) interface{} {
+			return builder.Build(cr)
+		}
+		hc := collector.NewHybridCollector(cfg, interval, snapStore, buildFn, func(topo interface{}) {
 			srv.UpdateTopology(topo)
 			srv.NotifySnapshotSaved()
 		})
@@ -171,6 +179,7 @@ func collectCmd() *cobra.Command {
 
 	cmd.Flags().StringP("config", "c", "config.yaml", "Path to configuration file")
 	cmd.Flags().StringP("output", "o", "topology.json", "Path to write topology JSON output")
+	cmd.Flags().String("schema", "v2", "Output schema version: v1 (legacy flat) or v2 (hierarchical)")
 
 	return cmd
 }
@@ -178,6 +187,7 @@ func collectCmd() *cobra.Command {
 func runCollect(cmd *cobra.Command, args []string) error {
 	cfgPath, _ := cmd.Flags().GetString("config")
 	outputPath, _ := cmd.Flags().GetString("output")
+	schemaFlag, _ := cmd.Flags().GetString("schema")
 
 	cfg, err := config.Load(cfgPath)
 	if err != nil {
@@ -186,27 +196,54 @@ func runCollect(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Collecting topology from %d switch(es)...\n", len(cfg.Switches))
 
-	topo, err := collector.Collect(context.Background(), cfg)
+	if schemaFlag == "v1" {
+		// Legacy v1 pipeline
+		topo, err := collector.Collect(context.Background(), cfg)
+		if err != nil {
+			return fmt.Errorf("collection failed: %w", err)
+		}
+		return writeJSON(outputPath, topo, func() {
+			fmt.Printf("Topology written to %s (schema v1)\n", outputPath)
+			fmt.Printf("  Devices: %d\n", len(topo.Devices))
+			fmt.Printf("  Links:   %d\n", len(topo.Links))
+			if len(topo.PartialFailures) > 0 {
+				fmt.Printf("  Warnings: %d partial failures\n", len(topo.PartialFailures))
+			}
+		})
+	}
+
+	// V2 pipeline: collect raw → build → write
+	cr, err := collector.CollectRaw(context.Background(), cfg)
 	if err != nil {
 		return fmt.Errorf("collection failed: %w", err)
 	}
 
-	data, err := json.MarshalIndent(topo, "", "  ")
+	builder.ToolVersion = version
+	topo := builder.Build(cr)
+
+	return writeJSON(outputPath, topo, func() {
+		s := topo.Metadata.Summary
+		fmt.Printf("Topology written to %s (schema v2)\n", outputPath)
+		fmt.Printf("  Switches:  %d\n", s.SwitchCount)
+		fmt.Printf("  Hosts:     %d\n", s.HostCount)
+		fmt.Printf("  Links:     %d\n", s.TotalLinks)
+		fmt.Printf("  VLANs:     %d\n", s.VLANCount)
+		fmt.Printf("  Endpoints: %d\n", s.EndpointCount)
+		if s.PartialFailures > 0 {
+			fmt.Printf("  Warnings:  %d partial failures\n", s.PartialFailures)
+		}
+	})
+}
+
+func writeJSON(path string, v interface{}, onSuccess func()) error {
+	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshaling topology: %w", err)
 	}
-
-	if err := os.WriteFile(outputPath, data, 0644); err != nil {
+	if err := os.WriteFile(path, data, 0644); err != nil {
 		return fmt.Errorf("writing output: %w", err)
 	}
-
-	fmt.Printf("Topology written to %s\n", outputPath)
-	fmt.Printf("  Devices: %d\n", len(topo.Devices))
-	fmt.Printf("  Links:   %d\n", len(topo.Links))
-	if len(topo.PartialFailures) > 0 {
-		fmt.Printf("  Warnings: %d partial failures\n", len(topo.PartialFailures))
-	}
-
+	onSuccess()
 	return nil
 }
 
