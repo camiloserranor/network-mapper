@@ -46,9 +46,10 @@ func NewSnapshotStore(dataDir string) (*SnapshotStore, error) {
 }
 
 // Save writes a topology snapshot to disk with the collection timestamp as the filename.
-// Returns the SnapshotInfo for the saved file.
-func (s *SnapshotStore) Save(topo *topology.Topology) (*SnapshotInfo, error) {
-	ts := topo.CollectedAt.UTC()
+// topo can be *topology.Topology (v1) or *topology.TopologyV2 (v2). Both schemas are
+// supported; the timestamp is extracted automatically.
+func (s *SnapshotStore) Save(topo interface{}) (*SnapshotInfo, error) {
+	ts := extractTimestamp(topo)
 	filename := snapshotPrefix + ts.Format(TimestampFormat) + snapshotSuffix
 	path := filepath.Join(s.dir, filename)
 
@@ -67,6 +68,18 @@ func (s *SnapshotStore) Save(topo *topology.Topology) (*SnapshotInfo, error) {
 		Filename:  filename,
 		SizeBytes: int64(len(data)),
 	}, nil
+}
+
+// extractTimestamp gets the collection time from either v1 or v2 topology.
+func extractTimestamp(topo interface{}) time.Time {
+	switch t := topo.(type) {
+	case *topology.Topology:
+		return t.CollectedAt.UTC()
+	case *topology.TopologyV2:
+		return t.Metadata.CollectedAt.UTC()
+	default:
+		return time.Now().UTC()
+	}
 }
 
 // List returns all snapshots sorted by timestamp (oldest first).
