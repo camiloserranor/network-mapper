@@ -4,7 +4,8 @@
 
 (async function () {
     try {
-        const topology = await fetchTopology();
+        var rawTopology = await fetchTopology();
+        var topology = NM.data.adaptV2(rawTopology);
         NM.state.topology = topology;
 
         NM.ui.Toolbar.init();
@@ -54,12 +55,13 @@ function connectWebSocket() {
                 if (msg.type === 'topology_update' && msg.topology) {
                     // Only apply if in live mode
                     if (NM.ui.Timeline.isLive()) {
-                        NM.state.topology = msg.topology;
-                        NM.core.showWarnings(msg.topology.partial_failures);
-                        NM.ui.Sidebar.setTopology(msg.topology);
-                        NM.ui.Popup.setTopology(msg.topology);
+                        var adapted = NM.data.adaptV2(msg.topology);
+                        NM.state.topology = adapted;
+                        NM.core.showWarnings(adapted.partial_failures);
+                        NM.ui.Sidebar.setTopology(adapted);
+                        NM.ui.Popup.setTopology(adapted);
                         NM.ui.Inventory.update();
-                        NM.graph.setTopology(msg.topology);
+                        NM.graph.setTopology(adapted);
                         NM.state.ViewManager.renderCurrentView();
                     }
                 } else if (msg.type === 'snapshot_list' && msg.snapshots) {

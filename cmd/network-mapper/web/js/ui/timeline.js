@@ -122,12 +122,13 @@ NM.ui.Timeline = (() => {
     }
 
     function applyTopology(topo) {
-        NM.state.topology = topo;
-        NM.core.showWarnings(topo.partial_failures);
-        NM.ui.Sidebar.setTopology(topo);
-        NM.ui.Popup.setTopology(topo);
+        var adapted = NM.data.adaptV2(topo);
+        NM.state.topology = adapted;
+        NM.core.showWarnings(adapted.partial_failures);
+        NM.ui.Sidebar.setTopology(adapted);
+        NM.ui.Popup.setTopology(adapted);
         NM.ui.Inventory.update();
-        NM.graph.setTopology(topo);
+        NM.graph.setTopology(adapted);
         NM.state.ViewManager.renderCurrentView();
     }
 
