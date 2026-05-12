@@ -46,6 +46,7 @@ func main() {
 	serveCmd.Flags().StringP("config", "c", "", "Config file for live mode (enables periodic gNMI collection)")
 	serveCmd.Flags().Int("interval", 30, "Collection interval in seconds for live mode")
 	serveCmd.Flags().Bool("profile", false, "Enable /debug/pprof/* profiling endpoints")
+	serveCmd.Flags().String("from-raw", "", "Load raw gNMI dump from directory (offline mode, no live collection)")
 
 	versionCmd := &cobra.Command{
 		Use:   "version",
@@ -72,13 +73,30 @@ func runServe(cmd *cobra.Command, args []string) error {
 	cfgPath, _ := cmd.Flags().GetString("config")
 	intervalSec, _ := cmd.Flags().GetInt("interval")
 	enableProfile, _ := cmd.Flags().GetBool("profile")
+	fromRaw, _ := cmd.Flags().GetString("from-raw")
 
 	srv := server.New(topologyPath, port, webFS())
 	srv.SetPprof(enableProfile)
 	addr := fmt.Sprintf("http://localhost:%d", port)
 	fmt.Printf("Network Mapper UI starting at %s\n", addr)
 
-	if cfgPath != "" {
+	if fromRaw != "" {
+		// Offline mode: load raw gNMI dump, build topology, serve statically
+		fmt.Printf("Loading raw gNMI data from %s...\n", fromRaw)
+		cr, err := collector.LoadFromDisk(fromRaw)
+		if err != nil {
+			return fmt.Errorf("loading raw data: %w", err)
+		}
+
+		builder.ToolVersion = version
+		topo := builder.Build(cr)
+		fmt.Printf("Topology built from raw data: %d switches, %d hosts, %d links\n",
+			topo.Metadata.Summary.SwitchCount,
+			topo.Metadata.Summary.HostCount,
+			topo.Metadata.Summary.TotalLinks)
+
+		srv.SetLiveMode(topo)
+	} else if cfgPath != "" {
 		// Live mode: gNMI collection + WebSocket push
 		cfg, err := config.Load(cfgPath)
 		if err != nil {
@@ -180,6 +198,7 @@ func collectCmd() *cobra.Command {
 	cmd.Flags().StringP("config", "c", "config.yaml", "Path to configuration file")
 	cmd.Flags().StringP("output", "o", "topology.json", "Path to write topology JSON output")
 	cmd.Flags().String("schema", "v2", "Output schema version: v1 (legacy flat) or v2 (hierarchical)")
+	cmd.Flags().String("from-raw", "", "Load raw gNMI dump from directory instead of collecting from live switches")
 
 	return cmd
 }
@@ -188,7 +207,34 @@ func runCollect(cmd *cobra.Command, args []string) error {
 	cfgPath, _ := cmd.Flags().GetString("config")
 	outputPath, _ := cmd.Flags().GetString("output")
 	schemaFlag, _ := cmd.Flags().GetString("schema")
+	fromRaw, _ := cmd.Flags().GetString("from-raw")
 
+	// Mode 1: Load from raw gNMI dump directory (no live switches needed)
+	if fromRaw != "" {
+		fmt.Printf("Loading raw gNMI data from %s...\n", fromRaw)
+		cr, err := collector.LoadFromDisk(fromRaw)
+		if err != nil {
+			return fmt.Errorf("loading raw data: %w", err)
+		}
+
+		builder.ToolVersion = version
+		topo := builder.Build(cr)
+
+		return writeJSON(outputPath, topo, func() {
+			s := topo.Metadata.Summary
+			fmt.Printf("Topology written to %s (schema v2, from raw data)\n", outputPath)
+			fmt.Printf("  Switches:  %d\n", s.SwitchCount)
+			fmt.Printf("  Hosts:     %d\n", s.HostCount)
+			fmt.Printf("  Links:     %d\n", s.TotalLinks)
+			fmt.Printf("  VLANs:     %d\n", s.VLANCount)
+			fmt.Printf("  Endpoints: %d\n", s.EndpointCount)
+			if s.PartialFailures > 0 {
+				fmt.Printf("  Warnings:  %d partial failures\n", s.PartialFailures)
+			}
+		})
+	}
+
+	// Mode 2: Live collection from switches
 	cfg, err := config.Load(cfgPath)
 	if err != nil {
 		return fmt.Errorf("loading config: %w", err)
