@@ -37,7 +37,8 @@ NM.ui.Toolbar = (() => {
             try {
                 const resp = await fetch('/api/topology');
                 if (resp.ok) {
-                    const topology = await resp.json();
+                    var rawTopology = await resp.json();
+                    var topology = NM.data.adaptV2(rawTopology);
                     NM.state.topology = topology;
                     NM.core.showWarnings(topology.partial_failures);
                     NM.ui.Sidebar.setTopology(topology);
