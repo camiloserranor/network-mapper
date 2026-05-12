@@ -28,11 +28,16 @@ func ParseVLANsNXOS(notifs []gnmi.Notification, switchID string) []topology.VLAN
 			}
 
 			for _, item := range items {
-				// BD-list (bridge domain list) or nested under bd-items
+				// BD-list at top level
 				bdList := GetSlice(item, "BD-list")
+
+				// Or nested: bd-items → BD-list
 				if bdList == nil {
-					bdList = GetSlice(item, "bd-items")
+					if bdItems := GetMap(item, "bd-items"); bdItems != nil {
+						bdList = GetSlice(bdItems, "BD-list")
+					}
 				}
+
 				if bdList == nil {
 					// Direct BD entry
 					if v := extractVLAN(item, switchID); v.ID > 0 {
@@ -65,18 +70,23 @@ func extractVLAN(m map[string]interface{}, switchID string) topology.VLAN {
 		return topology.VLAN{}
 	}
 
-	name := GetFirstString(m, "name", "descr")
+	name := GetFirstString(m, "name", "BdOperName", "descr")
 	status := GetFirstString(m, "adminSt", "operSt", "status")
 
 	// Collect member ports if available
 	var memberPorts []string
-	if members := GetSlice(m, "member-items"); members != nil {
-		for _, mRaw := range members {
-			if member, ok := mRaw.(map[string]interface{}); ok {
-				port := GetFirstString(member, "if", "id", "port")
-				if port != "" {
-					memberPorts = append(memberPorts, NormalizeInterfaceName(port))
-				}
+	memberList := GetSlice(m, "member-items")
+	// Nested: member-items → VlanMemberIf-list
+	if memberList == nil {
+		if mi := GetMap(m, "member-items"); mi != nil {
+			memberList = GetSlice(mi, "VlanMemberIf-list")
+		}
+	}
+	for _, mRaw := range memberList {
+		if member, ok := mRaw.(map[string]interface{}); ok {
+			port := GetFirstString(member, "if", "id", "port")
+			if port != "" {
+				memberPorts = append(memberPorts, NormalizeInterfaceName(port))
 			}
 		}
 	}
