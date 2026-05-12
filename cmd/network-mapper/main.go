@@ -47,6 +47,7 @@ func main() {
 	serveCmd.Flags().Int("interval", 30, "Collection interval in seconds for live mode")
 	serveCmd.Flags().Bool("profile", false, "Enable /debug/pprof/* profiling endpoints")
 	serveCmd.Flags().String("from-raw", "", "Load raw gNMI dump from directory (offline mode, no live collection)")
+	serveCmd.Flags().Bool("history", false, "Enable historical snapshots, timeline UI, and periodic re-collection")
 
 	versionCmd := &cobra.Command{
 		Use:   "version",
@@ -74,6 +75,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	intervalSec, _ := cmd.Flags().GetInt("interval")
 	enableProfile, _ := cmd.Flags().GetBool("profile")
 	fromRaw, _ := cmd.Flags().GetString("from-raw")
+	enableHistory, _ := cmd.Flags().GetBool("history")
 
 	srv := server.New(topologyPath, port, webFS())
 	srv.SetPprof(enableProfile)
@@ -97,21 +99,11 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 		srv.SetLiveMode(topo)
 	} else if cfgPath != "" {
-		// Live mode: gNMI collection + WebSocket push
+		// Live mode: gNMI collection
 		cfg, err := config.Load(cfgPath)
 		if err != nil {
 			return fmt.Errorf("loading config: %w", err)
 		}
-
-		interval := time.Duration(intervalSec) * time.Second
-		fmt.Printf("Live mode: collecting from %d switch(es) every %s\n", len(cfg.Switches), interval)
-
-		// Set up storage (snapshots + logging)
-		snapStore, err := storage.NewSnapshotStore(cfg.Storage.DataDir)
-		if err != nil {
-			return fmt.Errorf("initializing snapshot store: %w", err)
-		}
-		srv.SetSnapshots(snapStore)
 
 		// Set up file-based logging with rotation
 		if cfg.Storage.LogToFile {
@@ -124,12 +116,6 @@ func runServe(cmd *cobra.Command, args []string) error {
 				log.Printf("File logging enabled: %s/logs/", cfg.Storage.DataDir)
 			}
 		}
-
-		// Start retention pruner in background
-		pruner := storage.NewRetentionPruner(snapStore, cfg.Storage.DataDir, cfg.Storage.RetentionDays, cfg.Storage.MaxSnapshots)
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		go pruner.Start(ctx)
 
 		// Perform initial collection synchronously so the API is ready before the browser opens
 		fmt.Println("Running initial topology collection...")
@@ -149,25 +135,45 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 		srv.SetLiveMode(initialTopo)
 
-		// Save initial snapshot
-		if _, err := snapStore.Save(initialTopo); err != nil {
-			log.Printf("WARNING: failed to save initial snapshot: %v", err)
-		}
+		if enableHistory {
+			// Historical mode: snapshots + periodic re-collection + retention
+			interval := time.Duration(intervalSec) * time.Second
+			fmt.Printf("History enabled: collecting every %s, saving snapshots\n", interval)
 
-		// Start hybrid collector (ON_CHANGE + periodic poll)
-		buildFn := func(cr *collector.CollectionResult) interface{} {
-			return builder.Build(cr)
-		}
-		hc := collector.NewHybridCollector(cfg, interval, snapStore, buildFn, func(topo interface{}) {
-			srv.UpdateTopology(topo)
-			srv.NotifySnapshotSaved()
-		})
-
-		go func() {
-			if err := hc.Start(ctx); err != nil && err != context.Canceled {
-				fmt.Fprintf(os.Stderr, "Hybrid collector error: %v\n", err)
+			snapStore, err := storage.NewSnapshotStore(cfg.Storage.DataDir)
+			if err != nil {
+				return fmt.Errorf("initializing snapshot store: %w", err)
 			}
-		}()
+			srv.SetSnapshots(snapStore)
+
+			// Start retention pruner
+			pruner := storage.NewRetentionPruner(snapStore, cfg.Storage.DataDir, cfg.Storage.RetentionDays, cfg.Storage.MaxSnapshots)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			go pruner.Start(ctx)
+
+			// Save initial snapshot
+			if _, err := snapStore.Save(initialTopo); err != nil {
+				log.Printf("WARNING: failed to save initial snapshot: %v", err)
+			}
+
+			// Start hybrid collector (ON_CHANGE + periodic poll)
+			buildFn := func(cr *collector.CollectionResult) interface{} {
+				return builder.Build(cr)
+			}
+			hc := collector.NewHybridCollector(cfg, interval, snapStore, buildFn, func(topo interface{}) {
+				srv.UpdateTopology(topo)
+				srv.NotifySnapshotSaved()
+			})
+
+			go func() {
+				if err := hc.Start(ctx); err != nil && err != context.Canceled {
+					fmt.Fprintf(os.Stderr, "Hybrid collector error: %v\n", err)
+				}
+			}()
+		} else {
+			fmt.Println("Single collection mode (use --history to enable snapshots and periodic re-collection)")
+		}
 	} else {
 		fmt.Printf("Static mode: serving %s\n", topologyPath)
 	}
