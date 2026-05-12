@@ -620,7 +620,7 @@ func deviceToFabricSwitch(d topology.Device) topology.FabricSwitch {
 		SoftwareVersion:   d.SoftwareVersion,
 		SystemDescription: d.SystemDescription,
 		Uptime:            d.Uptime,
-		Interfaces:        d.Interfaces,
+		Interfaces:        stripCounters(d.Interfaces),
 		BGPSessions:       d.BGPSessions,
 		Annotations:       d.Annotations,
 	}
@@ -676,6 +676,16 @@ func addConnectedHostFromInfo(v2 *topology.TopologyV2, li linkInfo) {
 			return
 		}
 	}
+}
+
+// stripCounters returns a copy of the interface slice with Counters cleared.
+func stripCounters(ifaces []topology.Interface) []topology.Interface {
+	out := make([]topology.Interface, len(ifaces))
+	copy(out, ifaces)
+	for i := range out {
+		out[i].Counters = nil
+	}
+	return out
 }
 
 func addPeerLink(v2 *topology.TopologyV2, link topology.Link) {
