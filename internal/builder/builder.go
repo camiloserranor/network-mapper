@@ -5,9 +5,9 @@
 //
 // Usage:
 //
-//	result := collector.Collect(ctx, cfg)  // stage 1: raw gNMI data
-//	topo := builder.Build(result)          // stage 2: structured topology
-//	json.Marshal(topo)                     // stage 3: serialize for UI / humans
+//	result := collector.CollectRaw(ctx, cfg)  // stage 1: raw gNMI data
+//	topo := builder.Build(result)             // stage 2: structured topology
+//	json.Marshal(topo)                        // stage 3: serialize for UI / humans
 package builder
 
 import (

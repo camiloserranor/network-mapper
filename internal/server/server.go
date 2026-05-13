@@ -33,7 +33,7 @@ type Server struct {
 
 	// Live mode state
 	mu        sync.RWMutex
-	liveTopo  interface{} // *topology.Topology (v1) or *topology.TopologyV2
+	liveTopo  interface{} // *topology.TopologyV2
 	clients   map[*wsClient]struct{}
 	clientsMu sync.Mutex
 }
@@ -59,9 +59,7 @@ func (s *Server) SetPprof(enable bool) {
 	s.enablePprof = enable
 }
 
-// SetLiveMode enables live streaming mode (topology served from memory, WebSocket push).
 // SetLiveMode puts the server into live mode with initial topology data.
-// topo can be *topology.Topology (v1) or *topology.TopologyV2 (v2).
 func (s *Server) SetLiveMode(initial interface{}) {
 	s.live = true
 	s.liveTopo = initial
@@ -73,7 +71,6 @@ func (s *Server) SetSnapshots(store *storage.SnapshotStore) {
 }
 
 // UpdateTopology updates the in-memory topology and broadcasts to all WebSocket clients.
-// topo can be *topology.Topology (v1) or *topology.TopologyV2 (v2).
 func (s *Server) UpdateTopology(topo interface{}) {
 	s.mu.Lock()
 	s.liveTopo = topo

@@ -17,18 +17,18 @@ Azure Local deployments rely on physical cabling between hosts and TOR switches.
 
 ```
   Stage 1: Collect               Stage 2: Build               Stage 3: Render
-┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐
+┌──────────────────┐         ┌──────────────────┐         ┌─────────────────┐
 │  gNMI Collector  │         │ Topology Builder │         │   Web UI / CLI  │
 │                  │ ──────► │                  │ ──────► │                 │
 │ Raw switch data  │ Result  │ V2 hierarchical  │  JSON   │ Interactive     │
 │ per switch       │         │ topology JSON    │         │ visualization   │
-└─────────────────┘         └─────────────────┘         └─────────────────┘
+└──────────────────┘         └──────────────────┘         └─────────────────┘
      ▲                                                        ▲
      │ gNMI Get/Subscribe                                     │ HTTP + WS
-┌─────────────┐                                          ┌──────────┐
+┌──────────────┐                                          ┌──────────┐
 │ TOR Switches │                                          │ Browser  │
 │ (SONiC/NX-OS)│                                          └──────────┘
-└─────────────┘
+└──────────────┘
 ```
 
 The project is organized as a 3-stage data pipeline. Each stage is independently testable and mockable:
@@ -44,6 +44,7 @@ The project is organized as a 3-stage data pipeline. Each stage is independently
 go build -o network-mapper ./cmd/network-mapper/
 
 # Authenticate (dev/test — production uses Arc managed identity)
+# This allows the collector to get the keyvault secret with the switch credentials
 az login
 
 # Collect topology from TOR switches
@@ -155,8 +156,8 @@ auth:
 # Collect topology from configured switches
 network-mapper collect --config config.yaml --output topology.json
 
-# Collect with legacy v1 schema output
-network-mapper collect --config config.yaml --output topology.json --schema v1
+# Collect from a raw gNMI dump (offline mode)
+network-mapper collect --from-raw ./gnmi-raw-data/2026-05-11_094644 --output topology.json
 
 # Serve the interactive web UI (static mode — serves a single JSON file)
 network-mapper serve --topology topology.json --port 8080
@@ -279,8 +280,6 @@ The topology JSON uses a hierarchical v2 schema designed to be both machine-proc
 
 For the full schema reference, see [`docs/topology-schema.md`](docs/topology-schema.md).
 
-Use `--schema v1` with the `collect` command to output the legacy flat schema if needed.
-
 ## Web UI Features
 
 The embedded web UI provides an interactive topology visualization (Azure portal-inspired dark theme):
@@ -380,7 +379,7 @@ network-mapper/
 │   ├── transform/             # LLDP, interface, system data parsers
 │   ├── collector/             # Stage 1: gNMI collection → CollectionResult
 │   ├── builder/               # Stage 2: CollectionResult → TopologyV2
-│   ├── topology/              # Core types: v1 (Topology) + v2 (TopologyV2)
+│   ├── topology/              # Core types: TopologyV2 (output schema), Device/Interface (internal)
 │   ├── deployment/            # Deployment JSON enrichment (experimental)
 │   ├── secrets/               # Azure Key Vault credential resolution
 │   ├── server/                # HTTP server: embedded web + REST API
