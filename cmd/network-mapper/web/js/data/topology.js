@@ -94,11 +94,24 @@ NM.data.adaptV2 = function(topology) {
             interfaces: [],
             bgp_sessions: [],
             annotations: host.annotations || {},
-            vlans: []
+            vlans: host.vlans || []
         };
 
-        // Build links from host connections (if not already in switch connected_hosts)
+        // Populate VLANs from connection port config (access, native, trunk)
         var conns = host.connections || [];
+        var vlanSet = {};
+        for (var vi2 = 0; vi2 < hostDev.vlans.length; vi2++) vlanSet[hostDev.vlans[vi2]] = true;
+        for (var ci = 0; ci < conns.length; ci++) {
+            var cn = conns[ci];
+            if (cn.access_vlan && !vlanSet[cn.access_vlan]) { hostDev.vlans.push(cn.access_vlan); vlanSet[cn.access_vlan] = true; }
+            if (cn.native_vlan && !vlanSet[cn.native_vlan]) { hostDev.vlans.push(cn.native_vlan); vlanSet[cn.native_vlan] = true; }
+            var tvlans = cn.trunk_vlans || [];
+            for (var tv = 0; tv < tvlans.length; tv++) {
+                if (!vlanSet[tvlans[tv]]) { hostDev.vlans.push(tvlans[tv]); vlanSet[tvlans[tv]] = true; }
+            }
+        }
+
+        // Build links from host connections (if not already in switch connected_hosts)
         for (var c = 0; c < conns.length; c++) {
             var conn = conns[c];
             // Check if this link already exists from switch side

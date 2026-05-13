@@ -569,17 +569,30 @@ func (b *buildState) assembleVLANs(v2 *topology.TopologyV2) {
 		}
 	}
 
-	// Add host VLAN membership info
+	// Add host VLAN membership info from port assignments (access, native, and trunk VLANs)
 	for _, host := range v2.Compute.Hosts {
 		for _, conn := range host.Connections {
-			if conn.AccessVLAN > 0 {
-				if entry, ok := vlanMap[conn.AccessVLAN]; ok {
-					entry.Hosts = append(entry.Hosts, topology.VLANHost{
-						ChassisID:    host.ChassisID,
-						ManagementIP: host.ManagementAddress,
-						SwitchPort:   conn.SwitchPort,
-					})
+			addedVLANs := make(map[int]bool)
+			hostRef := topology.VLANHost{
+				ChassisID:    host.ChassisID,
+				ManagementIP: host.ManagementAddress,
+				SwitchPort:   conn.SwitchPort,
+			}
+
+			addHostToVLAN := func(vid int) {
+				if vid <= 0 || addedVLANs[vid] {
+					return
 				}
+				addedVLANs[vid] = true
+				if entry, ok := vlanMap[vid]; ok {
+					entry.Hosts = append(entry.Hosts, hostRef)
+				}
+			}
+
+			addHostToVLAN(conn.AccessVLAN)
+			addHostToVLAN(conn.NativeVLAN)
+			for _, vid := range conn.TrunkVLANs {
+				addHostToVLAN(vid)
 			}
 		}
 	}
