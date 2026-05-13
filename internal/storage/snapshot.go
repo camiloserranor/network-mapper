@@ -46,8 +46,6 @@ func NewSnapshotStore(dataDir string) (*SnapshotStore, error) {
 }
 
 // Save writes a topology snapshot to disk with the collection timestamp as the filename.
-// topo can be *topology.Topology (v1) or *topology.TopologyV2 (v2). Both schemas are
-// supported; the timestamp is extracted automatically.
 func (s *SnapshotStore) Save(topo interface{}) (*SnapshotInfo, error) {
 	ts := extractTimestamp(topo)
 	filename := snapshotPrefix + ts.Format(TimestampFormat) + snapshotSuffix

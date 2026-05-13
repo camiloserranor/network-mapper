@@ -203,7 +203,6 @@ func collectCmd() *cobra.Command {
 
 	cmd.Flags().StringP("config", "c", "config.yaml", "Path to configuration file")
 	cmd.Flags().StringP("output", "o", "topology.json", "Path to write topology JSON output")
-	cmd.Flags().String("schema", "v2", "Output schema version: v1 (legacy flat) or v2 (hierarchical)")
 	cmd.Flags().String("from-raw", "", "Load raw gNMI dump from directory instead of collecting from live switches")
 
 	return cmd
@@ -212,7 +211,6 @@ func collectCmd() *cobra.Command {
 func runCollect(cmd *cobra.Command, args []string) error {
 	cfgPath, _ := cmd.Flags().GetString("config")
 	outputPath, _ := cmd.Flags().GetString("output")
-	schemaFlag, _ := cmd.Flags().GetString("schema")
 	fromRaw, _ := cmd.Flags().GetString("from-raw")
 
 	// Mode 1: Load from raw gNMI dump directory (no live switches needed)
@@ -228,7 +226,7 @@ func runCollect(cmd *cobra.Command, args []string) error {
 
 		return writeJSON(outputPath, topo, func() {
 			s := topo.Metadata.Summary
-			fmt.Printf("Topology written to %s (schema v2, from raw data)\n", outputPath)
+			fmt.Printf("Topology written to %s (from raw data)\n", outputPath)
 			fmt.Printf("  Switches:  %d\n", s.SwitchCount)
 			fmt.Printf("  Hosts:     %d\n", s.HostCount)
 			fmt.Printf("  Links:     %d\n", s.TotalLinks)
@@ -248,23 +246,6 @@ func runCollect(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Collecting topology from %d switch(es)...\n", len(cfg.Switches))
 
-	if schemaFlag == "v1" {
-		// Legacy v1 pipeline
-		topo, err := collector.Collect(context.Background(), cfg)
-		if err != nil {
-			return fmt.Errorf("collection failed: %w", err)
-		}
-		return writeJSON(outputPath, topo, func() {
-			fmt.Printf("Topology written to %s (schema v1)\n", outputPath)
-			fmt.Printf("  Devices: %d\n", len(topo.Devices))
-			fmt.Printf("  Links:   %d\n", len(topo.Links))
-			if len(topo.PartialFailures) > 0 {
-				fmt.Printf("  Warnings: %d partial failures\n", len(topo.PartialFailures))
-			}
-		})
-	}
-
-	// V2 pipeline: collect raw → build → write
 	cr, err := collector.CollectRaw(context.Background(), cfg)
 	if err != nil {
 		return fmt.Errorf("collection failed: %w", err)
@@ -275,7 +256,7 @@ func runCollect(cmd *cobra.Command, args []string) error {
 
 	return writeJSON(outputPath, topo, func() {
 		s := topo.Metadata.Summary
-		fmt.Printf("Topology written to %s (schema v2)\n", outputPath)
+		fmt.Printf("Topology written to %s\n", outputPath)
 		fmt.Printf("  Switches:  %d\n", s.SwitchCount)
 		fmt.Printf("  Hosts:     %d\n", s.HostCount)
 		fmt.Printf("  Links:     %d\n", s.TotalLinks)
