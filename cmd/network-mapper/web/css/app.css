@@ -73,11 +73,6 @@
     --logical-iface-bg: #e8e8e8;
     --focus-outer: #ffffff;
     --focus-inner: #000000;
-
-    /* Toolbar — neutral in light mode */
-    --toolbar-bg: var(--colorNeutralBackground2);
-    --toolbar-text: var(--colorNeutralForeground1);
-    --toolbar-text-secondary: var(--colorNeutralForeground2);
 }
 
 [data-theme="dark"] {
@@ -117,11 +112,6 @@
     --logical-iface-bg: #2a2a2a;
     --focus-outer: #000000;
     --focus-inner: #ffffff;
-
-    /* Toolbar — Azure portal deep blue in dark mode */
-    --toolbar-bg: #0c2340;
-    --toolbar-text: #ffffff;
-    --toolbar-text-secondary: #a3c7e8;
 }
 
 /* Reset */
@@ -147,9 +137,8 @@ body {
 /* ---- Toolbar ---- */
 #toolbar {
     height: var(--toolbar-height);
-    background: var(--toolbar-bg, var(--bg-secondary));
+    background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-subtle);
-    border-top: 2px solid var(--accent);
     display: flex;
     align-items: center;
     padding: 0 16px;
@@ -181,7 +170,7 @@ body {
 .logo {
     font-size: 16px;
     font-weight: 600;
-    color: var(--toolbar-text, var(--text-primary));
+    color: var(--text-primary);
     white-space: nowrap;
     display: flex;
     align-items: center;
@@ -190,47 +179,6 @@ body {
 
 .icon-logo {
     flex-shrink: 0;
-}
-
-/* Dark mode toolbar — buttons and inputs adapt to blue background */
-[data-theme="dark"] #toolbar .btn {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.12);
-    color: #ffffff;
-}
-
-[data-theme="dark"] #toolbar .btn:hover {
-    background: rgba(255, 255, 255, 0.14);
-    color: #ffffff;
-}
-
-[data-theme="dark"] #toolbar .btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
-}
-
-[data-theme="dark"] #toolbar .btn-icon {
-    color: var(--toolbar-text-secondary);
-}
-
-[data-theme="dark"] #toolbar .btn-icon:hover {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] #toolbar .badge {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--toolbar-text-secondary);
-}
-
-[data-theme="dark"] #toolbar #search-input {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.12);
-    color: #ffffff;
-}
-
-[data-theme="dark"] #toolbar #search-input::placeholder {
-    color: rgba(255, 255, 255, 0.5);
 }
 
 .badge {
