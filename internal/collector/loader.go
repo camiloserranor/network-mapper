@@ -94,6 +94,13 @@ func LoadFromDisk(dir string) (*CollectionResult, error) {
 				},
 			}
 		}
+		// Skip switches that have no useful data (all queries failed)
+		if len(sd.Interfaces) == 0 && len(sd.Neighbors) == 0 &&
+			len(sd.VLANs) == 0 && len(sd.BGPNeighbors) == 0 &&
+			sd.Device.SoftwareVersion == "" {
+			log.Printf("INFO: skipping %s (no data collected, all queries may have failed)", swName)
+			continue
+		}
 		cr.Switches = append(cr.Switches, sd)
 	}
 
