@@ -66,8 +66,7 @@ web/js/
 
 ## Visual Theme
 
-- Azure portal-inspired: toolbar uses deep blue (`#0c2340`) in dark mode, with a 2px blue accent line at the top.
-- Light theme: neutral backgrounds with azure blue (`#0078d4`) accent.
+- Dark theme: background `#1b1a19`, graph area `#0d1117`, accent `#0078d4` (Azure portal blue).
 - Device colors:
   - **switch**: `#0078d4` (blue)
   - **host**: `#44b700` (green)
