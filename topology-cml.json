@@ -1,19 +1,17 @@
 {
   "schema_version": "2.0",
   "metadata": {
-    "collected_at": "2026-05-13T15:10:41.1235899Z",
+    "collected_at": "2026-05-13T15:28:10.9207798Z",
     "tool": "network-mapper",
     "tool_version": "dev",
     "source_switches": [
       "10.255.255.11_50051",
       "10.255.255.12_50051",
       "10.255.255.13_50051",
-      "10.255.255.14_50051",
-      "10.255.255.1_50051",
-      "10.255.255.2_50051"
+      "10.255.255.14_50051"
     ],
     "summary": {
-      "switch_count": 8,
+      "switch_count": 6,
       "host_count": 0,
       "endpoint_count": 9,
       "unknown_device_count": 0,
@@ -21,13 +19,634 @@
       "inter_switch_links": 8,
       "host_links": 0,
       "vlan_count": 4,
-      "partial_failures": 56,
+      "partial_failures": 24,
       "attributed_endpoints": 0,
       "unattributed_endpoints": 9
     }
   },
   "fabric": {
     "switches": [
+      {
+        "id": "10.255.255.13_50051",
+        "name": "10.255.255.13_50051",
+        "software_version": "NX-OS 10.5(1)",
+        "uptime": "1 days(s) 5 hour(s) 4 minute(s) ",
+        "interfaces": [
+          {
+            "name": "Eth1/13",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/12",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/6",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/20",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/5",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/58",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/63",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/3",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 9216,
+            "mode": "access",
+            "access_vlan": 1201,
+            "native_vlan": 1,
+            "observed_vlans": [
+              1201
+            ]
+          },
+          {
+            "name": "Eth1/64",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/10",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/62",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/42",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/27",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/57",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/1",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 9216,
+            "mode": "access"
+          },
+          {
+            "name": "Eth1/56",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/8",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/40",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/59",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/45",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/47",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/60",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/17",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/16",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/26",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/51",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/34",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/4",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/52",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/49",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/29",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/37",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/14",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/28",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/19",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/2",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 9216,
+            "mode": "access"
+          },
+          {
+            "name": "Eth1/36",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/35",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/61",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/31",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/32",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/24",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/22",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/44",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/25",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/18",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/21",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/9",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/11",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/53",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/54",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/48",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/38",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/41",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/46",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/30",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/39",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/7",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/15",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/50",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/55",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/23",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/33",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          },
+          {
+            "name": "Eth1/43",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": 1500,
+            "mode": "access",
+            "access_vlan": 1,
+            "native_vlan": 1
+          }
+        ],
+        "bgp_sessions": [
+          {
+            "neighbor_address": "100.71.93.151",
+            "peer_as": 64905,
+            "session_state": "ESTABLISHED",
+            "enabled": true,
+            "vrf_name": "default",
+            "messages_received": 1644,
+            "messages_sent": 1586
+          },
+          {
+            "neighbor_address": "100.71.93.150",
+            "peer_as": 64905,
+            "session_state": "ESTABLISHED",
+            "enabled": true,
+            "vrf_name": "default",
+            "messages_received": 1645,
+            "messages_sent": 1586
+          }
+        ],
+        "peer_links": [
+          {
+            "local_port": "Eth1/1",
+            "remote_switch": "Spine1",
+            "remote_port": "Ethernet1/3",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": "9216"
+          },
+          {
+            "local_port": "Eth1/2",
+            "remote_switch": "Spine2",
+            "remote_port": "Ethernet1/3",
+            "oper_status": "UP",
+            "speed": "auto",
+            "mtu": "9216"
+          }
+        ]
+      },
       {
         "id": "10.255.255.14_50051",
         "name": "10.255.255.14_50051",
@@ -645,16 +1264,6 @@
             "mtu": "9216"
           }
         ]
-      },
-      {
-        "id": "10.255.255.1_50051",
-        "name": "10.255.255.1_50051",
-        "interfaces": []
-      },
-      {
-        "id": "10.255.255.2_50051",
-        "name": "10.255.255.2_50051",
-        "interfaces": []
       },
       {
         "id": "Spine1",
@@ -1911,627 +2520,6 @@
             "mtu": "9216"
           }
         ]
-      },
-      {
-        "id": "10.255.255.13_50051",
-        "name": "10.255.255.13_50051",
-        "software_version": "NX-OS 10.5(1)",
-        "uptime": "1 days(s) 5 hour(s) 4 minute(s) ",
-        "interfaces": [
-          {
-            "name": "Eth1/13",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/12",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/6",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/20",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/5",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/58",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/63",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/3",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 9216,
-            "mode": "access",
-            "access_vlan": 1201,
-            "native_vlan": 1,
-            "observed_vlans": [
-              1201
-            ]
-          },
-          {
-            "name": "Eth1/64",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/10",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/62",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/42",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/27",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/57",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/1",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 9216,
-            "mode": "access"
-          },
-          {
-            "name": "Eth1/56",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/8",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/40",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/59",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/45",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/47",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/60",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/17",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/16",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/26",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/51",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/34",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/4",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/52",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/49",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/29",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/37",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/14",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/28",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/19",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/2",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 9216,
-            "mode": "access"
-          },
-          {
-            "name": "Eth1/36",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/35",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/61",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/31",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/32",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/24",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/22",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/44",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/25",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/18",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/21",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/9",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/11",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/53",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/54",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/48",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/38",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/41",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/46",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/30",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/39",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/7",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/15",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/50",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/55",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/23",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/33",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          },
-          {
-            "name": "Eth1/43",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": 1500,
-            "mode": "access",
-            "access_vlan": 1,
-            "native_vlan": 1
-          }
-        ],
-        "bgp_sessions": [
-          {
-            "neighbor_address": "100.71.93.151",
-            "peer_as": 64905,
-            "session_state": "ESTABLISHED",
-            "enabled": true,
-            "vrf_name": "default",
-            "messages_received": 1644,
-            "messages_sent": 1586
-          },
-          {
-            "neighbor_address": "100.71.93.150",
-            "peer_as": 64905,
-            "session_state": "ESTABLISHED",
-            "enabled": true,
-            "vrf_name": "default",
-            "messages_received": 1645,
-            "messages_sent": 1586
-          }
-        ],
-        "peer_links": [
-          {
-            "local_port": "Eth1/1",
-            "remote_switch": "Spine1",
-            "remote_port": "Ethernet1/3",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": "9216"
-          },
-          {
-            "local_port": "Eth1/2",
-            "remote_switch": "Spine2",
-            "remote_port": "Ethernet1/3",
-            "oper_status": "UP",
-            "speed": "auto",
-            "mtu": "9216"
-          }
-        ]
       }
     ]
   },
@@ -2540,6 +2528,57 @@
     "unattributed_endpoints": {
       "count": 9,
       "items": [
+        {
+          "mac": "52:4e:8d:eb:1b:08",
+          "vlans": [
+            3910,
+            1201,
+            1007
+          ],
+          "type": "vm",
+          "learned_on_switch": "10.255.255.11_50051",
+          "learned_on_port": "Nve"
+        },
+        {
+          "mac": "52:30:2a:7f:1b:08",
+          "vlans": [
+            3910
+          ],
+          "type": "vm",
+          "learned_on_switch": "10.255.255.11_50051",
+          "learned_on_port": "Nve"
+        },
+        {
+          "mac": "52:54:00:21:27:2a",
+          "vlans": [
+            1201
+          ],
+          "type": "vm",
+          "learned_on_switch": "10.255.255.11_50051",
+          "learned_on_port": "Nve"
+        },
+        {
+          "mac": "52:3a:c8:fa:1b:08",
+          "vlans": [
+            1201,
+            1007,
+            3910
+          ],
+          "type": "vm",
+          "learned_on_switch": "10.255.255.11_50051",
+          "learned_on_port": "supeth1"
+        },
+        {
+          "mac": "52:10:2b:55:1b:08",
+          "vlans": [
+            3910,
+            1201,
+            1007
+          ],
+          "type": "vm",
+          "learned_on_switch": "10.255.255.11_50051",
+          "learned_on_port": "Nve"
+        },
         {
           "mac": "52:1c:02:6b:1b:08",
           "vlans": [
@@ -2564,55 +2603,6 @@
           "learned_on_port": "Eth1/3"
         },
         {
-          "mac": "52:2e:72:9b:1b:08",
-          "vlans": [
-            3910
-          ],
-          "type": "vm",
-          "learned_on_switch": "10.255.255.11_50051",
-          "learned_on_port": "Nve"
-        },
-        {
-          "mac": "52:4e:8d:eb:1b:08",
-          "vlans": [
-            3910,
-            1201,
-            1007
-          ],
-          "type": "vm",
-          "learned_on_switch": "10.255.255.11_50051",
-          "learned_on_port": "Nve"
-        },
-        {
-          "mac": "52:3a:c8:fa:1b:08",
-          "vlans": [
-            1201,
-            1007,
-            3910
-          ],
-          "type": "vm",
-          "learned_on_switch": "10.255.255.11_50051",
-          "learned_on_port": "supeth1"
-        },
-        {
-          "mac": "52:30:2a:7f:1b:08",
-          "vlans": [
-            3910
-          ],
-          "type": "vm",
-          "learned_on_switch": "10.255.255.11_50051",
-          "learned_on_port": "Nve"
-        },
-        {
-          "mac": "52:54:00:21:27:2a",
-          "vlans": [
-            1201
-          ],
-          "type": "vm",
-          "learned_on_switch": "10.255.255.11_50051",
-          "learned_on_port": "Nve"
-        },
-        {
           "mac": "52:54:00:5d:ef:47",
           "ips": [
             "100.68.248.10"
@@ -2625,11 +2615,9 @@
           "learned_on_port": "Eth1/4"
         },
         {
-          "mac": "52:10:2b:55:1b:08",
+          "mac": "52:2e:72:9b:1b:08",
           "vlans": [
-            3910,
-            1201,
-            1007
+            3910
           ],
           "type": "vm",
           "learned_on_switch": "10.255.255.11_50051",
@@ -3088,166 +3076,6 @@
     },
     {
       "switch": "10.255.255.14_50051",
-      "phase": "load-openconfig-system_system_state.json",
-      "message": "openconfig-system_system_state.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.1_50051",
-      "phase": "load-System_arp-items_inst-items_dom-items_Dom-list_db-items_Db-list_adj-items_AdjEp-list.json",
-      "message": "System_arp-items_inst-items_dom-items_Dom-list_db-items_Db-list_adj-items_AdjEp-list.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.1_50051",
-      "phase": "load-System_bd-items.json",
-      "message": "System_bd-items.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.1_50051",
-      "phase": "load-System_bgp-items_inst-items_dom-items_Dom-list_peer-items_Peer-list.json",
-      "message": "System_bgp-items_inst-items_dom-items_Dom-list_peer-items_Peer-list.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.1_50051",
-      "phase": "load-System_intf-items_phys-items_PhysIf-list.json",
-      "message": "System_intf-items_phys-items_PhysIf-list.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.1_50051",
-      "phase": "load-System_intf-items_phys-items_PhysIf-list_dbgIfIn-items.json",
-      "message": "System_intf-items_phys-items_PhysIf-list_dbgIfIn-items.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.1_50051",
-      "phase": "load-System_lldp-items_inst-items_if-items_If-list.json",
-      "message": "System_lldp-items_inst-items_if-items_If-list.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.1_50051",
-      "phase": "load-System_mac-items.json",
-      "message": "System_mac-items.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.1_50051",
-      "phase": "load-System_procsys-items_syscpusummary-items.json",
-      "message": "System_procsys-items_syscpusummary-items.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.1_50051",
-      "phase": "load-System_procsys-items_sysmem-items.json",
-      "message": "System_procsys-items_sysmem-items.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.1_50051",
-      "phase": "load-System_showversion-items.json",
-      "message": "System_showversion-items.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.1_50051",
-      "phase": "load-openconfig-interfaces_interfaces_interface_state.json",
-      "message": "openconfig-interfaces_interfaces_interface_state.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.1_50051",
-      "phase": "load-openconfig-interfaces_interfaces_interface_state_counters.json",
-      "message": "openconfig-interfaces_interfaces_interface_state_counters.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.1_50051",
-      "phase": "load-openconfig-lldp_lldp_interfaces_interface_neighbors.json",
-      "message": "openconfig-lldp_lldp_interfaces_interface_neighbors.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.1_50051",
-      "phase": "load-openconfig-network-instance_network-instances_network-instance_protocols_protocol_bgp_neighbors.json",
-      "message": "openconfig-network-instance_network-instances_network-instance_protocols_protocol_bgp_neighbors.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.1_50051",
-      "phase": "load-openconfig-network-instance_network-instances_network-instance_vlans_vlan.json",
-      "message": "openconfig-network-instance_network-instances_network-instance_vlans_vlan.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.1_50051",
-      "phase": "load-openconfig-system_system_state.json",
-      "message": "openconfig-system_system_state.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.2_50051",
-      "phase": "load-System_arp-items_inst-items_dom-items_Dom-list_db-items_Db-list_adj-items_AdjEp-list.json",
-      "message": "System_arp-items_inst-items_dom-items_Dom-list_db-items_Db-list_adj-items_AdjEp-list.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.2_50051",
-      "phase": "load-System_bd-items.json",
-      "message": "System_bd-items.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.2_50051",
-      "phase": "load-System_bgp-items_inst-items_dom-items_Dom-list_peer-items_Peer-list.json",
-      "message": "System_bgp-items_inst-items_dom-items_Dom-list_peer-items_Peer-list.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.2_50051",
-      "phase": "load-System_intf-items_phys-items_PhysIf-list.json",
-      "message": "System_intf-items_phys-items_PhysIf-list.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.2_50051",
-      "phase": "load-System_intf-items_phys-items_PhysIf-list_dbgIfIn-items.json",
-      "message": "System_intf-items_phys-items_PhysIf-list_dbgIfIn-items.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.2_50051",
-      "phase": "load-System_lldp-items_inst-items_if-items_If-list.json",
-      "message": "System_lldp-items_inst-items_if-items_If-list.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.2_50051",
-      "phase": "load-System_mac-items.json",
-      "message": "System_mac-items.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.2_50051",
-      "phase": "load-System_procsys-items_syscpusummary-items.json",
-      "message": "System_procsys-items_syscpusummary-items.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.2_50051",
-      "phase": "load-System_procsys-items_sysmem-items.json",
-      "message": "System_procsys-items_sysmem-items.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.2_50051",
-      "phase": "load-System_showversion-items.json",
-      "message": "System_showversion-items.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.2_50051",
-      "phase": "load-openconfig-interfaces_interfaces_interface_state.json",
-      "message": "openconfig-interfaces_interfaces_interface_state.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.2_50051",
-      "phase": "load-openconfig-interfaces_interfaces_interface_state_counters.json",
-      "message": "openconfig-interfaces_interfaces_interface_state_counters.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.2_50051",
-      "phase": "load-openconfig-lldp_lldp_interfaces_interface_neighbors.json",
-      "message": "openconfig-lldp_lldp_interfaces_interface_neighbors.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.2_50051",
-      "phase": "load-openconfig-network-instance_network-instances_network-instance_protocols_protocol_bgp_neighbors.json",
-      "message": "openconfig-network-instance_network-instances_network-instance_protocols_protocol_bgp_neighbors.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.2_50051",
-      "phase": "load-openconfig-network-instance_network-instances_network-instance_vlans_vlan.json",
-      "message": "openconfig-network-instance_network-instances_network-instance_vlans_vlan.json: gnmic query failed"
-    },
-    {
-      "switch": "10.255.255.2_50051",
       "phase": "load-openconfig-system_system_state.json",
       "message": "openconfig-system_system_state.json: gnmic query failed"
     }
