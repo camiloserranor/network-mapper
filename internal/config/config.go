@@ -21,7 +21,6 @@ Switches       []SwitchConfig `yaml:"switches"`
 TLS            TLSConfig      `yaml:"tls"`
 Collect        CollectConfig  `yaml:"collect"`
 Storage        StorageConfig  `yaml:"storage"`         // snapshot and log storage settings
-DeploymentJSON string         `yaml:"deployment_json"` // optional path to Azure Local deployment design JSON
 }
 
 // SwitchConfig defines how to connect to a single TOR switch.

@@ -149,8 +149,18 @@ func TestAdaptV2_SwitchFields(t *testing.T) {
 		t.Fatalf("expected at least 2 switches, got %d", len(switches))
 	}
 
-	// Check TOR-1 (the one with all the data)
-	sw := switches[0].(map[string]interface{})
+	// Find TOR-1 (the one with all the data)
+	var sw map[string]interface{}
+	for _, s := range switches {
+		m := s.(map[string]interface{})
+		if m["id"] == "TOR-1" {
+			sw = m
+			break
+		}
+	}
+	if sw == nil {
+		t.Fatal("TOR-1 not found in switches")
+	}
 	switchFields := []string{"id", "name", "chassis_id", "management_address", "software_version",
 		"system_description", "interfaces", "peer_links", "connected_hosts", "bgp_sessions"}
 	for _, key := range switchFields {
