@@ -6,6 +6,8 @@
 # Collected data (generated, not committed)
 topology-collected.json
 topology.json
+topology.validation*.json
+topology-cml.json
 
 # Test/local config (may contain credentials)
 config.*test*.yaml

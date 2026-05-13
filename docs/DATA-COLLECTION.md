@@ -308,46 +308,26 @@ Stages marked "No" under Required are best-effort — failures are logged but do
 
 ## Data Model
 
-The collected data is assembled into the following JSON structure (served at `/api/topology`):
+The collected data is assembled into the **v2 hierarchical topology schema** (served at `/api/topology`). See [`topology-schema.md`](topology-schema.md) for the full field reference.
 
-```json
-{
-  "schema_version": "1.0",
-  "collected_at": "2025-01-15T10:30:00Z",
-  "source_switches": ["tor-1", "tor-2"],
-  "partial_failures": [],
-  "devices": [
-    {
-      "id": "tor-1",
-      "type": "switch",
-      "system_name": "tor-1.azure.local",
-      "management_address": "10.0.0.1",
-      "software_version": "NX-OS 10.3(4a)",
-      "cpu_utilization": 23.5,
-      "memory_used": 4294967296,
-      "memory_total": 8589934592,
-      "interfaces": [...],
-      "bgp_sessions": [...],
-      "vlans": [100, 200, 300]
-    }
-  ],
-  "links": [
-    {
-      "local_device": "tor-1",
-      "local_port": "Ethernet1/1",
-      "remote_device": "hci-node-01",
-      "remote_port": "NIC1-Port1",
-      "source": "lldp",
-      "oper_status": "UP",
-      "speed": "25G"
-    }
-  ],
-  "vlans": [...],
-  "endpoints": [...]
-}
+The schema version is `"2.0"` with top-level sections: `metadata`, `fabric` (switches, interfaces, peer links), `compute` (hosts, endpoints), `vlans`, and `warnings`.
+
+---
+
+## Offline / Mock Mode
+
+You can run the topology pipeline without live switch access by using pre-collected raw gNMI data:
+
+```bash
+# Serve from a raw gNMI dump directory
+network-mapper serve --from-raw ./gnmi-raw-data/2026-05-11_094644 --port 8080
 ```
 
-For full type definitions, see [`internal/topology/types.go`](../internal/topology/types.go).
+The raw data directory should contain one subdirectory per switch, each with JSON files for the collected gNMI paths. This enables:
+
+- **Development** without switch access
+- **Testing** transform/builder changes against known data
+- **Demos** with reproducible topology output
 
 ---
 
