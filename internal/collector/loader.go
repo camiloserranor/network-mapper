@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/camiloserranor/network-mapper/internal/gnmi"
@@ -145,6 +146,15 @@ func loadSwitchFromDisk(dir, swName string) (SwitchData, error) {
 		if sd.Device.SystemName == "" {
 			sd.Device.SystemName = swName
 		}
+	} else if raw, ok := categories["system-nxos"]; ok {
+		sysInfo := transform.ParseSystemNXOS(raw.Notifications)
+		sd.Device = topology.Device{
+			ID:              swName,
+			Type:            "switch",
+			SystemName:      swName,
+			SoftwareVersion: sysInfo.SoftwareVersion,
+			Uptime:          sysInfo.Uptime,
+		}
 	} else {
 		sd.Device = topology.Device{
 			ID:         swName,
@@ -163,7 +173,10 @@ func loadSwitchFromDisk(dir, swName string) (SwitchData, error) {
 	}
 
 	// 3. Interfaces
-	if raw, ok := categories["interfaces-openconfig"]; ok {
+	if raw, ok := categories["interfaces-nxos"]; ok {
+		sd.Interfaces = transform.ParseInterfacesNXOS(raw.Notifications)
+		log.Printf("  %s: %d interfaces (nxos)", swName, len(sd.Interfaces))
+	} else if raw, ok := categories["interfaces-openconfig"]; ok {
 		sd.Interfaces = transform.ParseInterfacesOpenConfig(raw.Notifications)
 
 		// Merge counters
@@ -231,11 +244,33 @@ func loadSwitchFromDisk(dir, swName string) (SwitchData, error) {
 }
 
 // loadDumpFile reads and deserializes a single raw dump JSON file.
+// It supports two formats:
+//  1. rawDumpFile wrapper: {"switch":"...", "category":"...", "notifications":[...]}
+//  2. gnmic raw output: [{"source":"...", "timestamp":..., "updates":[...]}]
+//
+// For format 2, the category is inferred from the filename.
 func loadDumpFile(path string) (*rawDumpFile, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
+
+	// Detect format: gnmic raw is a JSON array, rawDumpFile is a JSON object.
+	trimmed := trimLeadingWhitespace(data)
+	if len(trimmed) > 0 && trimmed[0] == '[' {
+		return loadGnmicRawFile(data, path)
+	}
+
+	// Check for error-only files (single JSON object with "error" field)
+	if len(trimmed) > 0 && trimmed[0] == '{' {
+		var errObj struct {
+			Error string `json:"error"`
+		}
+		if json.Unmarshal(data, &errObj) == nil && errObj.Error != "" {
+			return nil, fmt.Errorf("%s: %s", filepath.Base(path), errObj.Error)
+		}
+	}
+
 	var raw rawDumpFile
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("parsing %s: %w", filepath.Base(path), err)
@@ -244,6 +279,114 @@ func loadDumpFile(path string) (*rawDumpFile, error) {
 		return nil, fmt.Errorf("%s: missing 'category' field", filepath.Base(path))
 	}
 	return &raw, nil
+}
+
+// gnmicNotification is the on-wire format produced by gnmic's Get/Subscribe output.
+type gnmicNotification struct {
+	Source    string        `json:"source"`
+	Timestamp int64        `json:"timestamp"`
+	Time     string        `json:"time"`
+	Updates  []gnmicUpdate `json:"updates"`
+}
+
+type gnmicUpdate struct {
+	Path   string                 `json:"Path"`
+	Values map[string]interface{} `json:"values"`
+}
+
+// loadGnmicRawFile parses the gnmic raw JSON array format and converts it into
+// a rawDumpFile with proper category and notifications.
+func loadGnmicRawFile(data []byte, path string) (*rawDumpFile, error) {
+	var gnmicNotifs []gnmicNotification
+	if err := json.Unmarshal(data, &gnmicNotifs); err != nil {
+		return nil, fmt.Errorf("parsing gnmic format %s: %w", filepath.Base(path), err)
+	}
+	if len(gnmicNotifs) == 0 {
+		return nil, fmt.Errorf("%s: empty notification array", filepath.Base(path))
+	}
+
+	category := inferCategoryFromFilename(filepath.Base(path))
+	if category == "" {
+		return nil, fmt.Errorf("%s: cannot infer category from filename", filepath.Base(path))
+	}
+
+	// Convert gnmic notifications to our internal Notification format
+	var notifications []gnmi.Notification
+	for _, gn := range gnmicNotifs {
+		var updates []gnmi.Update
+		for _, gu := range gn.Updates {
+			// gnmic stores values as {"path": value} — extract the value
+			for p, v := range gu.Values {
+				updates = append(updates, gnmi.Update{
+					Path:  p,
+					Value: v,
+				})
+			}
+		}
+		notifications = append(notifications, gnmi.Notification{
+			Timestamp: gn.Timestamp,
+			Updates:   updates,
+		})
+	}
+
+	return &rawDumpFile{
+		Switch:        gnmicNotifs[0].Source,
+		Category:      category,
+		Platform:      "nxos",
+		Notifications: notifications,
+	}, nil
+}
+
+// inferCategoryFromFilename maps gnmic-style filenames to loader categories.
+// Examples:
+//
+//	System_lldp-items_inst-items_if-items_If-list.json → lldp-nxos
+//	System_bd-items.json → vlan-config-nxos
+//	openconfig-lldp_lldp_interfaces_interface_neighbors.json → lldp-openconfig
+func inferCategoryFromFilename(name string) string {
+	// Strip .json extension
+	name = strings.TrimSuffix(name, ".json")
+
+	// NX-OS native paths (System_*)
+	nxosMap := map[string]string{
+		"System_lldp-items_inst-items_if-items_If-list":                                       "lldp-nxos",
+		"System_bd-items":                                                                      "vlan-config-nxos",
+		"System_intf-items_phys-items_PhysIf-list":                                             "interfaces-nxos",
+		"System_intf-items_phys-items_PhysIf-list_dbgIfIn-items":                               "interface-counters-nxos",
+		"System_mac-items":                                                                     "mac-table-nxos",
+		"System_arp-items_inst-items_dom-items_Dom-list_db-items_Db-list_adj-items_AdjEp-list": "arp-table-nxos",
+		"System_bgp-items_inst-items_dom-items_Dom-list_peer-items_Peer-list":                  "bgp-nxos",
+		"System_procsys-items_syscpusummary-items":                                             "cpu-nxos",
+		"System_procsys-items_sysmem-items":                                                    "memory-nxos",
+		"System_showversion-items":                                                             "system-nxos",
+	}
+	if cat, ok := nxosMap[name]; ok {
+		return cat
+	}
+
+	// OpenConfig paths
+	ocMap := map[string]string{
+		"openconfig-lldp_lldp_interfaces_interface_neighbors":                                               "lldp-openconfig",
+		"openconfig-interfaces_interfaces_interface_state":                                                   "interfaces-openconfig",
+		"openconfig-interfaces_interfaces_interface_state_counters":                                          "interface-counters-openconfig",
+		"openconfig-system_system_state":                                                                     "system-openconfig",
+		"openconfig-network-instance_network-instances_network-instance_protocols_protocol_bgp_neighbors":    "bgp-openconfig",
+		"openconfig-network-instance_network-instances_network-instance_vlans_vlan":                          "vlan-openconfig",
+	}
+	if cat, ok := ocMap[name]; ok {
+		return cat
+	}
+
+	return ""
+}
+
+func trimLeadingWhitespace(data []byte) []byte {
+	for i, b := range data {
+		if b != ' ' && b != '\t' && b != '\n' && b != '\r' {
+			return data[i:]
+		}
+	}
+	return nil
 }
 
 // detectPlatform infers the switch platform from the available data files.
