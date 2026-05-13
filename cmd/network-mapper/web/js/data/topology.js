@@ -67,7 +67,7 @@ NM.data.adaptV2 = function(topology) {
             var ch = connHosts[k];
             links.push({
                 local_device: sw.id,
-                local_port: ch.port,
+                local_port: ch.local_port || ch.port || '',
                 remote_device: ch.host_id,
                 remote_port: '',
                 oper_status: ch.oper_status || '',

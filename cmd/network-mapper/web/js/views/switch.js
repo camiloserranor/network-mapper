@@ -140,8 +140,8 @@ NM.views.renderSwitch = function(switchId) {
     // Connections table
     const links = (topology.links || []).filter(l => l.local_device === switchId || l.remote_device === switchId);
     links.sort(function(a, b) {
-        const aPort = a.local_device === switchId ? a.local_port : a.remote_port;
-        const bPort = b.local_device === switchId ? b.local_port : b.remote_port;
+        const aPort = (a.local_device === switchId ? a.local_port : a.remote_port) || '';
+        const bPort = (b.local_device === switchId ? b.local_port : b.remote_port) || '';
         return aPort.localeCompare(bPort, undefined, { numeric: true });
     });
     if (links.length > 0) {
@@ -486,14 +486,14 @@ function buildInterfaceVLANSummary(swDev) {
     var ifaces = swDev.interfaces || [];
     for (var i = 0; i < ifaces.length; i++) {
         var iface = ifaces[i];
-        var hasVlanData = iface.mode || iface.access_vlan || iface.native_vlan ||
+        var hasVlanData = iface.vlan_mode || iface.mode || iface.access_vlan || iface.native_vlan ||
             (iface.trunk_vlans && iface.trunk_vlans.length > 0) ||
             (iface.observed_vlans && iface.observed_vlans.length > 0);
         if (!hasVlanData) continue;
 
         results.push({
-            name: iface.name,
-            mode: iface.mode || '',
+            name: iface.name || '',
+            mode: iface.vlan_mode || iface.mode || '',
             accessVlan: iface.access_vlan || 0,
             nativeVlan: iface.native_vlan || 0,
             observedVlans: (iface.observed_vlans || []).join(', ')
@@ -501,7 +501,7 @@ function buildInterfaceVLANSummary(swDev) {
     }
     // Sort: physical ports first, then by name
     results.sort(function(a, b) {
-        return a.name.localeCompare(b.name, undefined, { numeric: true });
+        return (a.name || '').localeCompare(b.name || '', undefined, { numeric: true });
     });
     return results;
 }
