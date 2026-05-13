@@ -291,7 +291,7 @@ The tool classifies every discovered device into one of five types. Classificati
 | Type | Meaning | How identified |
 |------|---------|---------------|
 | **switch** | Network switch (TOR, spine, leaf) | LLDP capabilities (Bridge/Router), or system description keywords: SONiC, NX-OS, Arista, Cumulus, FTOS, Dell EMC, Cisco |
-| **host** | Physical server | LLDP capabilities (Station only), or system description keywords: Linux, Ubuntu, Windows, Red Hat, CentOS, SLES. Also promoted from `unknown` via ARP enrichment or deployment JSON matching |
+| **host** | Physical server | LLDP capabilities (Station only), or system description keywords: Linux, Ubuntu, Windows, Red Hat, CentOS, SLES. Also promoted from `unknown` via ARP enrichment |
 | **bmc** | Baseboard Management Controller | Name or description contains: iDRAC, iLO, BMC, IPMI, Redfish |
 | **vm** | Virtual machine / endpoint | MAC address learned on a switch port that does NOT match (or nearly match) the LLDP chassis-id of the neighbor on that port |
 | **unknown** | Unclassifiable device | No LLDP capabilities and no matching keywords. Common for bare-metal NICs on NX-OS (empty system-name/capabilities) |
@@ -312,22 +312,6 @@ This classification is computed client-side from the link data and used only for
 | 1 | Config name (queried switches) | `TOR-1` | Always — user-assigned name from `config.yaml` |
 | 2 | LLDP system-name (neighbors) | `rr1-n42-r14-93180hl-8-1a` | When the neighbor reports a hostname |
 | 3 | LLDP chassis-id (neighbors) | `d8:94:24:f2:cf:b4` | Fallback when system-name is empty |
-| 4 | Deployment hostname (enrichment) | `ASRR1N42R14U01` | Replaces MAC-based IDs after deployment matching |
-
-For full details on device correlation, MAC offset handling, and enrichment passes, see [`docs/DEVICE-CORRELATION.md`](docs/DEVICE-CORRELATION.md).
-
-## Deployment JSON Enrichment (Experimental)
-
-> ⚠️ **This feature is experimental.** It has been tested against a single Azure Local deployment layout. The deployment JSON schema may vary across versions and regions. Use this feature for additional context, but do not rely on it as the sole source of truth.
-
-When provided with a deployment plan JSON file (`--deployment` flag), the tool can enrich the topology with authoritative host metadata:
-
-- **MAC matching** — correlates LLDP chassis-ids to deployment NIC MACs (exact and +2 offset)
-- **NIC port grouping** — merges multi-NIC-port devices into single host nodes
-- **ID rename** — replaces MAC-based IDs with deployment hostnames
-- **Missing host synthesis** — adds expected hosts that were not discovered via LLDP
-
-The deployment JSON is read from files produced by Azure Local deployment tooling. See [`docs/DEVICE-CORRELATION.md`](docs/DEVICE-CORRELATION.md) for the expected schema and matching algorithm.
 
 ## Architecture
 
@@ -352,7 +336,6 @@ network-mapper/
 │   ├── collector/             # Stage 1: gNMI collection → CollectionResult
 │   ├── builder/               # Stage 2: CollectionResult → TopologyV2
 │   ├── topology/              # Core types: TopologyV2 (output schema), Device/Interface (internal)
-│   ├── deployment/            # Deployment JSON enrichment (experimental)
 │   ├── secrets/               # Azure Key Vault credential resolution
 │   ├── server/                # HTTP server: embedded web + REST API
 │   └── storage/               # Snapshot persistence + retention pruning
@@ -381,7 +364,7 @@ This project builds on patterns from [arc-switch](../arc-switch), specifically:
 |----------|-------------|
 | [topology-schema.md](docs/topology-schema.md) | V2 topology JSON schema — field-by-field reference |
 | [DATA-COLLECTION.md](docs/DATA-COLLECTION.md) | What data is collected, gNMI paths, how each category is used |
-| [DEVICE-CORRELATION.md](docs/DEVICE-CORRELATION.md) | Device deduplication, MAC offset handling, enrichment passes |
+| [DEVICE-CORRELATION.md](docs/DEVICE-CORRELATION.md) | Device deduplication, MAC offset handling, ARP enrichment |
 | [SWITCH-SETUP.md](docs/SWITCH-SETUP.md) | How to enable gNMI on TOR switches |
 
 ## Roadmap
