@@ -223,6 +223,10 @@ body {
     flex-shrink: 0;
 }
 
+#timeline-bar.hidden {
+    display: none;
+}
+
 .timeline-icon {
     font-size: 14px;
     flex-shrink: 0;
@@ -286,6 +290,10 @@ body {
     align-items: center;
     gap: 8px;
     flex-shrink: 0;
+}
+
+#historical-banner.hidden {
+    display: none;
 }
 
 .historical-icon {
