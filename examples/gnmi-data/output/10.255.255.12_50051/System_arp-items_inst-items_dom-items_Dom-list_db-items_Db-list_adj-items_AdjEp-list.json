@@ -1,0 +1,41 @@
+[
+  {
+    "source": "10.255.255.12:50051",
+    "timestamp": 1778628611312994933,
+    "time": "2026-05-12T23:30:11.312994933Z",
+    "updates": [
+      {
+        "Path": "System/arp-items/inst-items/dom-items/Dom-list[name=default]/db-items/Db-list[type=ip]/adj-items/AdjEp-list[ifId=eth1/2][ip=100.71.93.151]",
+        "values": {
+          "System/arp-items/inst-items/dom-items/Dom-list/db-items/Db-list/adj-items/AdjEp-list": [
+            {
+              "flags": "",
+              "ifId": "eth1/2",
+              "ip": "100.71.93.151",
+              "mac": "52:E1:70:90:1B:08",
+              "operSt": "normal",
+              "physIfId": "eth1/2",
+              "upTS": "2026-05-12T23:17:28.863+00:00"
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/arp-items/inst-items/dom-items/Dom-list[name=default]/db-items/Db-list[type=ip]/adj-items/AdjEp-list[ifId=eth1/1][ip=100.71.93.150]",
+        "values": {
+          "System/arp-items/inst-items/dom-items/Dom-list/db-items/Db-list/adj-items/AdjEp-list": [
+            {
+              "flags": "",
+              "ifId": "eth1/1",
+              "ip": "100.71.93.150",
+              "mac": "52:C9:8C:E5:1B:08",
+              "operSt": "normal",
+              "physIfId": "eth1/1",
+              "upTS": "2026-05-12T23:17:22.796+00:00"
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

@@ -1,0 +1,30 @@
+[
+  {
+    "source": "10.255.255.14:50051",
+    "timestamp": 1778628615104308051,
+    "time": "2026-05-12T23:30:15.104308051Z",
+    "updates": [
+      {
+        "Path": "System/showversion-items",
+        "values": {
+          "System/showversion-items": {
+            "biosCompileTime": "",
+            "biosVersion": "",
+            "bootflashSize": 8397560,
+            "copyRight": "Cisco Nexus Operating System (NX-OS) Software\nTAC support: http://www.cisco.com/tac\nDocuments: http://www.cisco.com/en/US/products/ps9372/tsd_products_support_series_home.html\nCopyright (c) 2002-2024, Cisco Systems, Inc. All rights reserved.\nThe copyrights to certain works contained herein are owned by\nother third parties and are used and distributed under license.\nSome parts of this software are covered under the GNU Public\nLicense. A copy of the license is available at\nhttp://www.gnu.org/licenses/gpl.html.\n\nNexus 9000v is a demo version of the Nexus Operating System\n",
+            "kernelUptime": "1 days(s) 5 hour(s) 4 minute(s) 2 second(s) ",
+            "lastResetEpochTime": "0",
+            "lastResetReason": "Unknown",
+            "lastResetService": "",
+            "lastResetSysVersion": "",
+            "lastResetTime": "",
+            "nxosCompileTime": " 7/31/2024 12:00:00",
+            "nxosImageFile": "bootflash:///nxos64-cs.10.5.1.F.bin",
+            "nxosVersion": "10.5(1)",
+            "plugin": "Core Plugin, Ethernet Plugin"
+          }
+        }
+      }
+    ]
+  }
+]

@@ -1,0 +1,1289 @@
+[
+  {
+    "source": "10.255.255.14:50051",
+    "timestamp": 1778628616435320508,
+    "time": "2026-05-12T23:30:16.435320508Z",
+    "updates": [
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/13]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/12]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/6]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/20]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/5]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/58]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/63]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/3]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/64]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/10]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/62]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/42]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/27]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/57]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/1]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "12884901888",
+            "discards": "0",
+            "errors": "288233674686595072",
+            "multicastPkts": "77532749627392",
+            "nUcastPkts": "77545634529280",
+            "noBuffer": "0",
+            "octetRate": "227633266688",
+            "octets": "10186597274222592",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "20839181320192",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/56]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/8]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/40]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/59]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/45]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/47]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/60]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/17]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/16]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/26]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/51]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/34]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/4]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/52]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/49]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/29]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/37]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/14]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/28]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/19]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/2]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "47244640256",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "80522046865408",
+            "nUcastPkts": "80569291505664",
+            "noBuffer": "0",
+            "octetRate": "120259084288",
+            "octets": "9980735196758016",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "16926466113536",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/36]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/35]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/61]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/31]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/32]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/24]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/22]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/44]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/25]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/18]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/21]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/9]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/11]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/53]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/54]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/48]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/38]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/41]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/46]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/30]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/39]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/7]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/15]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/50]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/55]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/23]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/33]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      },
+      {
+        "Path": "System/intf-items/phys-items/PhysIf-list[id=eth1/43]/dbgIfIn-items",
+        "values": {
+          "System/intf-items/phys-items/PhysIf-list/dbgIfIn-items": {
+            "broadcastPkts": "0",
+            "discards": "0",
+            "errors": "0",
+            "multicastPkts": "0",
+            "nUcastPkts": "0",
+            "noBuffer": "0",
+            "octetRate": "0",
+            "octets": "0",
+            "packetRate": "0",
+            "rateInterval": 0,
+            "ucastPkts": "0",
+            "unknownEtype": "0",
+            "unknownProtos": "0"
+          }
+        }
+      }
+    ]
+  }
+]

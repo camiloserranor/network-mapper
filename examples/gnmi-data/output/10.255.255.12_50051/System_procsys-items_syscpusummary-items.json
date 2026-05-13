@@ -1,0 +1,288 @@
+[
+  {
+    "source": "10.255.255.12:50051",
+    "timestamp": 1778628610990176742,
+    "time": "2026-05-12T23:30:10.990176742Z",
+    "updates": [
+      {
+        "Path": "System/procsys-items/syscpusummary-items",
+        "values": {
+          "System/procsys-items/syscpusummary-items": {
+            "idle": "67.0",
+            "kernel": "6.0",
+            "name": "syscpusummary",
+            "syscpu-items": {
+              "SysCpu-list": [
+                {
+                  "id": "cpu0",
+                  "idle-items": {
+                    "avg": 88,
+                    "max": 98,
+                    "maxInstant": "1778628563",
+                    "min": 49,
+                    "minInstant": "1778628556",
+                    "name": "idle",
+                    "pct": 93,
+                    "stats": "30"
+                  },
+                  "irq-items": {
+                    "avg": 0,
+                    "max": 1,
+                    "maxInstant": "1778628591",
+                    "min": 0,
+                    "minInstant": "1778628556",
+                    "name": "irq",
+                    "pct": 1,
+                    "stats": "30"
+                  },
+                  "kernel-items": {
+                    "avg": 2,
+                    "max": 9,
+                    "maxInstant": "1778628556",
+                    "min": 0,
+                    "minInstant": "1778628577",
+                    "name": "kernel",
+                    "pct": 3,
+                    "stats": "30"
+                  },
+                  "name": "syscpu",
+                  "nice-items": {
+                    "avg": 0,
+                    "max": 0,
+                    "maxInstant": "1778628591",
+                    "min": 0,
+                    "minInstant": "1778628591",
+                    "name": "nice",
+                    "pct": 0,
+                    "stats": "30"
+                  },
+                  "softirq-items": {
+                    "avg": 0,
+                    "max": 0,
+                    "maxInstant": "1778628591",
+                    "min": 0,
+                    "minInstant": "1778628591",
+                    "name": "softirq",
+                    "pct": 0,
+                    "stats": "30"
+                  },
+                  "total-items": {
+                    "avg": 11,
+                    "max": 50,
+                    "maxInstant": "1778628556",
+                    "min": 2,
+                    "minInstant": "1778628563",
+                    "name": "total",
+                    "pct": 6,
+                    "stats": "30"
+                  },
+                  "user-items": {
+                    "avg": 7,
+                    "max": 41,
+                    "maxInstant": "1778628556",
+                    "min": 0,
+                    "minInstant": "1778628577",
+                    "name": "user",
+                    "pct": 2,
+                    "stats": "30"
+                  },
+                  "wait-items": {
+                    "avg": 0,
+                    "max": 1,
+                    "maxInstant": "1778628584",
+                    "min": 0,
+                    "minInstant": "1778628591",
+                    "name": "wait",
+                    "pct": 0,
+                    "stats": "30"
+                  }
+                },
+                {
+                  "id": "cpu1",
+                  "idle-items": {
+                    "avg": 85,
+                    "max": 98,
+                    "maxInstant": "1778628570",
+                    "min": 42,
+                    "minInstant": "1778628591",
+                    "name": "idle",
+                    "pct": 42,
+                    "stats": "30"
+                  },
+                  "irq-items": {
+                    "avg": 0,
+                    "max": 1,
+                    "maxInstant": "1778628591",
+                    "min": 0,
+                    "minInstant": "1778628556",
+                    "name": "irq",
+                    "pct": 1,
+                    "stats": "30"
+                  },
+                  "kernel-items": {
+                    "avg": 2,
+                    "max": 10,
+                    "maxInstant": "1778628591",
+                    "min": 0,
+                    "minInstant": "1778628570",
+                    "name": "kernel",
+                    "pct": 10,
+                    "stats": "30"
+                  },
+                  "name": "syscpu",
+                  "nice-items": {
+                    "avg": 0,
+                    "max": 0,
+                    "maxInstant": "1778628591",
+                    "min": 0,
+                    "minInstant": "1778628591",
+                    "name": "nice",
+                    "pct": 0,
+                    "stats": "30"
+                  },
+                  "softirq-items": {
+                    "avg": 0,
+                    "max": 0,
+                    "maxInstant": "1778628591",
+                    "min": 0,
+                    "minInstant": "1778628591",
+                    "name": "softirq",
+                    "pct": 0,
+                    "stats": "30"
+                  },
+                  "total-items": {
+                    "avg": 14,
+                    "max": 58,
+                    "maxInstant": "1778628591",
+                    "min": 1,
+                    "minInstant": "1778628570",
+                    "name": "total",
+                    "pct": 58,
+                    "stats": "30"
+                  },
+                  "user-items": {
+                    "avg": 10,
+                    "max": 47,
+                    "maxInstant": "1778628591",
+                    "min": 1,
+                    "minInstant": "1778628563",
+                    "name": "user",
+                    "pct": 47,
+                    "stats": "30"
+                  },
+                  "wait-items": {
+                    "avg": 0,
+                    "max": 0,
+                    "maxInstant": "1778628591",
+                    "min": 0,
+                    "minInstant": "1778628591",
+                    "name": "wait",
+                    "pct": 0,
+                    "stats": "30"
+                  }
+                },
+                {
+                  "id": "ALL",
+                  "idle-items": {
+                    "avg": 86,
+                    "max": 98,
+                    "maxInstant": "1778628563",
+                    "min": 66,
+                    "minInstant": "1778628556",
+                    "name": "idle",
+                    "pct": 67,
+                    "stats": "30"
+                  },
+                  "irq-items": {
+                    "avg": 0,
+                    "max": 0,
+                    "maxInstant": "1778628591",
+                    "min": 0,
+                    "minInstant": "1778628591",
+                    "name": "irq",
+                    "pct": 0,
+                    "stats": "30"
+                  },
+                  "kernel-items": {
+                    "avg": 2,
+                    "max": 7,
+                    "maxInstant": "1778628556",
+                    "min": 0,
+                    "minInstant": "1778628563",
+                    "name": "kernel",
+                    "pct": 6,
+                    "stats": "30"
+                  },
+                  "name": "syscpu",
+                  "nice-items": {
+                    "avg": 0,
+                    "max": 0,
+                    "maxInstant": "1778628591",
+                    "min": 0,
+                    "minInstant": "1778628591",
+                    "name": "nice",
+                    "pct": 0,
+                    "stats": "30"
+                  },
+                  "softirq-items": {
+                    "avg": 0,
+                    "max": 0,
+                    "maxInstant": "1778628591",
+                    "min": 0,
+                    "minInstant": "1778628591",
+                    "name": "softirq",
+                    "pct": 0,
+                    "stats": "30"
+                  },
+                  "total-items": {
+                    "avg": 12,
+                    "max": 33,
+                    "maxInstant": "1778628556",
+                    "min": 1,
+                    "minInstant": "1778628563",
+                    "name": "total",
+                    "pct": 32,
+                    "stats": "30"
+                  },
+                  "user-items": {
+                    "avg": 9,
+                    "max": 26,
+                    "maxInstant": "1778628556",
+                    "min": 0,
+                    "minInstant": "1778628563",
+                    "name": "user",
+                    "pct": 25,
+                    "stats": "30"
+                  },
+                  "wait-items": {
+                    "avg": 0,
+                    "max": 0,
+                    "maxInstant": "1778628591",
+                    "min": 0,
+                    "minInstant": "1778628591",
+                    "name": "wait",
+                    "pct": 0,
+                    "stats": "30"
+                  }
+                }
+              ]
+            },
+            "syscpuhistory-items": {
+              "SysCpuHistory-list": [
+                {
+                  "durationname": "last60seconds",
+                  "name": "syscpuhistory",
+                  "usage": "2,4,4,2,4,5,4,3,1,1,4,5,4,2,12,38,18,25,45,37,31,33,34,5,1,5,1,5,4,2,2,3,7,3,19,2,3,3,5,2,2,8,3,1,2,6,3,12,41,3,2,3,19,41,32,33,69,74,64,34",
+                  "usageAvg": "14.033334",
+                  "usageMax": 74,
+                  "usageMin": 1
+                }
+              ]
+            },
+            "user": "25.0"
+          }
+        }
+      }
+    ]
+  }
+]

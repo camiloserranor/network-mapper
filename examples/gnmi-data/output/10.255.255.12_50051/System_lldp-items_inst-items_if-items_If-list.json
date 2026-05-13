@@ -1,0 +1,1301 @@
+[
+  {
+    "source": "10.255.255.12:50051",
+    "timestamp": 1778628608353344114,
+    "time": "2026-05-12T23:30:08.353344114Z",
+    "updates": [
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/59]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/59",
+              "mac": "52:10:2B:55:01:3B",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/50]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/50",
+              "mac": "52:10:2B:55:01:32",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/64]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/64",
+              "mac": "52:10:2B:55:01:40",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/3]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/3",
+              "ifstats-items": {
+                "entriesAged": "0",
+                "errPktRcvd": "0",
+                "flapCnt": "0",
+                "pktDiscarded": "0",
+                "pktRcvd": "0",
+                "pktSent": "135",
+                "unrecogTLV": "0"
+              },
+              "mac": "52:10:2B:55:01:03",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": true,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/51]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/51",
+              "mac": "52:10:2B:55:01:33",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/35]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/35",
+              "mac": "52:10:2B:55:01:23",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/13]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/13",
+              "mac": "52:10:2B:55:01:0D",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/62]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/62",
+              "mac": "52:10:2B:55:01:3E",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=mgmt0]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "mgmt0",
+              "ifstats-items": {
+                "entriesAged": "0",
+                "errPktRcvd": "0",
+                "flapCnt": "0",
+                "pktDiscarded": "0",
+                "pktRcvd": "0",
+                "pktSent": "129",
+                "unrecogTLV": "0"
+              },
+              "mac": "52:54:00:10:2B:55",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": true,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/53]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/53",
+              "mac": "52:10:2B:55:01:35",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/58]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/58",
+              "mac": "52:10:2B:55:01:3A",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/63]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/63",
+              "mac": "52:10:2B:55:01:3F",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/49]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/49",
+              "mac": "52:10:2B:55:01:31",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/18]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/18",
+              "mac": "52:10:2B:55:01:12",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/56]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/56",
+              "mac": "52:10:2B:55:01:38",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/16]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/16",
+              "mac": "52:10:2B:55:01:10",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/12]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/12",
+              "mac": "52:10:2B:55:01:0C",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/48]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/48",
+              "mac": "52:10:2B:55:01:30",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/25]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/25",
+              "mac": "52:10:2B:55:01:19",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/33]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/33",
+              "mac": "52:10:2B:55:01:21",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/22]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/22",
+              "mac": "52:10:2B:55:01:16",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/11]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/11",
+              "mac": "52:10:2B:55:01:0B",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/14]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/14",
+              "mac": "52:10:2B:55:01:0E",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/32]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/32",
+              "mac": "52:10:2B:55:01:20",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/54]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/54",
+              "mac": "52:10:2B:55:01:36",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/8]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/8",
+              "mac": "52:10:2B:55:01:08",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/61]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/61",
+              "mac": "52:10:2B:55:01:3D",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/55]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/55",
+              "mac": "52:10:2B:55:01:37",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/31]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/31",
+              "mac": "52:10:2B:55:01:1F",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/52]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/52",
+              "mac": "52:10:2B:55:01:34",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/15]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/15",
+              "mac": "52:10:2B:55:01:0F",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/27]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/27",
+              "mac": "52:10:2B:55:01:1B",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/43]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/43",
+              "mac": "52:10:2B:55:01:2B",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/1]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adj-items": {
+                "AdjEp-list": [
+                  {
+                    "capability": "bridge,router",
+                    "chassisIdT": 4,
+                    "chassisIdV": "52c9.8ce5.0102",
+                    "enCap": "bridge,router",
+                    "id": 1,
+                    "linkAggCap": "enabled",
+                    "linkAggID": 0,
+                    "linkAggStatus": "not aggregated",
+                    "maxFramesize": 9216,
+                    "mgmtIp": "unspecified",
+                    "mgmtPortMac": "52:C9:8C:E5:01:02",
+                    "portDesc": "To-R14-TOR2",
+                    "portIdT": 5,
+                    "portIdV": "Ethernet1/2",
+                    "portVlan": 0,
+                    "sysDesc": "Cisco Nexus Operating System (NX-OS) Software 10.5(1)\nTAC support: http://www.cisco.com/tac\nCopyright (c) 2002-2024, Cisco Systems, Inc. All rights reserved.",
+                    "sysName": "Spine1",
+                    "ttl": 120,
+                    "vlanName": "not advertised"
+                  }
+                ]
+              },
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/1",
+              "ifstats-items": {
+                "entriesAged": "0",
+                "errPktRcvd": "0",
+                "flapCnt": "0",
+                "pktDiscarded": "0",
+                "pktRcvd": "133",
+                "pktSent": "140",
+                "unrecogTLV": "0"
+              },
+              "mac": "52:10:2B:55:01:01",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": true,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/6]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/6",
+              "ifstats-items": {
+                "entriesAged": "0",
+                "errPktRcvd": "0",
+                "flapCnt": "0",
+                "pktDiscarded": "0",
+                "pktRcvd": "0",
+                "pktSent": "135",
+                "unrecogTLV": "0"
+              },
+              "mac": "52:10:2B:55:01:06",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": true,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/7]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/7",
+              "ifstats-items": {
+                "entriesAged": "0",
+                "errPktRcvd": "0",
+                "flapCnt": "0",
+                "pktDiscarded": "0",
+                "pktRcvd": "0",
+                "pktSent": "135",
+                "unrecogTLV": "0"
+              },
+              "mac": "52:10:2B:55:01:07",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": true,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/19]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/19",
+              "mac": "52:10:2B:55:01:13",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/46]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/46",
+              "mac": "52:10:2B:55:01:2E",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/42]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/42",
+              "mac": "52:10:2B:55:01:2A",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/5]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/5",
+              "ifstats-items": {
+                "entriesAged": "0",
+                "errPktRcvd": "0",
+                "flapCnt": "0",
+                "pktDiscarded": "0",
+                "pktRcvd": "0",
+                "pktSent": "135",
+                "unrecogTLV": "0"
+              },
+              "mac": "52:10:2B:55:01:05",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": true,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/44]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/44",
+              "mac": "52:10:2B:55:01:2C",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/9]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/9",
+              "mac": "52:10:2B:55:01:09",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/20]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/20",
+              "mac": "52:10:2B:55:01:14",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/40]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/40",
+              "mac": "52:10:2B:55:01:28",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/34]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/34",
+              "mac": "52:10:2B:55:01:22",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/36]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/36",
+              "mac": "52:10:2B:55:01:24",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/38]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/38",
+              "mac": "52:10:2B:55:01:26",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/24]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/24",
+              "mac": "52:10:2B:55:01:18",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/26]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/26",
+              "mac": "52:10:2B:55:01:1A",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/10]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/10",
+              "mac": "52:10:2B:55:01:0A",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/45]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/45",
+              "mac": "52:10:2B:55:01:2D",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/60]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/60",
+              "mac": "52:10:2B:55:01:3C",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/29]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/29",
+              "mac": "52:10:2B:55:01:1D",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/4]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/4",
+              "ifstats-items": {
+                "entriesAged": "0",
+                "errPktRcvd": "0",
+                "flapCnt": "0",
+                "pktDiscarded": "0",
+                "pktRcvd": "0",
+                "pktSent": "135",
+                "unrecogTLV": "0"
+              },
+              "mac": "52:10:2B:55:01:04",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": true,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/30]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/30",
+              "mac": "52:10:2B:55:01:1E",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/57]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/57",
+              "mac": "52:10:2B:55:01:39",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/17]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/17",
+              "mac": "52:10:2B:55:01:11",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/28]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/28",
+              "mac": "52:10:2B:55:01:1C",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/37]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/37",
+              "mac": "52:10:2B:55:01:25",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/2]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adj-items": {
+                "AdjEp-list": [
+                  {
+                    "capability": "bridge,router",
+                    "chassisIdT": 4,
+                    "chassisIdV": "52e1.7090.0102",
+                    "enCap": "bridge,router",
+                    "id": 1,
+                    "linkAggCap": "enabled",
+                    "linkAggID": 0,
+                    "linkAggStatus": "not aggregated",
+                    "maxFramesize": 9216,
+                    "mgmtIp": "unspecified",
+                    "mgmtPortMac": "52:E1:70:90:01:02",
+                    "portDesc": "To-R14-TOR2",
+                    "portIdT": 5,
+                    "portIdV": "Ethernet1/2",
+                    "portVlan": 0,
+                    "sysDesc": "Cisco Nexus Operating System (NX-OS) Software 10.5(1)\nTAC support: http://www.cisco.com/tac\nCopyright (c) 2002-2024, Cisco Systems, Inc. All rights reserved.",
+                    "sysName": "Spine2",
+                    "ttl": 120,
+                    "vlanName": "not advertised"
+                  }
+                ]
+              },
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/2",
+              "ifstats-items": {
+                "entriesAged": "0",
+                "errPktRcvd": "0",
+                "flapCnt": "0",
+                "pktDiscarded": "0",
+                "pktRcvd": "132",
+                "pktSent": "140",
+                "unrecogTLV": "0"
+              },
+              "mac": "52:10:2B:55:01:02",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": true,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/41]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/41",
+              "mac": "52:10:2B:55:01:29",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/23]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/23",
+              "mac": "52:10:2B:55:01:17",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/47]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/47",
+              "mac": "52:10:2B:55:01:2F",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/21]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/21",
+              "mac": "52:10:2B:55:01:15",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/lldp-items/inst-items/if-items/If-list[id=eth1/39]",
+        "values": {
+          "System/lldp-items/inst-items/if-items/If-list": [
+            {
+              "adminRxSt": "enabled",
+              "adminSt": "enabled",
+              "adminTxSt": "enabled",
+              "id": "eth1/39",
+              "mac": "52:10:2B:55:01:27",
+              "portDCBXPVer": "auto",
+              "portDCBXSt": false,
+              "tlvSetMgmtIpv6": "::",
+              "tlvSetVlan": 0
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

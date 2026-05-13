@@ -1,0 +1,195 @@
+[
+  {
+    "source": "10.255.255.12:50051",
+    "timestamp": 1778628611206595498,
+    "time": "2026-05-12T23:30:11.206595498Z",
+    "updates": [
+      {
+        "Path": "System/mac-items",
+        "values": {
+          "System/mac-items": {
+            "aging": 1800,
+            "gwmacCount": 0,
+            "hwMacLimit": 0,
+            "macMoveNotify": true,
+            "staticClear": false,
+            "systemLimit": 196000,
+            "table-items": {
+              "vlan-items": {
+                "MacAddressEntry-list": [
+                  {
+                    "age": 0,
+                    "createTs": "2026-05-12T22:30:45.000+00:00",
+                    "macAddress": "52:54:00:21:27:2A",
+                    "macInfo": "nve",
+                    "ntfy": false,
+                    "port": "Nve",
+                    "routed": false,
+                    "secure": false,
+                    "static": false,
+                    "type": "primary",
+                    "vlan": "vlan-1201"
+                  },
+                  {
+                    "age": 0,
+                    "macAddress": "52:54:00:5D:EF:47",
+                    "macInfo": "nve",
+                    "ntfy": false,
+                    "port": "Nve",
+                    "routed": false,
+                    "secure": false,
+                    "static": false,
+                    "type": "primary",
+                    "vlan": "vlan-1007"
+                  },
+                  {
+                    "age": 0,
+                    "macAddress": "52:2E:72:9B:1B:08",
+                    "macInfo": "nve",
+                    "ntfy": false,
+                    "port": "Nve",
+                    "routed": false,
+                    "secure": false,
+                    "static": true,
+                    "type": "primary",
+                    "vlan": "vlan-3910"
+                  },
+                  {
+                    "age": 0,
+                    "createTs": "2026-05-11T21:33:54.000+00:00",
+                    "macAddress": "52:10:2B:55:1B:08",
+                    "macInfo": "standard",
+                    "ntfy": false,
+                    "port": "supeth1",
+                    "routed": true,
+                    "secure": false,
+                    "static": true,
+                    "type": "gateway",
+                    "vlan": "vlan-1201"
+                  },
+                  {
+                    "age": 0,
+                    "macAddress": "DE:AD:BE:EF:00:01",
+                    "macInfo": "standard",
+                    "ntfy": false,
+                    "port": "supeth1",
+                    "routed": true,
+                    "secure": false,
+                    "static": true,
+                    "type": "gateway",
+                    "vlan": "vlan-0"
+                  },
+                  {
+                    "age": 0,
+                    "macAddress": "52:10:2B:55:1B:08",
+                    "macInfo": "standard",
+                    "ntfy": false,
+                    "port": "supeth1",
+                    "routed": true,
+                    "secure": false,
+                    "static": true,
+                    "type": "gateway",
+                    "vlan": "vlan-0"
+                  },
+                  {
+                    "age": 0,
+                    "createTs": "2026-05-11T21:43:58.000+00:00",
+                    "macAddress": "52:1C:02:6B:1B:08",
+                    "macInfo": "nve",
+                    "ntfy": false,
+                    "port": "Nve",
+                    "routed": false,
+                    "secure": false,
+                    "static": true,
+                    "type": "primary",
+                    "vlan": "vlan-3910"
+                  },
+                  {
+                    "age": 0,
+                    "createTs": "2026-05-11T21:33:54.000+00:00",
+                    "macAddress": "52:10:2B:55:1B:08",
+                    "macInfo": "standard",
+                    "ntfy": false,
+                    "port": "supeth1",
+                    "routed": true,
+                    "secure": false,
+                    "static": true,
+                    "type": "gateway",
+                    "vlan": "vlan-1007"
+                  },
+                  {
+                    "age": 0,
+                    "createTs": "2026-05-11T21:43:38.000+00:00",
+                    "macAddress": "52:10:2B:55:1B:08",
+                    "macInfo": "standard",
+                    "ntfy": false,
+                    "port": "vlan3910",
+                    "routed": false,
+                    "secure": false,
+                    "static": true,
+                    "type": "primary",
+                    "vlan": "vlan-3910"
+                  },
+                  {
+                    "age": 0,
+                    "createTs": "2026-05-11T21:43:38.000+00:00",
+                    "macAddress": "52:3A:C8:FA:1B:08",
+                    "macInfo": "nve",
+                    "ntfy": false,
+                    "port": "Nve",
+                    "routed": false,
+                    "secure": false,
+                    "static": true,
+                    "type": "primary",
+                    "vlan": "vlan-3910"
+                  },
+                  {
+                    "age": 0,
+                    "createTs": "2026-05-11T21:43:38.000+00:00",
+                    "macAddress": "52:54:00:C1:F3:6A",
+                    "macInfo": "nve",
+                    "ntfy": false,
+                    "port": "Nve",
+                    "routed": false,
+                    "secure": false,
+                    "static": false,
+                    "type": "primary",
+                    "vlan": "vlan-1007"
+                  },
+                  {
+                    "age": 0,
+                    "macAddress": "52:30:2A:7F:1B:08",
+                    "macInfo": "nve",
+                    "ntfy": false,
+                    "port": "Nve",
+                    "routed": false,
+                    "secure": false,
+                    "static": true,
+                    "type": "primary",
+                    "vlan": "vlan-3910"
+                  },
+                  {
+                    "age": 0,
+                    "createTs": "2026-05-11T21:44:27.000+00:00",
+                    "macAddress": "52:4E:8D:EB:1B:08",
+                    "macInfo": "nve",
+                    "ntfy": false,
+                    "port": "Nve",
+                    "routed": false,
+                    "secure": false,
+                    "static": true,
+                    "type": "primary",
+                    "vlan": "vlan-3910"
+                  }
+                ]
+              }
+            },
+            "thresholdInterval": 120,
+            "thresholdLimit": 50,
+            "userDefinedLimit": 16
+          }
+        }
+      }
+    ]
+  }
+]

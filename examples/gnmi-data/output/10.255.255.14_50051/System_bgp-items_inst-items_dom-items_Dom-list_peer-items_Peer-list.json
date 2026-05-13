@@ -1,0 +1,305 @@
+[
+  {
+    "source": "10.255.255.14:50051",
+    "timestamp": 1778628618223018497,
+    "time": "2026-05-12T23:30:18.223018497Z",
+    "updates": [
+      {
+        "Path": "System/bgp-items/inst-items/dom-items/Dom-list[name=default]/peer-items/Peer-list[addr=100.71.93.151]",
+        "values": {
+          "System/bgp-items/inst-items/dom-items/Dom-list/peer-items/Peer-list": [
+            {
+              "activePfxPeers": "0",
+              "addr": "100.71.93.151",
+              "adminSt": "enabled",
+              "af-items": {
+                "PeerAf-list": [
+                  {
+                    "advGwIp": "enabled",
+                    "advLocalLblRt": "disabled",
+                    "aigp": "disabled",
+                    "allowedSelfAsCnt": 0,
+                    "asOverride": "disabled",
+                    "defOrg": "disabled",
+                    "dmzLinkBw": "disabled",
+                    "encapMpls": "disabled",
+                    "linkBwCum": "disabled",
+                    "name": "bgp-PeerAf",
+                    "nhSelfAll": false,
+                    "nhThirdparty": "disabled",
+                    "rewriteRtAsn": "disabled",
+                    "sendComExt": "enabled",
+                    "sendComStd": "enabled",
+                    "type": "l2vpn-evpn"
+                  }
+                ]
+              },
+              "asn": "64905",
+              "asnType": "none",
+              "bfdType": "none",
+              "bmpSrvId1St": "disabled",
+              "bmpSrvId2St": "disabled",
+              "capSuppr4ByteAsn": "disabled",
+              "curPfxPeers": "0",
+              "dscp": "cs6",
+              "ent-items": {
+                "PeerEntry-list": [
+                  {
+                    "addr": "100.71.93.151",
+                    "advCap": "as4,dynamic,dynamic-gr,dynamic-mp,dynamic-old,dynamic-refresh,gr,l2vpn-evpn,refresh,refresh-old",
+                    "af-items": {
+                      "PeerAfEntry-list": [
+                        {
+                          "acceptedPaths": 26,
+                          "deniedPaths": 0,
+                          "firstEorRcvdTs": "2026-05-11T21:34:40.359+00:00",
+                          "flags": "first-eor-rcvd,gr-cap,gr-sent",
+                          "lastEorRcvdTs": "2026-05-11T21:35:34.779+00:00",
+                          "memAccPaths": 2496,
+                          "peerTblVer": 482,
+                          "pfxFlushed": "0",
+                          "pfxSaved": "0",
+                          "pfxSent": "5",
+                          "tblSt": "up",
+                          "tblVer": 482,
+                          "treatAswithDrawnPaths": 0,
+                          "type": "l2vpn-evpn",
+                          "withDrawnPaths": 0
+                        }
+                      ]
+                    },
+                    "connAttempts": 3,
+                    "connDrop": 0,
+                    "connEst": 1,
+                    "ev-items": {
+                      "lastErrLenRsvd": 0,
+                      "lastErrLenSent": 0,
+                      "lastErrValRsvd": 0,
+                      "lastErrValSent": 0,
+                      "majErrRstRsvd": "none",
+                      "majErrRstSent": "none",
+                      "minErrRstRsvd": "none",
+                      "minErrRstSent": "none",
+                      "rstRsvdTs": "2026-05-11T18:29:46.474+00:00",
+                      "rstSentTs": "2026-05-11T18:29:46.474+00:00"
+                    },
+                    "fd": 88,
+                    "flags": "cap-neg,gr-enabled",
+                    "gr-items": {
+                      "grTs": "1970-01-01T00:00:00.000+00:00",
+                      "operSt": "na",
+                      "restartIntvl": 120
+                    },
+                    "holdIntvl": 180,
+                    "kaIntvl": 60,
+                    "lastFlapTs": "2026-05-11T21:35:29.773+00:00",
+                    "localIp": "100.71.93.153",
+                    "localPort": 49600,
+                    "maxConnRetryIntvl": 60,
+                    "operAsn": "64905",
+                    "operPeerIsDynamic": "disabled",
+                    "operSt": "established",
+                    "passwdSet": "disabled",
+                    "peerIdx": 4,
+                    "peerstats-items": {
+                      "byteInRecvQ": "0",
+                      "byteInSendQ": "0",
+                      "byteRcvd": "44135",
+                      "byteSent": "30184",
+                      "capRcvd": "2",
+                      "capSent": "2",
+                      "connectRetryTs": "1970-01-01T00:00:00.000+00:00",
+                      "kaRcvd": "1549",
+                      "kaSent": "1560",
+                      "kaTs": "2026-05-12T23:34:34.225+00:00",
+                      "msgRcvd": "1692",
+                      "msgSent": "1564",
+                      "notifRcvd": "0",
+                      "notifSent": "0",
+                      "openRcvd": "1",
+                      "openSent": "1",
+                      "routeRefreshRcvd": "0",
+                      "routeRefreshSent": "0",
+                      "totalDiscardedAttributes": "0",
+                      "updateRcvd": "140",
+                      "updateSent": "5"
+                    },
+                    "prevOperSt": "open-confirm",
+                    "rcvCap": "as4,cap,dynamic,dynamic-gr,dynamic-mp,dynamic-old,dynamic-refresh,gr,l2vpn-evpn,refresh,refresh-old",
+                    "remotePort": 179,
+                    "rtrId": "100.71.93.151",
+                    "shutStQual": "admin-up",
+                    "stReason": "none",
+                    "type": "ibgp",
+                    "updateElapsedTs": "2026-05-12T22:34:15.924+00:00"
+                  }
+                ]
+              },
+              "epe": "disabled",
+              "holdIntvl": 180,
+              "internalVpnClient": "disabled",
+              "kaIntvl": 60,
+              "logNbrChgs": "none",
+              "lowMemExempt": "disabled",
+              "maxCurPeers": "0",
+              "maxPfxPeers": "0",
+              "passwdType": "LINE",
+              "peerType": "fabric-internal",
+              "privateASctrl": "none",
+              "srcIf": "lo0",
+              "totalPfxPeers": "0"
+            }
+          ]
+        }
+      },
+      {
+        "Path": "System/bgp-items/inst-items/dom-items/Dom-list[name=default]/peer-items/Peer-list[addr=100.71.93.150]",
+        "values": {
+          "System/bgp-items/inst-items/dom-items/Dom-list/peer-items/Peer-list": [
+            {
+              "activePfxPeers": "0",
+              "addr": "100.71.93.150",
+              "adminSt": "enabled",
+              "af-items": {
+                "PeerAf-list": [
+                  {
+                    "advGwIp": "enabled",
+                    "advLocalLblRt": "disabled",
+                    "aigp": "disabled",
+                    "allowedSelfAsCnt": 0,
+                    "asOverride": "disabled",
+                    "defOrg": "disabled",
+                    "dmzLinkBw": "disabled",
+                    "encapMpls": "disabled",
+                    "linkBwCum": "disabled",
+                    "name": "bgp-PeerAf",
+                    "nhSelfAll": false,
+                    "nhThirdparty": "disabled",
+                    "rewriteRtAsn": "disabled",
+                    "sendComExt": "enabled",
+                    "sendComStd": "enabled",
+                    "type": "l2vpn-evpn"
+                  }
+                ]
+              },
+              "asn": "64905",
+              "asnType": "none",
+              "bfdType": "none",
+              "bmpSrvId1St": "disabled",
+              "bmpSrvId2St": "disabled",
+              "capSuppr4ByteAsn": "disabled",
+              "curPfxPeers": "0",
+              "dscp": "cs6",
+              "ent-items": {
+                "PeerEntry-list": [
+                  {
+                    "addr": "100.71.93.150",
+                    "advCap": "as4,dynamic,dynamic-gr,dynamic-mp,dynamic-old,dynamic-refresh,gr,l2vpn-evpn,refresh,refresh-old",
+                    "af-items": {
+                      "PeerAfEntry-list": [
+                        {
+                          "acceptedPaths": 26,
+                          "deniedPaths": 0,
+                          "firstEorRcvdTs": "2026-05-11T21:34:40.359+00:00",
+                          "flags": "first-eor-rcvd,gr-cap,gr-sent",
+                          "lastEorRcvdTs": "2026-05-11T21:35:32.453+00:00",
+                          "memAccPaths": 2496,
+                          "peerTblVer": 482,
+                          "pfxFlushed": "0",
+                          "pfxSaved": "0",
+                          "pfxSent": "5",
+                          "tblSt": "up",
+                          "tblVer": 482,
+                          "treatAswithDrawnPaths": 0,
+                          "type": "l2vpn-evpn",
+                          "withDrawnPaths": 0
+                        }
+                      ]
+                    },
+                    "connAttempts": 2,
+                    "connDrop": 0,
+                    "connEst": 1,
+                    "ev-items": {
+                      "lastErrLenRsvd": 0,
+                      "lastErrLenSent": 0,
+                      "lastErrValRsvd": 0,
+                      "lastErrValSent": 0,
+                      "majErrRstRsvd": "none",
+                      "majErrRstSent": "none",
+                      "minErrRstRsvd": "none",
+                      "minErrRstSent": "none",
+                      "rstRsvdTs": "2026-05-11T18:29:46.474+00:00",
+                      "rstSentTs": "2026-05-11T18:29:46.474+00:00"
+                    },
+                    "fd": 87,
+                    "flags": "cap-neg,gr-enabled",
+                    "gr-items": {
+                      "grTs": "1970-01-01T00:00:00.000+00:00",
+                      "operSt": "na",
+                      "restartIntvl": 120
+                    },
+                    "holdIntvl": 180,
+                    "kaIntvl": 60,
+                    "lastFlapTs": "2026-05-11T21:35:27.451+00:00",
+                    "localIp": "100.71.93.153",
+                    "localPort": 179,
+                    "maxConnRetryIntvl": 60,
+                    "operAsn": "64905",
+                    "operPeerIsDynamic": "disabled",
+                    "operSt": "established",
+                    "passwdSet": "disabled",
+                    "peerIdx": 3,
+                    "peerstats-items": {
+                      "byteInRecvQ": "0",
+                      "byteInSendQ": "0",
+                      "byteRcvd": "44135",
+                      "byteSent": "30184",
+                      "capRcvd": "2",
+                      "capSent": "2",
+                      "connectRetryTs": "1970-01-01T00:00:00.000+00:00",
+                      "kaRcvd": "1549",
+                      "kaSent": "1560",
+                      "kaTs": "2026-05-12T23:34:34.225+00:00",
+                      "msgRcvd": "1692",
+                      "msgSent": "1564",
+                      "notifRcvd": "0",
+                      "notifSent": "0",
+                      "openRcvd": "1",
+                      "openSent": "1",
+                      "routeRefreshRcvd": "0",
+                      "routeRefreshSent": "0",
+                      "totalDiscardedAttributes": "0",
+                      "updateRcvd": "140",
+                      "updateSent": "5"
+                    },
+                    "prevOperSt": "open-confirm",
+                    "rcvCap": "as4,cap,dynamic,dynamic-gr,dynamic-mp,dynamic-old,dynamic-refresh,gr,l2vpn-evpn,refresh,refresh-old",
+                    "remotePort": 56210,
+                    "rtrId": "100.71.93.150",
+                    "shutStQual": "admin-up",
+                    "stReason": "none",
+                    "type": "ibgp",
+                    "updateElapsedTs": "2026-05-12T22:34:15.924+00:00"
+                  }
+                ]
+              },
+              "epe": "disabled",
+              "holdIntvl": 180,
+              "internalVpnClient": "disabled",
+              "kaIntvl": 60,
+              "logNbrChgs": "none",
+              "lowMemExempt": "disabled",
+              "maxCurPeers": "0",
+              "maxPfxPeers": "0",
+              "passwdType": "LINE",
+              "peerType": "fabric-internal",
+              "privateASctrl": "none",
+              "srcIf": "lo0",
+              "totalPfxPeers": "0"
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

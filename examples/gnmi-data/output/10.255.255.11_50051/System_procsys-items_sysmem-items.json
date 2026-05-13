@@ -1,0 +1,52 @@
+[
+  {
+    "source": "10.255.255.11:50051",
+    "timestamp": 1778628608158340832,
+    "time": "2026-05-12T23:30:08.158340832Z",
+    "updates": [
+      {
+        "Path": "System/procsys-items/sysmem-items",
+        "values": {
+          "System/procsys-items/sysmem-items": {
+            "buffers": "56464",
+            "cached": "6645400",
+            "memstatus": "OK",
+            "name": "sysmem",
+            "reserved": "984324",
+            "sysmemfree-items": {
+              "avg": "1696503",
+              "curr": "1682460",
+              "interval": "5Sec",
+              "max": "4831348",
+              "min": "1270628",
+              "name": "sysmemfree",
+              "timemax": "1778524395",
+              "timemin": "1778524365"
+            },
+            "sysmemusage-items": {
+              "avg": "86.153427",
+              "curr": "86.268044",
+              "interval": "5Sec",
+              "max": "89.629349",
+              "min": "60.567348",
+              "name": "sysmemusage",
+              "timemax": "1778524365",
+              "timemin": "1778524395"
+            },
+            "sysmemused-items": {
+              "avg": "10555648",
+              "curr": "10569692",
+              "interval": "5Sec",
+              "max": "10981524",
+              "min": "7420804",
+              "name": "sysmemused",
+              "timemax": "1778524365",
+              "timemin": "1778524395"
+            },
+            "total": "12252152"
+          }
+        }
+      }
+    ]
+  }
+]

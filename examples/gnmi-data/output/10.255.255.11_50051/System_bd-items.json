@@ -1,0 +1,373 @@
+[
+  {
+    "source": "10.255.255.11:50051",
+    "timestamp": 1778628608438560775,
+    "time": "2026-05-12T23:30:08.438560775Z",
+    "updates": [
+      {
+        "Path": "System/bd-items",
+        "values": {
+          "System/bd-items": {
+            "allVlans": 4,
+            "bd-items": {
+              "BD-list": [
+                {
+                  "BdOperName": "Tenant1",
+                  "BdState": "active",
+                  "accEncap": "vxlan-11201",
+                  "adminSt": "active",
+                  "bridgeMode": "mac",
+                  "createTs": "2026-05-11T21:33:21.000+00:00",
+                  "fabEncap": "vlan-1201",
+                  "fwdCtrl": "mdst-flood",
+                  "fwdMode": "bridge,route",
+                  "hwId": 22,
+                  "id": 1201,
+                  "longName": false,
+                  "macPacketClassify": "disable",
+                  "mode": "CE",
+                  "name": "Tenant1",
+                  "operSt": "down",
+                  "xConnect": "disable"
+                },
+                {
+                  "BdOperName": "Infrastructure",
+                  "BdState": "active",
+                  "accEncap": "vxlan-11007",
+                  "adminSt": "active",
+                  "bridgeMode": "mac",
+                  "createTs": "2026-05-11T21:33:20.000+00:00",
+                  "fabEncap": "vlan-1007",
+                  "fwdCtrl": "mdst-flood",
+                  "fwdMode": "bridge,route",
+                  "hwId": 21,
+                  "id": 1007,
+                  "longName": false,
+                  "macPacketClassify": "disable",
+                  "member-items": {
+                    "VlanMemberIf-list": [
+                      {
+                        "id": "eth1/4",
+                        "vlan": 1007
+                      },
+                      {
+                        "id": "eth1/3",
+                        "vlan": 1007
+                      }
+                    ]
+                  },
+                  "mode": "CE",
+                  "name": "Infrastructure",
+                  "operSt": "up",
+                  "xConnect": "disable"
+                },
+                {
+                  "BdOperName": "L3VNI_N42-TENANT",
+                  "BdState": "active",
+                  "accEncap": "vxlan-39100",
+                  "adminSt": "active",
+                  "bridgeMode": "mac",
+                  "createTs": "2026-05-11T21:33:21.000+00:00",
+                  "fabEncap": "vlan-3910",
+                  "fwdCtrl": "mdst-flood",
+                  "fwdMode": "bridge,route",
+                  "hwId": 23,
+                  "id": 3910,
+                  "longName": false,
+                  "macPacketClassify": "disable",
+                  "mode": "CE",
+                  "name": "L3VNI_N42-TENANT",
+                  "operSt": "down",
+                  "xConnect": "disable"
+                },
+                {
+                  "BdOperName": "default",
+                  "BdState": "active",
+                  "adminSt": "active",
+                  "bridgeMode": "mac",
+                  "createTs": "2026-05-11T18:32:30.000+00:00",
+                  "dbgVlanStats-items": {
+                    "inBcastOctets": "0",
+                    "inBcastPkts": "0",
+                    "inL3UcastOctets": "0",
+                    "inL3UcastPkts": "0",
+                    "inMcastOctets": "0",
+                    "inMcastPkts": "0",
+                    "inUcastOctets": "0",
+                    "inUcastPkts": "0",
+                    "outUcastOctets": "0",
+                    "outUcastPkts": "0"
+                  },
+                  "fabEncap": "vlan-1",
+                  "fwdCtrl": "mdst-flood",
+                  "fwdMode": "bridge,route",
+                  "hwId": 1,
+                  "id": 1,
+                  "longName": false,
+                  "macPacketClassify": "disable",
+                  "member-items": {
+                    "VlanMemberIf-list": [
+                      {
+                        "id": "eth1/30",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/29",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/26",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/25",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/24",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/23",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/22",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/20",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/27",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/51",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/49",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/31",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/48",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/10",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/32",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/46",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/44",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/16",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/53",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/52",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/45",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/13",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/41",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/28",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/19",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/61",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/47",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/56",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/37",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/35",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/36",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/33",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/38",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/21",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/54",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/64",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/40",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/42",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/17",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/55",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/50",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/60",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/58",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/59",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/62",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/43",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/63",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/9",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/5",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/6",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/7",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/8",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/11",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/12",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/34",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/39",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/14",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/15",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/57",
+                        "vlan": 1
+                      },
+                      {
+                        "id": "eth1/18",
+                        "vlan": 1
+                      }
+                    ]
+                  },
+                  "mode": "CE",
+                  "operSt": "up",
+                  "xConnect": "disable"
+                }
+              ]
+            },
+            "extVlans": 3,
+            "maxSupVlans": 4094,
+            "resvlan-items": {
+              "blockVal64": false,
+              "currentmax": 4095,
+              "currentmin": 3968,
+              "sysVlan": 3968
+            },
+            "sysDefaultSVIAutostate": "enable",
+            "vtpVlans": 1
+          }
+        }
+      }
+    ]
+  }
+]
