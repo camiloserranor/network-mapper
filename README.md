@@ -155,20 +155,45 @@ auth:
 # Collect topology from configured switches
 network-mapper collect --config config.yaml --output topology.json
 
+# Collect with legacy v1 schema output
+network-mapper collect --config config.yaml --output topology.json --schema v1
+
 # Serve the interactive web UI (static mode — serves a single JSON file)
 network-mapper serve --topology topology.json --port 8080
 
-# Serve with live collection (hybrid mode — ON_CHANGE + periodic polling)
-network-mapper serve --config config.yaml --port 8080 --interval 300
+# Serve with live collection (hybrid mode — periodic gNMI polling)
+network-mapper serve --config config.yaml --port 8080 --interval 30
+
+# Serve with historical snapshots and timeline slider
+network-mapper serve --config config.yaml --port 8080 --history
+
+# Serve from a raw gNMI dump (offline/mock mode — no live switches needed)
+network-mapper serve --from-raw ./gnmi-raw-data/2026-05-11_094644 --port 8080
+
+# Test gNMI connectivity to a single switch
+network-mapper test-connection --address 10.0.0.1:50051 --username admin --password secret
 
 # Flags
 network-mapper collect --help
 network-mapper serve --help
 ```
 
+### `serve` flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--topology, -t` | `topology.json` | Path to topology JSON file (static mode) |
+| `--port, -p` | `8080` | HTTP server port |
+| `--config, -c` | | Config file for live mode (enables periodic gNMI collection) |
+| `--interval` | `30` | Collection interval in seconds for live mode |
+| `--history` | `false` | Enable historical snapshots, timeline UI, and periodic re-collection |
+| `--from-raw` | | Load raw gNMI dump from directory (offline mode, no live collection) |
+| `--no-open` | `false` | Don't auto-open browser |
+| `--profile` | `false` | Enable `/debug/pprof/*` profiling endpoints |
+
 ## Historical Snapshots & Retention
 
-When running in live mode (`serve --config`), the tool automatically:
+When running in live mode with the `--history` flag (`serve --config ... --history`), the tool:
 
 - **Saves topology snapshots** to `data/snapshots/` whenever the network topology changes
 - **Subscribes to gNMI ON_CHANGE** for LLDP and interface state — changes are detected in near real-time
