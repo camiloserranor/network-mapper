@@ -67,7 +67,7 @@ Contains an array of `switches`, each representing a TOR or spine switch that wa
 | `name` | string | System hostname |
 | `chassis_id` | string | LLDP chassis ID (MAC address) |
 | `management_address` | string | Management IP address |
-| `software_version` | string | NX-OS/SONiC version string |
+| `software_version` | string | Software version string (e.g., NX-OS version) |
 | `system_description` | string | Full system description from LLDP/gNMI |
 | `uptime` | string | System uptime |
 | `health` | object? | CPU/memory utilization (if available) |

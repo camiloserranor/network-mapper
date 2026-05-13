@@ -106,7 +106,7 @@ LLDP capabilities present?
     │   (hints: iDRAC, iLO, BMC, IPMI, Redfish)
     │
     ├── Description contains switch OS hint? → "switch"
-    │   (hints: SONiC, NX-OS, Arista, Cumulus, FTOS, Dell EMC, Cisco)
+    │   (hints: NX-OS, Arista, Cumulus, FTOS, Dell EMC, Cisco)
     │
     ├── Description contains server OS hint? → "host"
     │   (hints: Linux, Ubuntu, Windows, Red Hat, CentOS, SLES)
@@ -165,7 +165,7 @@ MAC addresses arrive in many formats depending on the source:
 | Source | Format example |
 |--------|---------------|
 | LLDP chassis-id (NX-OS) | `d894.24f2.cfb4` (dot-separated Cisco notation) |
-| LLDP chassis-id (SONiC) | `aa:bb:cc:dd:ee:ff` (colon-separated) |
+| LLDP chassis-id (other) | `aa:bb:cc:dd:ee:ff` (colon-separated) |
 | Internal representation | `d8:94:24:f2:cf:b2` (colon-separated, lowercase) |
 
 All MACs are normalized to lowercase colon-separated format before comparison.

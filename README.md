@@ -27,7 +27,7 @@ Azure Local deployments rely on physical cabling between hosts and TOR switches.
      │ gNMI Get/Subscribe                                     │ HTTP + WS
 ┌──────────────┐                                          ┌──────────┐
 │ TOR Switches │                                          │ Browser  │
-│ (SONiC/NX-OS)│                                          └──────────┘
+│   (NX-OS)   │                                          └──────────┘
 └──────────────┘
 ```
 
@@ -69,11 +69,11 @@ auth:
 switches:
   - name: TOR-1
     address: "10.0.0.1:50051"
-    platform: sonic            # sonic | nxos
+    platform: nxos
 
   - name: TOR-2
     address: "10.0.0.2:50051"
-    platform: sonic
+    platform: nxos
     # Per-switch override (optional):
     # auth:
     #   username_keyvault: https://myvault.vault.azure.net/secrets/tor2-user
@@ -227,7 +227,7 @@ The topology JSON uses a hierarchical v2 schema designed to be both machine-proc
         "name": "TOR-1",
         "chassis_id": "aa:bb:cc:dd:ee:01",
         "management_address": "10.0.0.1",
-        "software_version": "SONiC.4.1.5",
+        "software_version": "NX-OS 10.4(5)",
         "interfaces": [ ... ],
         "peer_links": [ ... ],
         "connected_hosts": [ ... ],
@@ -276,11 +276,9 @@ The embedded web UI provides an interactive topology visualization (Azure portal
 
 | Vendor | Platform | LLDP Path | Encoding |
 |---|---|---|---|
-| SONiC (Dell/MS) | Enterprise SONiC | OpenConfig `/openconfig-lldp:lldp/...` | JSON_IETF |
 | Cisco | NX-OS | Native `/System/lldp-items/...` | JSON |
 
 The tool automatically handles:
-- **SONiC Get→Subscribe fallback** — SONiC returns empty for bulk Get on list paths; the tool falls back to Subscribe ONCE
 - **JSON_IETF prefix stripping** — removes `module-name:` prefixes from response keys (RFC 7951)
 - **Interface name normalization** — `eth1/1` → `Eth1/1`, `Ethernet0` unchanged
 
@@ -290,7 +288,7 @@ The tool classifies every discovered device into one of five types. Classificati
 
 | Type | Meaning | How identified |
 |------|---------|---------------|
-| **switch** | Network switch (TOR, spine, leaf) | LLDP capabilities (Bridge/Router), or system description keywords: SONiC, NX-OS, Arista, Cumulus, FTOS, Dell EMC, Cisco |
+| **switch** | Network switch (TOR, spine, leaf) | LLDP capabilities (Bridge/Router), or system description keywords: NX-OS, Arista, Cumulus, FTOS, Dell EMC, Cisco |
 | **host** | Physical server | LLDP capabilities (Station only), or system description keywords: Linux, Ubuntu, Windows, Red Hat, CentOS, SLES. Also promoted from `unknown` via ARP enrichment |
 | **bmc** | Baseboard Management Controller | Name or description contains: iDRAC, iLO, BMC, IPMI, Redfish |
 | **vm** | Virtual machine / endpoint | MAC address learned on a switch port that does NOT match (or nearly match) the LLDP chassis-id of the neighbor on that port |
@@ -354,8 +352,7 @@ network-mapper/
 This project builds on patterns from [arc-switch](../arc-switch), specifically:
 - gNMI client with gRPC metadata auth and 64MB max message size
 - TLS/TOFU certificate bootstrapping and caching
-- Subscribe ONCE fallback for SONiC list path quirks
-- OpenConfig + NX-OS native LLDP response transformers
+- NX-OS native LLDP response transformers
 - JSON_IETF module prefix stripping (RFC 7951)
 
 ## Documentation
