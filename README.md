@@ -165,9 +165,6 @@ network-mapper serve --topology topology.json --port 8080
 # Serve with live collection (hybrid mode — periodic gNMI polling)
 network-mapper serve --config config.yaml --port 8080 --interval 30
 
-# Serve with historical snapshots and timeline slider
-network-mapper serve --config config.yaml --port 8080 --history
-
 # Serve from a raw gNMI dump (offline/mock mode — no live switches needed)
 network-mapper serve --from-raw ./gnmi-raw-data/2026-05-11_094644 --port 8080
 
@@ -187,34 +184,9 @@ network-mapper serve --help
 | `--port, -p` | `8080` | HTTP server port |
 | `--config, -c` | | Config file for live mode (enables periodic gNMI collection) |
 | `--interval` | `30` | Collection interval in seconds for live mode |
-| `--history` | `false` | Enable historical snapshots, timeline UI, and periodic re-collection |
 | `--from-raw` | | Load raw gNMI dump from directory (offline mode, no live collection) |
 | `--no-open` | `false` | Don't auto-open browser |
 | `--profile` | `false` | Enable `/debug/pprof/*` profiling endpoints |
-
-## Historical Snapshots & Retention
-
-When running in live mode with the `--history` flag (`serve --config ... --history`), the tool:
-
-- **Saves topology snapshots** to `data/snapshots/` whenever the network topology changes
-- **Subscribes to gNMI ON_CHANGE** for LLDP and interface state — changes are detected in near real-time
-- **Polls periodically** (default 5 min) as fallback for data that doesn't support ON_CHANGE
-- **Prunes old data** — snapshots and log files older than `retention_days` are automatically deleted
-
-The web UI displays a **timeline slider** when snapshots are available, letting you browse historical topology states and compare them with the current live view.
-
-### Data Directory Structure
-
-```
-data/
-├── snapshots/
-│   ├── topology-2026-05-11T10-30-00Z.json
-│   ├── topology-2026-05-11T11-45-22Z.json
-│   └── ...
-└── logs/
-    ├── network-mapper-2026-05-11.log
-    └── ...
-```
 
 ## Data Collected
 

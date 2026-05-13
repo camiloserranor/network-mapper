@@ -48,6 +48,7 @@ func main() {
 	serveCmd.Flags().Bool("profile", false, "Enable /debug/pprof/* profiling endpoints")
 	serveCmd.Flags().String("from-raw", "", "Load raw gNMI dump from directory (offline mode, no live collection)")
 	serveCmd.Flags().Bool("history", false, "Enable historical snapshots, timeline UI, and periodic re-collection")
+	serveCmd.Flags().MarkHidden("history")
 
 	versionCmd := &cobra.Command{
 		Use:   "version",
