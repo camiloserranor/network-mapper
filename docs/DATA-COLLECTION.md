@@ -35,7 +35,7 @@ Network-mapper connects to each configured TOR switch via **gNMI** (gRPC Network
 - **Non-destructive**: Collection does not impact switch forwarding performance.
 - **Graceful degradation**: If a data category fails, the error is recorded and collection continues with remaining categories.
 - **Parallel execution**: Multiple switches are queried concurrently (configurable).
-- **Platform-aware**: Each switch is queried using the correct YANG paths and encoding for its platform (SONiC/OpenConfig or NX-OS native).
+- **Platform-aware**: Each switch is queried using the correct YANG paths and encoding for its platform (NX-OS native).
 
 ---
 
@@ -177,7 +177,7 @@ Stages marked "No" under Required are best-effort — failures are logged but do
 - MAC-to-port mapping enables **endpoint location** tracking.
 - Only dynamic entries on non-uplink ports are considered (avoids counting infrastructure MACs).
 
-**Platform support:** NX-OS only. SONiC MAC table collection is planned but not yet implemented.
+**Platform support:** NX-OS only.
 
 ---
 
@@ -266,18 +266,6 @@ Stages marked "No" under Required are best-effort — failures are logged but do
 
 ## gNMI Path Reference
 
-### OpenConfig (SONiC and OpenConfig-compliant switches)
-
-| Category | gNMI Path | Encoding |
-|----------|-----------|----------|
-| System | `/openconfig-system:system/state` | JSON_IETF |
-| LLDP | `/openconfig-lldp:lldp/interfaces/interface/neighbors` | JSON_IETF |
-| Interfaces | `/openconfig-interfaces:interfaces/interface/state` | JSON_IETF |
-| Interface Counters | `/openconfig-interfaces:interfaces/interface/state/counters` | JSON_IETF |
-| CPU | `/openconfig-system:system/cpus/cpu[index=ALL]/state` | JSON_IETF |
-| Memory | `/openconfig-system:system/memory/state` | JSON_IETF |
-| BGP | `/openconfig-network-instance:network-instances/network-instance/protocols/protocol/bgp/neighbors` | JSON_IETF |
-
 ### Cisco NX-OS (Native YANG)
 
 | Category | gNMI Path | Encoding |
@@ -292,17 +280,16 @@ Stages marked "No" under Required are best-effort — failures are logged but do
 
 ---
 
-## Platform Differences
+## Platform Details
 
-| Aspect | SONiC (OpenConfig) | Cisco NX-OS |
-|--------|-------------------|-------------|
-| Encoding | `JSON_IETF` | `JSON` |
-| Get behavior | May return empty on bulk list paths; uses Subscribe ONCE fallback | Standard Get works |
-| Module prefixes | Stripped (e.g., `openconfig-lldp:` removed) | Not applicable |
-| Interface naming | `Ethernet0`, `Ethernet4` | `eth1/1`, `Ethernet1/1` |
-| MAC/ARP/VLAN | Not yet supported | Fully supported |
-| BGP paths | OpenConfig standard | NX-OS native YANG |
-| Authentication | gRPC metadata (username/password) | gRPC metadata (username/password) |
+| Aspect | Cisco NX-OS |
+|--------|-------------|
+| Encoding | `JSON` |
+| Get behavior | Standard Get works |
+| Interface naming | `eth1/1`, `Ethernet1/1` |
+| MAC/ARP/VLAN | Fully supported |
+| BGP paths | NX-OS native YANG |
+| Authentication | gRPC metadata (username/password) |
 
 ---
 
