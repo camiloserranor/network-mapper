@@ -1,11 +1,13 @@
 # Binaries
 *.exe
 *.exe~
-network-mapper
+/network-mapper
 
 # Collected data (generated, not committed)
 topology-collected.json
 topology.json
+topology.validation*.json
+topology-cml.json
 
 # Test/local config (may contain credentials)
 config.*test*.yaml
@@ -16,6 +18,12 @@ examples/sample-deployment.json
 
 # TLS certificate cache
 .certs/
+
+# Raw gNMI data dumps (diagnostic, may contain sensitive data)
+gnmi-raw-data/
+
+# Runtime data directory (snapshots + logs, generated at runtime)
+data/
 
 # IDE / OS
 .vs/

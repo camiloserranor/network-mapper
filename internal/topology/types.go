@@ -54,11 +54,16 @@ type BGPSession struct {
 
 // Interface represents a network interface on a device.
 type Interface struct {
-	Name       string          `json:"name"`
-	OperStatus string          `json:"oper_status,omitempty"` // UP, DOWN
-	Speed      string          `json:"speed,omitempty"`       // 1G, 10G, 25G, 100G
-	MTU        int             `json:"mtu,omitempty"`
-	Counters   *IfaceCounters  `json:"counters,omitempty"`
+	Name          string          `json:"name"`
+	OperStatus    string          `json:"oper_status,omitempty"`    // UP, DOWN
+	Speed         string          `json:"speed,omitempty"`          // 1G, 10G, 25G, 100G
+	MTU           int             `json:"mtu,omitempty"`
+	Mode          string          `json:"mode,omitempty"`           // access, trunk, routed
+	AccessVLAN    int             `json:"access_vlan,omitempty"`    // configured access VLAN
+	NativeVLAN    int             `json:"native_vlan,omitempty"`    // configured native VLAN (trunk)
+	TrunkVLANs    []int           `json:"trunk_vlans,omitempty"`    // configured trunk allowed VLANs
+	ObservedVLANs []int           `json:"observed_vlans,omitempty"` // VLANs seen in MAC table traffic
+	Counters      *IfaceCounters  `json:"counters,omitempty"`
 }
 
 // IfaceCounters holds interface traffic counters.

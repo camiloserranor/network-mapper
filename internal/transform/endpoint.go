@@ -85,6 +85,15 @@ func CorrelateEndpoints(inputs []CorrelationInput) []topology.Endpoint {
 			// This is likely a VM or endpoint behind the host
 			if existing, ok := endpointMap[entryMAC]; ok {
 				existing.VLANs = appendUniqueInt(existing.VLANs, macEntry.VLAN)
+				// Upgrade host association: prefer an entry learned on a physical
+				// port with an LLDP neighbor over one learned via a peer-link.
+				if existing.HostDevice == "" {
+					if newHost := portToHostDevice[portKey]; newHost != "" {
+						existing.HostDevice = newHost
+						existing.HostPort = macEntry.Port
+						existing.SwitchID = input.SwitchID
+					}
+				}
 			} else {
 				ep := &topology.Endpoint{
 					MAC:        entryMAC,
