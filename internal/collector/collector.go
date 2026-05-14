@@ -144,12 +144,29 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 	// 7. Collect VLAN configuration
 	collectVLANs(ctx, client, sw, &result)
 
+	// 8. Enrich interfaces with VLAN data (for OpenConfig platforms)
+	if sw.Platform != "nxos" && len(result.VLANs) > 0 {
+		transform.EnrichInterfaceVLANsFromVLANConfig(result.Interfaces, result.VLANs)
+	}
+
 	log.Printf("  %s: collection completed in %s", sw.Name, time.Since(start))
 
 	return result
 }
 
 func collectSystemInfo(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) transform.SystemInfo {
+	// For NX-OS, try the richer native system path first
+	if sw.Platform == "nxos" {
+		notifs, err := client.Get(ctx, transform.SystemPathNXOS)
+		if err == nil {
+			info := transform.ParseSystemNXOS(notifs)
+			if info.Hostname != "" || info.SoftwareVersion != "" {
+				return info
+			}
+		}
+		// Fall through to OpenConfig if NX-OS path fails
+	}
+
 	notifs, err := client.Get(ctx, transform.SystemPathOpenConfig)
 	if err != nil {
 		log.Printf("WARN: system info for %s: %v", sw.Name, err)
@@ -221,7 +238,12 @@ func collectResources(ctx context.Context, client *gnmi.Client, sw config.Switch
 		return
 	}
 
-	stats := transform.ParseResourceStatsNXOS(cpuNotifs, memNotifs)
+	var stats transform.ResourceStats
+	if sw.Platform == "nxos" {
+		stats = transform.ParseResourceStatsNXOS(cpuNotifs, memNotifs)
+	} else {
+		stats = transform.ParseResourceStatsOpenConfig(cpuNotifs, memNotifs)
+	}
 	result.Device.CPUUtilization = stats.CPUUtilization
 	result.Device.MemoryUsed = stats.MemoryUsed
 	result.Device.MemoryTotal = stats.MemoryTotal
@@ -233,11 +255,14 @@ func collectResources(ctx context.Context, client *gnmi.Client, sw config.Switch
 }
 
 func collectMACTable(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
-	if sw.Platform != "nxos" {
-		return // MAC table collection only supported on NX-OS for now
+	var macPath string
+	if sw.Platform == "nxos" {
+		macPath = transform.MACTablePathNXOS
+	} else {
+		macPath = transform.MACTablePathOpenConfig
 	}
 
-	notifs, err := client.GetWithFallback(ctx, transform.MACTablePathNXOS)
+	notifs, err := client.GetWithFallback(ctx, macPath)
 	if err != nil {
 		log.Printf("  %s: MAC table unavailable: %v", sw.Name, err)
 		result.Errors = append(result.Errors, topology.PartialError{
@@ -246,31 +271,23 @@ func collectMACTable(ctx context.Context, client *gnmi.Client, sw config.SwitchC
 		return
 	}
 
-	result.MACEntries = transform.ParseMACTableNXOS(notifs, sw.Name)
-	log.Printf("  %s: %d MAC table entries (from %d notifications)", sw.Name, len(result.MACEntries), len(notifs))
-	if len(result.MACEntries) == 0 && len(notifs) > 0 {
-		// Log raw notification structure for debugging
-		for i, n := range notifs {
-			log.Printf("  %s: MAC notif[%d]: %d updates", sw.Name, i, len(n.Updates))
-			for j, u := range n.Updates {
-				if j < 3 { // only first 3 to avoid flooding
-					raw := fmt.Sprintf("%v", u.Value)
-					if len(raw) > 300 {
-						raw = raw[:300] + "..."
-					}
-					log.Printf("  %s: MAC update[%d]: path=%q value=%s", sw.Name, j, u.Path, raw)
-				}
-			}
-		}
+	if sw.Platform == "nxos" {
+		result.MACEntries = transform.ParseMACTableNXOS(notifs, sw.Name)
+	} else {
+		result.MACEntries = transform.ParseMACTableOpenConfig(notifs, sw.Name)
 	}
+	log.Printf("  %s: %d MAC table entries", sw.Name, len(result.MACEntries))
 }
 
 func collectARPTable(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
-	if sw.Platform != "nxos" {
-		return // ARP table collection only supported on NX-OS for now
+	var arpPath string
+	if sw.Platform == "nxos" {
+		arpPath = transform.ARPPathNXOS
+	} else {
+		arpPath = transform.ARPPathOpenConfig
 	}
 
-	notifs, err := client.GetWithFallback(ctx, transform.ARPPathNXOS)
+	notifs, err := client.GetWithFallback(ctx, arpPath)
 	if err != nil {
 		log.Printf("  %s: ARP table unavailable: %v", sw.Name, err)
 		result.Errors = append(result.Errors, topology.PartialError{
@@ -279,30 +296,23 @@ func collectARPTable(ctx context.Context, client *gnmi.Client, sw config.SwitchC
 		return
 	}
 
-	result.ARPEntries = transform.ParseARPTableNXOS(notifs, sw.Name)
-	log.Printf("  %s: %d ARP entries (from %d notifications)", sw.Name, len(result.ARPEntries), len(notifs))
-	if len(result.ARPEntries) == 0 && len(notifs) > 0 {
-		for i, n := range notifs {
-			log.Printf("  %s: ARP notif[%d]: %d updates", sw.Name, i, len(n.Updates))
-			for j, u := range n.Updates {
-				if j < 3 {
-					raw := fmt.Sprintf("%v", u.Value)
-					if len(raw) > 300 {
-						raw = raw[:300] + "..."
-					}
-					log.Printf("  %s: ARP update[%d]: path=%q value=%s", sw.Name, j, u.Path, raw)
-				}
-			}
-		}
+	if sw.Platform == "nxos" {
+		result.ARPEntries = transform.ParseARPTableNXOS(notifs, sw.Name)
+	} else {
+		result.ARPEntries = transform.ParseARPTableOpenConfig(notifs, sw.Name)
 	}
+	log.Printf("  %s: %d ARP entries", sw.Name, len(result.ARPEntries))
 }
 
 func collectVLANs(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
-	if sw.Platform != "nxos" {
-		return // VLAN collection only supported on NX-OS for now
+	var vlanPath string
+	if sw.Platform == "nxos" {
+		vlanPath = transform.VLANPathNXOS
+	} else {
+		vlanPath = transform.VLANPathOpenConfig
 	}
 
-	notifs, err := client.GetWithFallback(ctx, transform.VLANPathNXOS)
+	notifs, err := client.GetWithFallback(ctx, vlanPath)
 	if err != nil {
 		log.Printf("  %s: VLAN config unavailable: %v", sw.Name, err)
 		result.Errors = append(result.Errors, topology.PartialError{
@@ -311,7 +321,11 @@ func collectVLANs(ctx context.Context, client *gnmi.Client, sw config.SwitchConf
 		return
 	}
 
-	result.VLANs = transform.ParseVLANsNXOS(notifs, sw.Name)
+	if sw.Platform == "nxos" {
+		result.VLANs = transform.ParseVLANsNXOS(notifs, sw.Name)
+	} else {
+		result.VLANs = transform.ParseVLANsOpenConfig(notifs, sw.Name)
+	}
 	log.Printf("  %s: %d VLANs", sw.Name, len(result.VLANs))
 }
 

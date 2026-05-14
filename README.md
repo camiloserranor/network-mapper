@@ -18,18 +18,18 @@ Azure Local deployments rely on physical cabling between hosts and TOR switches.
 ```
 ┌─────────────┐     gNMI Get/Subscribe       ┌──────────────┐
 │  TOR Switch  │ ◄────────────────────────── │              │
-│ (SONiC/NX-OS)│  LLDP · Interfaces · Sys    │   Network    │
+│  (NX-OS)     │  LLDP · Interfaces · Sys    │   Network    │
 └─────────────┘                              │   Mapper     │ ──► topology.json
                                              │              │
 ┌─────────────┐     gNMI Get/Subscribe       │              │ ──► Web UI (localhost)
 │  TOR Switch  │ ◄────────────────────────── │              │
-│ (SONiC/NX-OS)│  LLDP · Interfaces · Sys    │              │
+│  (NX-OS)     │  LLDP · Interfaces · Sys    │              │
 └─────────────┘                              └──────────────┘
 ```
 
 1. **Connect** to each TOR switch via gNMI (gRPC + TLS)
 2. **Query** LLDP neighbor tables, interface state/counters, and system info
-3. **Normalize** data across vendor variations (SONiC OpenConfig, Cisco NX-OS native)
+3. **Normalize** data across vendor-specific gNMI paths into a unified topology model
 4. **Build** a topology graph with devices, interfaces, and physical links
 5. **Export** the topology as a versioned JSON document
 6. **Visualize** the topology in an interactive web UI with hierarchical layout
@@ -65,11 +65,11 @@ auth:
 switches:
   - name: TOR-1
     address: "10.0.0.1:50051"
-    platform: sonic            # sonic | nxos
+    platform: nxos             # nxos | sonic | dell-os10
 
   - name: TOR-2
     address: "10.0.0.2:50051"
-    platform: sonic
+    platform: nxos
     # Per-switch override (optional):
     # auth:
     #   username_keyvault: https://myvault.vault.azure.net/secrets/tor2-user
@@ -222,13 +222,15 @@ The embedded web UI provides an interactive topology visualization (Azure portal
 
 ## Supported Platforms
 
-| Vendor | Platform | LLDP Path | Encoding |
+| Vendor | Platform Value | Status | Encoding |
 |---|---|---|---|
-| SONiC (Dell/MS) | Enterprise SONiC | OpenConfig `/openconfig-lldp:lldp/...` | JSON_IETF |
-| Cisco | NX-OS | Native `/System/lldp-items/...` | JSON |
+| Cisco | `nxos` | **Tested** | JSON |
+| Dell OS10 | `dell-os10` | Experimental | JSON_IETF |
+
+The architecture supports any OpenConfig-compatible platform via the `platform` config field. See [`docs/DATA-COLLECTION.md`](docs/DATA-COLLECTION.md) for details on the multi-vendor collection pipeline.
 
 The tool automatically handles:
-- **SONiC Get→Subscribe fallback** — SONiC returns empty for bulk Get on list paths; the tool falls back to Subscribe ONCE
+- **Vendor-specific gNMI paths** — NX-OS native paths vs. OpenConfig paths for other platforms
 - **JSON_IETF prefix stripping** — removes `module-name:` prefixes from response keys (RFC 7951)
 - **Interface name normalization** — `eth1/1` → `Eth1/1`, `Ethernet0` unchanged
 
@@ -239,7 +241,7 @@ The tool classifies every discovered device into one of five types. Classificati
 | Type | Meaning | How identified |
 |------|---------|---------------|
 | **switch** | Network switch (TOR, spine, leaf) | LLDP capabilities (Bridge/Router), or system description keywords: SONiC, NX-OS, Arista, Cumulus, FTOS, Dell EMC, Cisco |
-| **host** | Physical server | LLDP capabilities (Station only), or system description keywords: Linux, Ubuntu, Windows, Red Hat, CentOS, SLES. Also promoted from `unknown` via ARP enrichment or deployment JSON matching |
+| **host** | Physical server | LLDP capabilities (Station only), or system description keywords: Linux, Ubuntu, Windows, Red Hat, CentOS, SLES. Also promoted from `unknown` via ARP enrichment |
 | **bmc** | Baseboard Management Controller | Name or description contains: iDRAC, iLO, BMC, IPMI, Redfish |
 | **vm** | Virtual machine / endpoint | MAC address learned on a switch port that does NOT match (or nearly match) the LLDP chassis-id of the neighbor on that port |
 | **unknown** | Unclassifiable device | No LLDP capabilities and no matching keywords. Common for bare-metal NICs on NX-OS (empty system-name/capabilities) |
@@ -260,22 +262,8 @@ This classification is computed client-side from the link data and used only for
 | 1 | Config name (queried switches) | `TOR-1` | Always — user-assigned name from `config.yaml` |
 | 2 | LLDP system-name (neighbors) | `rr1-n42-r14-93180hl-8-1a` | When the neighbor reports a hostname |
 | 3 | LLDP chassis-id (neighbors) | `d8:94:24:f2:cf:b4` | Fallback when system-name is empty |
-| 4 | Deployment hostname (enrichment) | `ASRR1N42R14U01` | Replaces MAC-based IDs after deployment matching |
 
-For full details on device correlation, MAC offset handling, and enrichment passes, see [`docs/DEVICE-CORRELATION.md`](docs/DEVICE-CORRELATION.md).
-
-## Deployment JSON Enrichment (Experimental)
-
-> ⚠️ **This feature is experimental.** It has been tested against a single Azure Local deployment layout. The deployment JSON schema may vary across versions and regions. Use this feature for additional context, but do not rely on it as the sole source of truth.
-
-When provided with a deployment plan JSON file (`--deployment` flag), the tool can enrich the topology with authoritative host metadata:
-
-- **MAC matching** — correlates LLDP chassis-ids to deployment NIC MACs (exact and +2 offset)
-- **NIC port grouping** — merges multi-NIC-port devices into single host nodes
-- **ID rename** — replaces MAC-based IDs with deployment hostnames
-- **Missing host synthesis** — adds expected hosts that were not discovered via LLDP
-
-The deployment JSON is read from files produced by Azure Local deployment tooling. See [`docs/DEVICE-CORRELATION.md`](docs/DEVICE-CORRELATION.md) for the expected schema and matching algorithm.
+For full details on device correlation and MAC offset handling, see [`docs/DEVICE-CORRELATION.md`](docs/DEVICE-CORRELATION.md).
 
 ## Architecture
 
@@ -300,12 +288,12 @@ network-mapper/
 │   ├── transform/             # LLDP, interface, system data parsers
 │   ├── collector/             # Orchestrator: connect, collect, build topology
 │   ├── topology/              # Core types: Device, Interface, Link, Topology
-│   ├── deployment/            # Deployment JSON enrichment (experimental)
 │   ├── secrets/               # Azure Key Vault credential resolution
 │   └── server/                # HTTP server: embedded web + REST API
 └── examples/
-    ├── config.yaml            # Sample config for 2 TOR switches
-    └── sample-topology.json   # Sample output with enriched data
+    ├── config.yaml            # Sample config (NX-OS switches)
+    ├── config-sonic.yaml      # Sample config (OpenConfig platforms)
+    └── sample-topology.json   # Sample topology output
 ```
 
 ## Related Projects
@@ -313,8 +301,8 @@ network-mapper/
 This project builds on patterns from [arc-switch](../arc-switch), specifically:
 - gNMI client with gRPC metadata auth and 64MB max message size
 - TLS/TOFU certificate bootstrapping and caching
-- Subscribe ONCE fallback for SONiC list path quirks
-- OpenConfig + NX-OS native LLDP response transformers
+- Subscribe ONCE fallback for OpenConfig list path quirks
+- Multi-vendor LLDP response transformers (NX-OS native + OpenConfig)
 - JSON_IETF module prefix stripping (RFC 7951)
 
 ## Roadmap

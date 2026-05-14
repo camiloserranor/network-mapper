@@ -27,7 +27,7 @@ DeploymentJSON string         `yaml:"deployment_json"` // optional path to Azure
 type SwitchConfig struct {
 Address  string     `yaml:"address"`  // host:port (e.g., "10.0.0.1:8080")
 Name     string     `yaml:"name"`     // friendly name (optional, defaults to address)
-Platform string     `yaml:"platform"` // sonic, nxos
+Platform string     `yaml:"platform"` // sonic, nxos, dell-os10
 Auth     AuthConfig `yaml:"auth"`     // per-switch override (empty fields fall back to global)
 }
 
@@ -258,8 +258,8 @@ platform := strings.ToLower(sw.Platform)
 if platform == "" {
 platform = "sonic"
 }
-if platform != "sonic" && platform != "nxos" {
-return fmt.Errorf("switch[%d]: platform must be 'sonic' or 'nxos', got '%s'", i, sw.Platform)
+if platform != "sonic" && platform != "nxos" && platform != "dell-os10" {
+return fmt.Errorf("switch[%d]: platform must be 'sonic', 'nxos', or 'dell-os10', got '%s'", i, sw.Platform)
 }
 }
 
