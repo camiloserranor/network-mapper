@@ -40,6 +40,7 @@ NM.ui.Toolbar = (() => {
                     var rawTopology = await resp.json();
                     var topology = NM.data.adaptV2(rawTopology);
                     NM.state.topology = topology;
+                    NM.state.rawTopology = rawTopology;
                     NM.core.showWarnings(topology.partial_failures);
                     NM.ui.Sidebar.setTopology(topology);
                     NM.ui.Popup.setTopology(topology);

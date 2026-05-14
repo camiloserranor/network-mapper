@@ -7,6 +7,7 @@
         var rawTopology = await fetchTopology();
         var topology = NM.data.adaptV2(rawTopology);
         NM.state.topology = topology;
+        NM.state.rawTopology = rawTopology;
 
         NM.ui.Toolbar.init();
         NM.ui.Timeline.init();
