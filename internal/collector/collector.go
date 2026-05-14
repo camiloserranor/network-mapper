@@ -6,11 +6,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"sync"
 	"time"
 
 	"github.com/camiloserranor/network-mapper/internal/config"
-	"github.com/camiloserranor/network-mapper/internal/deployment"
 	"github.com/camiloserranor/network-mapper/internal/gnmi"
 	"github.com/camiloserranor/network-mapper/internal/topology"
 	"github.com/camiloserranor/network-mapper/internal/transform"
@@ -30,8 +30,59 @@ type switchResult struct {
 	Errors       []topology.PartialError
 }
 
+// CollectRaw connects to all configured switches, queries gNMI for LLDP,
+// interface, system data, and returns the raw per-switch results. This is
+// the stage-1 output of the pipeline — pass the result to builder.Build()
+// to produce the v2 topology.
+func CollectRaw(ctx context.Context, cfg *config.Config) (*CollectionResult, error) {
+	now := time.Now()
+
+	results := make([]switchResult, len(cfg.Switches))
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, cfg.Collect.Parallel)
+
+	for i, sw := range cfg.Switches {
+		wg.Add(1)
+		go func(idx int, sw config.SwitchConfig) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			swCtx, cancel := context.WithTimeout(ctx, time.Duration(cfg.Collect.TimeoutSec)*time.Second)
+			defer cancel()
+
+			results[idx] = collectSwitch(swCtx, sw, cfg, now)
+		}(i, sw)
+	}
+
+	wg.Wait()
+
+	cr := &CollectionResult{
+		CollectedAt: now,
+		Switches:    make([]SwitchData, len(results)),
+	}
+	for i, r := range results {
+		cr.Switches[i] = SwitchData{
+			SwitchName:   r.SwitchName,
+			SwitchID:     r.SwitchID,
+			Device:       r.Device,
+			Neighbors:    r.Neighbors,
+			Interfaces:   r.Interfaces,
+			MACEntries:   r.MACEntries,
+			ARPEntries:   r.ARPEntries,
+			VLANs:        r.VLANs,
+			BGPNeighbors: r.BGPNeighbors,
+			Errors:       r.Errors,
+		}
+	}
+
+	return cr, nil
+}
+
 // Collect connects to all configured switches, queries gNMI for LLDP, interface,
 // and system data, and returns a complete Topology.
+//
+// Deprecated: Use CollectRaw + builder.Build for the v2 pipeline.
 func Collect(ctx context.Context, cfg *config.Config) (*topology.Topology, error) {
 	now := time.Now()
 
@@ -56,19 +107,6 @@ func Collect(ctx context.Context, cfg *config.Config) (*topology.Topology, error
 	wg.Wait()
 
 	topo := buildTopology(results, now, cfg.Collect.ReverseDNS)
-
-	// Enrich with deployment data if configured (non-fatal on failure)
-	if cfg.DeploymentJSON != "" {
-		dd, err := deployment.Load(cfg.DeploymentJSON)
-		if err != nil {
-			log.Printf("WARNING: could not load deployment JSON: %v", err)
-			topo.PartialFailures = append(topo.PartialFailures, topology.PartialError{
-				Switch: "deployment", Phase: "enrichment", Message: err.Error(),
-			})
-		} else {
-			deployment.EnrichTopology(topo, dd)
-		}
-	}
 
 	return topo, nil
 }
@@ -211,6 +249,18 @@ func collectInterfaces(ctx context.Context, client *gnmi.Client, sw config.Switc
 			log.Printf("  %s: interface counters unavailable: %v", sw.Name, counterErr)
 		} else {
 			transform.MergeInterfaceCounters(result.Interfaces, counterNotifs)
+		}
+	}
+
+	// Collect per-port VLAN configuration (NX-OS only)
+	if sw.Platform == "nxos" && len(result.Interfaces) > 0 {
+		vlanNotifs, vlanErr := client.GetWithFallback(ctx, transform.InterfaceVLANPathNXOS)
+		if vlanErr != nil {
+			log.Printf("  %s: interface VLAN config unavailable: %v", sw.Name, vlanErr)
+		} else {
+			vlanConfigs := transform.ParseInterfaceVLANsNXOS(vlanNotifs)
+			transform.MergeInterfaceVLANConfigs(result.Interfaces, vlanConfigs)
+			log.Printf("  %s: %d interface VLAN configs", sw.Name, len(vlanConfigs))
 		}
 	}
 
@@ -524,6 +574,9 @@ func buildTopology(results []switchResult, now time.Time, reverseDNS bool) *topo
 		topo.PartialFailures = []topology.PartialError{}
 	}
 
+	// Populate ObservedVLANs on interfaces from MAC table data
+	enrichInterfaceObservedVLANs(topo, results)
+
 	return topo
 }
 
@@ -552,6 +605,53 @@ func resolveDeviceID(id string, systemNameToID map[string]string) string {
 
 func classifyDevice(nbr transform.LLDPNeighbor) string {
 	return transform.ClassifyDevice(nbr.SystemDescription, nbr.SystemName, nbr.Capabilities)
+}
+
+// enrichInterfaceObservedVLANs aggregates VLAN IDs from MAC table entries
+// onto the corresponding switch interfaces. This shows which VLANs have
+// active traffic on each port, derived from observed MAC learning.
+func enrichInterfaceObservedVLANs(topo *topology.Topology, results []switchResult) {
+	// Build per-switch, per-port VLAN sets from MAC entries
+	// Key: switchID → portName → set of VLAN IDs
+	type portVLANs map[string]map[int]bool
+	switchPortVLANs := make(map[string]portVLANs)
+
+	for _, r := range results {
+		for _, mac := range r.MACEntries {
+			if mac.Port == "" || mac.VLAN == 0 {
+				continue
+			}
+			port := transform.NormalizeInterfaceName(mac.Port)
+			if switchPortVLANs[r.SwitchID] == nil {
+				switchPortVLANs[r.SwitchID] = make(portVLANs)
+			}
+			if switchPortVLANs[r.SwitchID][port] == nil {
+				switchPortVLANs[r.SwitchID][port] = make(map[int]bool)
+			}
+			switchPortVLANs[r.SwitchID][port][mac.VLAN] = true
+		}
+	}
+
+	// Merge onto device interfaces
+	for i := range topo.Devices {
+		dev := &topo.Devices[i]
+		pvs, ok := switchPortVLANs[dev.ID]
+		if !ok {
+			continue
+		}
+		for j := range dev.Interfaces {
+			vlanSet, ok := pvs[dev.Interfaces[j].Name]
+			if !ok {
+				continue
+			}
+			var vlans []int
+			for v := range vlanSet {
+				vlans = append(vlans, v)
+			}
+			sort.Ints(vlans)
+			dev.Interfaces[j].ObservedVLANs = vlans
+		}
+	}
 }
 
 func extractHost(address string) string {

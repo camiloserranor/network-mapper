@@ -457,8 +457,9 @@ NM.graph = (() => {
     }
 
     function exportJSON() {
-        if (!storedTopology) return;
-        const json = JSON.stringify(storedTopology, null, 2);
+        var data = NM.state.rawTopology || storedTopology;
+        if (!data) return;
+        const json = JSON.stringify(data, null, 2);
         const blob = new Blob([json], { type: 'application/json' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);

@@ -1,22 +1,101 @@
 /* ============================================================
-   Network Mapper — Azure Portal Dark Theme
-   Follows Fluent Design System / Azure portal conventions
+   Network Mapper — Azure Portal Theme
+   Microsoft Fluent 2 Design System tokens
+   Light theme (default) with dark theme via [data-theme="dark"]
    ============================================================ */
 
 :root {
-    /* Azure portal dark theme palette */
-    --bg-primary: #1b1a19;
-    --bg-secondary: #252423;
-    --bg-surface: #323130;
-    --bg-graph: #1b1a19;
-    --accent: #0078d4;
-    --accent-hover: #106ebe;
+    /* Fluent 2 Light Theme Tokens (DEFAULT) */
+    --colorNeutralBackground1: #ffffff;
+    --colorNeutralBackground2: #faf9f8;
+    --colorNeutralBackground3: #f3f2f1;
+    --colorBrandBackground: #0078d4;
+    --colorBrandBackgroundHover: #106ebe;
+    --colorNeutralForeground1: #323130;
+    --colorNeutralForeground2: #605e5c;
+    --colorNeutralForeground3: #a19f9d;
+    --colorNeutralStroke1: #edebe9;
+    --colorNeutralStroke2: #f3f2f1;
+    --colorPaletteGreenForeground1: #107c10;
+    --colorPaletteRedForeground1: #a4262c;
+    --colorPaletteYellowForeground1: #797673;
+
+    /* Fluent 2 elevation (light theme) */
+    --shadow2: 0 1px 2px rgba(0,0,0,0.08);
+    --shadow4: 0 2px 4px rgba(0,0,0,0.08), 0 0 2px rgba(0,0,0,0.04);
+    --shadow8: 0 4px 8px rgba(0,0,0,0.12), 0 0 2px rgba(0,0,0,0.06);
+    --shadow16: 0 8px 16px rgba(0,0,0,0.14), 0 0 2px rgba(0,0,0,0.06);
+
+    /* Fluent 2 border radius tokens */
+    --borderRadiusSmall: 2px;
+    --borderRadiusMedium: 4px;
+    --borderRadiusLarge: 8px;
+    --borderRadiusXLarge: 12px;
+
+    /* Fluent 2 font stacks */
+    --fontFamilyBase: 'Segoe UI Variable', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Oxygen, sans-serif;
+    --fontFamilyMonospace: 'Cascadia Code', 'Cascadia Mono', Consolas, monospace;
+
+    /* Backward-compatible aliases */
+    --bg-primary: var(--colorNeutralBackground1);
+    --bg-secondary: var(--colorNeutralBackground2);
+    --bg-surface: var(--colorNeutralBackground3);
+    --bg-graph: var(--colorNeutralBackground1);
+    --accent: var(--colorBrandBackground);
+    --accent-hover: var(--colorBrandBackgroundHover);
+    --accent-glow: rgba(0, 120, 212, 0.15);
+    --text-primary: var(--colorNeutralForeground1);
+    --text-secondary: var(--colorNeutralForeground2);
+    --text-muted: var(--colorNeutralForeground3);
+    --border: var(--colorNeutralStroke1);
+    --border-subtle: var(--colorNeutralStroke2);
+    --node-switch: #0078d4;
+    --node-host: #107c10;
+    --node-bmc: #ca5010;
+    --node-vm: #8764b8;
+    --node-unknown: #8a8886;
+    --edge-default: #c8c6c4;
+    --edge-highlight: #0078d4;
+    --danger: var(--colorPaletteRedForeground1);
+    --success: var(--colorPaletteGreenForeground1);
+    --warning: var(--colorPaletteYellowForeground1);
+    --sidebar-width: 340px;
+    --toolbar-height: 48px;
+    --radius: var(--borderRadiusMedium);
+    --transition: 0.2s ease;
+
+    /* Theme-aware helpers for hardcoded hover/border colors */
+    --hover-bg: #f3f2f1;
+    --subtle-divider: rgba(0, 0, 0, 0.06);
+    --overlay-bg: rgba(255, 255, 255, 0.92);
+    --scrollbar-thumb: #c8c6c4;
+    --scrollbar-thumb-hover: #a19f9d;
+    --logical-iface-bg: #e8e8e8;
+    --focus-outer: #ffffff;
+    --focus-inner: #000000;
+}
+
+[data-theme="dark"] {
+    --colorNeutralBackground1: #1b1a19;
+    --colorNeutralBackground2: #252423;
+    --colorNeutralBackground3: #323130;
+    --colorBrandBackground: #0078d4;
+    --colorBrandBackgroundHover: #106ebe;
+    --colorNeutralForeground1: #ffffff;
+    --colorNeutralForeground2: #d2d0ce;
+    --colorNeutralForeground3: #a19f9d;
+    --colorNeutralStroke1: #484644;
+    --colorNeutralStroke2: #3b3a39;
+    --colorPaletteGreenForeground1: #57a300;
+    --colorPaletteRedForeground1: #d13438;
+    --colorPaletteYellowForeground1: #fce100;
+
+    --shadow2: 0 1px 2px rgba(0,0,0,0.24);
+    --shadow4: 0 2px 4px rgba(0,0,0,0.24), 0 0 2px rgba(0,0,0,0.12);
+    --shadow8: 0 4px 8px rgba(0,0,0,0.28), 0 0 2px rgba(0,0,0,0.12);
+    --shadow16: 0 8px 16px rgba(0,0,0,0.28), 0 0 2px rgba(0,0,0,0.12);
+
     --accent-glow: rgba(0, 120, 212, 0.25);
-    --text-primary: #ffffff;
-    --text-secondary: #d2d0ce;
-    --text-muted: #a19f9d;
-    --border: #484644;
-    --border-subtle: #3b3a39;
     --node-switch: #0078d4;
     --node-host: #44b700;
     --node-bmc: #f7630c;
@@ -24,13 +103,15 @@
     --node-unknown: #8a8886;
     --edge-default: #605e5c;
     --edge-highlight: #0078d4;
-    --danger: #d13438;
-    --success: #57a300;
-    --warning: #fce100;
-    --sidebar-width: 340px;
-    --toolbar-height: 48px;
-    --radius: 4px;
-    --transition: 0.2s ease;
+
+    --hover-bg: #3b3a39;
+    --subtle-divider: rgba(255, 255, 255, 0.04);
+    --overlay-bg: rgba(27, 26, 25, 0.92);
+    --scrollbar-thumb: #484644;
+    --scrollbar-thumb-hover: #605e5c;
+    --logical-iface-bg: #2a2a2a;
+    --focus-outer: #000000;
+    --focus-inner: #ffffff;
 }
 
 /* Reset */
@@ -41,7 +122,10 @@
 }
 
 body {
-    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Oxygen, sans-serif;
+    font-family: var(--fontFamilyBase);
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 400;
     background: var(--bg-primary);
     color: var(--text-primary);
     height: 100vh;
@@ -88,13 +172,21 @@ body {
     font-weight: 600;
     color: var(--text-primary);
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.icon-logo {
+    flex-shrink: 0;
 }
 
 .badge {
     font-size: 12px;
+    line-height: 16px;
     color: var(--text-secondary);
     background: var(--bg-surface);
-    padding: 3px 10px;
+    padding: 4px 12px;
     border-radius: 12px;
     white-space: nowrap;
 }
@@ -111,12 +203,107 @@ body {
 #breadcrumb-bar {
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-subtle);
-    padding: 6px 16px;
+    padding: 8px 16px;
     font-size: 12px;
+    line-height: 16px;
     color: var(--text-secondary);
     display: flex;
     align-items: center;
     flex-shrink: 0;
+}
+
+/* Timeline slider bar */
+#timeline-bar {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+#timeline-bar.hidden {
+    display: none;
+}
+
+.timeline-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+}
+
+#timeline-slider {
+    flex: 1;
+    height: 4px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+#timeline-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--bg-secondary);
+}
+
+#timeline-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--bg-secondary);
+}
+
+#timeline-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-width: 140px;
+    text-align: center;
+    font-family: var(--fontFamilyMonospace);
+    white-space: nowrap;
+}
+
+#timeline-label.live {
+    color: #44b700;
+    font-weight: 600;
+}
+
+/* Historical data banner */
+#historical-banner {
+    background: #2d2000;
+    border-bottom: 1px solid #665500;
+    padding: 8px 16px;
+    font-size: 12px;
+    line-height: 16px;
+    color: #ffcc00;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+#historical-banner.hidden {
+    display: none;
+}
+
+.historical-icon {
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+}
+
+#historical-return-btn {
+    margin-left: auto;
 }
 
 .crumb {
@@ -141,26 +328,29 @@ body {
 
 .crumb-sep {
     color: var(--text-muted);
-    margin: 0 6px;
+    margin: 0 8px;
 }
 
 #search-input {
     width: 100%;
     max-width: 320px;
-    padding: 6px 14px;
+    padding: 0 12px;
+    height: 32px;
     background: var(--bg-surface);
     border: 1px solid var(--border);
+    border-bottom-width: 2px;
     border-radius: var(--radius);
     color: var(--text-primary);
-    font-size: 13px;
-    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+    font-family: var(--fontFamilyBase);
     outline: none;
     transition: border-color var(--transition);
 }
 
 #search-input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 1px var(--accent);
+    border-color: var(--border);
+    border-bottom-color: var(--accent);
+    box-shadow: none;
 }
 
 #search-input::placeholder {
@@ -170,24 +360,30 @@ body {
 /* Buttons */
 .btn-group {
     display: flex;
-    gap: 2px;
+    gap: 4px;
 }
 
 .btn {
-    padding: 6px 12px;
+    padding: 0 12px;
+    height: 32px;
     background: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    color: var(--text-secondary);
-    font-size: 12px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 400;
     cursor: pointer;
     transition: all var(--transition);
     white-space: nowrap;
-    font-family: 'Segoe UI', sans-serif;
+    font-family: var(--fontFamilyBase);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
 }
 
 .btn:hover {
-    background: var(--border);
+    background: var(--hover-bg);
     color: var(--text-primary);
 }
 
@@ -195,6 +391,10 @@ body {
     background: var(--accent);
     color: #fff;
     border-color: var(--accent);
+}
+
+.btn.active:hover {
+    background: var(--accent-hover);
 }
 
 .btn-icon {
@@ -206,6 +406,9 @@ body {
     padding: 4px 8px;
     border-radius: var(--radius);
     transition: all var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-icon:hover {
@@ -247,9 +450,11 @@ select.btn {
     padding: 12px 16px;
     background: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
-    border-radius: 6px;
-    font-size: 13px;
+    border-radius: var(--borderRadiusLarge);
+    font-size: 14px;
+    line-height: 20px;
     color: var(--text-secondary);
+    box-shadow: var(--shadow4);
 }
 
 .fabric-stat strong {
@@ -276,9 +481,10 @@ select.btn {
 .switch-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
-    border-radius: 6px;
-    padding: 14px;
+    border-radius: var(--borderRadiusLarge);
+    padding: 16px;
     transition: border-color 0.15s ease;
+    box-shadow: var(--shadow4);
 }
 
 .switch-card:hover {
@@ -331,8 +537,9 @@ select.btn {
     padding: 16px 20px;
     background: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
-    border-radius: 6px;
+    border-radius: var(--borderRadiusLarge);
     margin-bottom: 24px;
+    box-shadow: var(--shadow4);
 }
 
 .device-header-icon {
@@ -355,7 +562,8 @@ select.btn {
 }
 
 .device-header-name {
-    font-size: 18px;
+    font-size: 20px;
+    line-height: 28px;
     font-weight: 600;
     color: var(--text-primary);
     margin-bottom: 4px;
@@ -363,6 +571,7 @@ select.btn {
 
 .device-header-meta {
     font-size: 12px;
+    line-height: 16px;
     color: var(--text-muted);
     display: flex;
     gap: 16px;
@@ -400,7 +609,7 @@ select.btn {
 .switch-diagram-chassis {
     background: var(--bg-secondary);
     border: 2px solid var(--node-switch);
-    border-radius: 8px;
+    border-radius: var(--borderRadiusLarge);
     padding: 16px 20px;
 }
 
@@ -438,8 +647,9 @@ select.btn {
 .info-panel {
     background: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
-    border-radius: 6px;
+    border-radius: var(--borderRadiusLarge);
     padding: 16px;
+    box-shadow: var(--shadow4);
 }
 
 .info-panel.wide {
@@ -455,6 +665,32 @@ select.btn {
     margin-bottom: 12px;
 }
 
+.info-panel.collapsible .info-panel-title {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.panel-chevron {
+    transition: transform 0.2s ease;
+    font-size: 12px;
+    color: var(--text-muted, #8a8886);
+}
+
+.info-panel.collapsed .panel-chevron {
+    transform: rotate(-90deg);
+}
+
+.info-panel.collapsed .panel-body {
+    display: none;
+}
+
+.info-panel.collapsed .info-panel-title {
+    margin-bottom: 0;
+}
+
 .info-panel-content {
     word-break: break-all;
 }
@@ -465,6 +701,7 @@ select.btn {
     padding: 4px 0;
     border-bottom: 1px solid var(--border-subtle);
     font-size: 12px;
+    line-height: 16px;
 }
 
 .info-row:last-child {
@@ -487,21 +724,32 @@ select.btn {
 .conn-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 11px;
+    font-size: 12px;
+    line-height: 16px;
 }
 
 .conn-table th {
     text-align: left;
-    padding: 6px 8px;
-    color: var(--text-muted);
-    border-bottom: 1px solid var(--border);
-    font-weight: 500;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-subtle);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .conn-table td {
-    padding: 5px 8px;
+    padding: 8px 12px;
     color: var(--text-secondary);
     border-bottom: 1px solid var(--border-subtle);
+}
+
+.conn-table td.vlan-list {
+    max-width: 200px;
+    word-break: break-word;
+    font-size: 10px;
 }
 
 .conn-row {
@@ -510,16 +758,101 @@ select.btn {
 }
 
 .conn-row:hover {
-    background: rgba(0, 120, 212, 0.08);
+    background: var(--hover-bg);
+}
+
+/* ---- VLAN Membership Visualization ---- */
+.vlan-sets-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 8px 0;
+}
+
+.vlan-set {
+    border: 2px solid;
+    border-radius: 8px;
+    overflow: hidden;
+    min-width: 200px;
+    flex: 1;
+    max-width: 400px;
+    background: var(--bg-primary);
+}
+
+.vlan-set-header {
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.vlan-set-count {
+    font-size: 11px;
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+.vlan-set-members {
+    padding: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.vlan-member-chip {
+    display: flex;
+    flex-direction: column;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    cursor: pointer;
+    transition: background var(--transition), border-color var(--transition);
+}
+
+.vlan-member-chip:hover {
+    background: var(--bg-secondary);
+    border-color: var(--accent);
+}
+
+.vlan-member-chip.host { border-left: 3px solid #44b700; }
+.vlan-member-chip.switch { border-left: 3px solid #0078d4; }
+.vlan-member-chip.bmc { border-left: 3px solid #f7630c; }
+.vlan-member-chip.unknown { border-left: 3px solid #8a8886; }
+
+.vlan-member-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary);
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vlan-member-port {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+}
+
+.vlan-viz-count {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-left: 8px;
 }
 
 /* ---- Switch Port Diagram (ports) ---- */
 .port-diagram {
     background: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
-    border-radius: 6px;
+    border-radius: var(--borderRadiusLarge);
     padding: 20px;
     margin-bottom: 24px;
+    box-shadow: var(--shadow4);
 }
 
 .port-diagram-title {
@@ -547,7 +880,7 @@ select.btn {
     align-items: center;
     justify-content: center;
     font-size: 9px;
-    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-family: var(--fontFamilyMonospace);
     color: var(--text-muted);
     cursor: default;
     position: relative;
@@ -608,7 +941,7 @@ select.btn {
     white-space: nowrap;
     z-index: 200;
     pointer-events: none;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    box-shadow: var(--shadow8);
     display: none;
 }
 
@@ -641,7 +974,7 @@ select.btn {
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 8px 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+    box-shadow: var(--shadow8);
     font-size: 11px;
     line-height: 1.4;
     pointer-events: none;
@@ -694,7 +1027,7 @@ select.btn {
     padding: 12px 16px;
     background: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
-    border-radius: 6px;
+    border-radius: var(--borderRadiusLarge);
 }
 .logical-interfaces-title {
     font-size: 11px;
@@ -714,10 +1047,10 @@ select.btn {
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    font-family: 'Cascadia Code', Consolas, monospace;
+    font-family: var(--fontFamilyMonospace);
     padding: 2px 8px;
     border-radius: 4px;
-    background: #2a2a2a;
+    background: var(--logical-iface-bg);
     color: var(--text-secondary);
 }
 .logical-iface.up { color: var(--text-primary); }
@@ -726,7 +1059,7 @@ select.btn {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #e94560;
+    background: var(--danger);
 }
 .logical-iface.up .logical-iface-status { background: #4CAF50; }
 .logical-iface.vlan { border-left: 2px solid #a36efd; }
@@ -738,9 +1071,10 @@ select.btn {
 .nic-diagram {
     background: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
-    border-radius: 6px;
+    border-radius: var(--borderRadiusLarge);
     padding: 20px;
     margin-bottom: 24px;
+    box-shadow: var(--shadow4);
 }
 
 .nic-diagram-title {
@@ -776,7 +1110,7 @@ select.btn {
 }
 
 .nic-card-port {
-    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-family: var(--fontFamilyMonospace);
     font-size: 12px;
     color: var(--accent);
     min-width: 120px;
@@ -812,10 +1146,10 @@ select.btn {
 
 .nic-card-counters {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     font-size: 10px;
     color: var(--text-muted);
-    font-family: 'Cascadia Code', Consolas, monospace;
+    font-family: var(--fontFamilyMonospace);
 }
 .nic-card-counters .counter-errors {
     color: var(--danger);
@@ -823,16 +1157,17 @@ select.btn {
 .nic-card-speed {
     font-size: 10px;
     color: var(--text-muted);
-    font-family: 'Cascadia Code', Consolas, monospace;
+    font-family: var(--fontFamilyMonospace);
 }
 
 /* ---- Host VLAN Membership ---- */
 .host-vlans {
     background: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
-    border-radius: 6px;
+    border-radius: var(--borderRadiusLarge);
     padding: 20px;
     margin-bottom: 24px;
+    box-shadow: var(--shadow4);
 }
 .host-vlans-title {
     font-size: 13px;
@@ -859,7 +1194,7 @@ select.btn {
     font-size: 12px;
     font-weight: 600;
     color: #a36efd;
-    font-family: 'Cascadia Code', Consolas, monospace;
+    font-family: var(--fontFamilyMonospace);
 }
 .vlan-card-name {
     font-size: 11px;
@@ -874,7 +1209,7 @@ select.btn {
     color: var(--text-muted);
 }
 .vlan-card-gw {
-    font-family: 'Cascadia Code', Consolas, monospace;
+    font-family: var(--fontFamilyMonospace);
 }
 .vlan-card-vms {
     color: var(--node-vm);
@@ -884,9 +1219,10 @@ select.btn {
 .vm-cloud {
     background: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
-    border-radius: 6px;
+    border-radius: var(--borderRadiusLarge);
     padding: 20px;
     margin-bottom: 24px;
+    box-shadow: var(--shadow4);
 }
 
 .vm-cloud-title {
@@ -960,9 +1296,10 @@ select.btn {
 .vm-info-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
-    border-radius: 6px;
+    border-radius: var(--borderRadiusLarge);
     padding: 20px;
     margin-bottom: 24px;
+    box-shadow: var(--shadow4);
 }
 
 .vm-info-card-title {
@@ -978,7 +1315,7 @@ select.btn {
     display: flex;
     justify-content: space-between;
     padding: 6px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid var(--subtle-divider);
     font-size: 13px;
 }
 
@@ -988,7 +1325,7 @@ select.btn {
 
 .vm-info-value {
     color: var(--text-primary);
-    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-family: var(--fontFamilyMonospace);
     font-size: 12px;
 }
 
@@ -1016,6 +1353,7 @@ select.btn {
     overflow-y: auto;
     transition: transform var(--transition), opacity var(--transition);
     z-index: 150;
+    box-shadow: var(--shadow16);
 }
 
 #sidebar.hidden {
@@ -1037,7 +1375,8 @@ select.btn {
 }
 
 .sidebar-header h2 {
-    font-size: 15px;
+    font-size: 14px;
+    line-height: 20px;
     font-weight: 600;
 }
 
@@ -1061,9 +1400,10 @@ select.btn {
 .detail-row {
     display: flex;
     justify-content: space-between;
-    padding: 5px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    font-size: 13px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--subtle-divider);
+    font-size: 14px;
+    line-height: 20px;
 }
 
 .detail-row[title] {
@@ -1071,7 +1411,7 @@ select.btn {
 }
 
 .detail-row[title]:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--hover-bg);
     border-radius: 4px;
 }
 
@@ -1092,7 +1432,7 @@ select.btn {
 
 .interface-list li {
     padding: 6px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid var(--subtle-divider);
     font-size: 13px;
     display: flex;
     justify-content: space-between;
@@ -1100,7 +1440,7 @@ select.btn {
 
 .interface-list .port {
     color: var(--accent);
-    font-family: 'Cascadia Code', 'Consolas', 'SF Mono', monospace;
+    font-family: var(--fontFamilyMonospace);
     font-size: 12px;
 }
 
@@ -1113,7 +1453,7 @@ select.btn {
 .type-badge {
     display: inline-block;
     padding: 2px 8px;
-    border-radius: 4px;
+    border-radius: var(--borderRadiusSmall);
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
@@ -1127,20 +1467,21 @@ select.btn {
 
 /* BGP state badges */
 .bgp-state {
-    padding: 2px 6px;
-    border-radius: 3px;
+    padding: 2px 8px;
+    border-radius: var(--borderRadiusSmall);
     font-size: 11px;
     font-weight: 600;
 }
-.bgp-state.bgp-up { background: rgba(68, 183, 0, 0.2); color: #44b700; }
-.bgp-state.bgp-down { background: rgba(233, 69, 96, 0.2); color: #e94560; }
+.bgp-state.bgp-up { background: rgba(87, 163, 0, 0.15); color: var(--success); border: 1px solid rgba(87, 163, 0, 0.3); }
+.bgp-state.bgp-down { background: rgba(209, 52, 56, 0.15); color: var(--danger); border: 1px solid rgba(209, 52, 56, 0.3); }
 
 /* ---- Warning banner (partial failures) ---- */
 #warning-banner {
     background: rgba(252, 225, 0, 0.1);
     border-bottom: 1px solid rgba(252, 225, 0, 0.3);
-    padding: 6px 16px;
-    font-size: 13px;
+    padding: 8px 16px;
+    font-size: 14px;
+    line-height: 20px;
     color: var(--warning);
     flex-shrink: 0;
 }
@@ -1158,6 +1499,8 @@ select.btn {
 .warning-icon {
     font-size: 14px;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
 }
 
 #warning-summary {
@@ -1254,15 +1597,19 @@ select.btn {
 .error-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--borderRadiusXLarge);
     padding: 32px;
     text-align: center;
     max-width: 400px;
+    box-shadow: var(--shadow16);
 }
 
 .error-card h2 {
     margin-bottom: 12px;
     color: var(--accent);
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 600;
 }
 
 .error-card p {
@@ -1300,13 +1647,14 @@ select.btn {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 12px;
+    padding: 12px;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
 }
 
 .inventory-header h2 {
-    font-size: 13px;
+    font-size: 14px;
+    line-height: 20px;
     font-weight: 600;
     color: var(--text-primary);
     white-space: nowrap;
@@ -1319,7 +1667,7 @@ select.btn {
 }
 
 #inventory-search-wrap {
-    padding: 8px 10px;
+    padding: 8px 12px;
     position: sticky;
     top: 0;
     background: var(--bg-secondary);
@@ -1328,18 +1676,22 @@ select.btn {
 
 #inventory-search {
     width: 100%;
-    padding: 5px 10px;
+    padding: 0 12px;
+    height: 32px;
     background: var(--bg-surface);
     border: 1px solid var(--border);
+    border-bottom-width: 2px;
     border-radius: var(--radius);
     color: var(--text-primary);
     font-size: 12px;
-    font-family: 'Segoe UI', sans-serif;
+    line-height: 16px;
+    font-family: var(--fontFamilyBase);
     outline: none;
 }
 
 #inventory-search:focus {
-    border-color: var(--accent);
+    border-color: var(--border);
+    border-bottom-color: var(--accent);
 }
 
 #inventory-search::placeholder {
@@ -1405,8 +1757,9 @@ select.btn {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 5px 12px 5px 28px;
+    padding: 4px 12px 4px 28px;
     font-size: 12px;
+    line-height: 16px;
     color: var(--text-secondary);
     cursor: pointer;
     transition: background var(--transition);
@@ -1422,7 +1775,7 @@ select.btn {
 
 /* ---- Switch Info Overlays (fabric view) ---- */
 .switch-info-overlay {
-    font-family: 'Segoe UI', sans-serif;
+    font-family: var(--fontFamilyBase);
     padding: 2px 4px;
     overflow: hidden;
 }
@@ -1464,16 +1817,17 @@ select.btn {
     position: absolute;
     bottom: 12px;
     right: 12px;
-    background: rgba(26, 26, 46, 0.92);
+    background: var(--overlay-bg);
     border: 1px solid var(--border-subtle);
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-family: 'Segoe UI', sans-serif;
+    border-radius: var(--borderRadiusLarge);
+    padding: 12px 16px;
+    font-family: var(--fontFamilyBase);
     font-size: 11px;
     color: var(--text-secondary);
     z-index: 10;
     pointer-events: none;
     max-width: 160px;
+    box-shadow: var(--shadow4);
 }
 
 .legend-title {
@@ -1608,9 +1962,10 @@ select.btn {
     display: none;
 }
 
-/* ---- Scrollbar ---- */
+/* ---- Scrollbar (Fluent 2) ---- */
 ::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
+    height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -1618,12 +1973,12 @@ select.btn {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 3px;
+    background: var(--scrollbar-thumb);
+    border-radius: var(--radius);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--text-muted);
+    background: var(--scrollbar-thumb-hover);
 }
 
 /* ---- Floating Popup Card ---- */
@@ -1632,8 +1987,8 @@ select.btn {
     width: 280px;
     background: var(--bg-secondary);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    border-radius: var(--borderRadiusLarge);
+    box-shadow: var(--shadow16);
     z-index: 200;
     overflow: hidden;
     animation: popup-in 0.15s ease-out;
@@ -1652,7 +2007,7 @@ select.btn {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 14px;
+    padding: 12px 16px;
     border-bottom: 1px solid var(--border-subtle);
     background: var(--bg-surface);
 }
@@ -1663,7 +2018,8 @@ select.btn {
 }
 
 #popup-title {
-    font-size: 13px;
+    font-size: 14px;
+    line-height: 20px;
     font-weight: 600;
     color: var(--text-primary);
     overflow: hidden;
@@ -1673,7 +2029,7 @@ select.btn {
 }
 
 #popup-body {
-    padding: 10px 14px;
+    padding: 12px 16px;
     max-height: 220px;
     overflow-y: auto;
 }
@@ -1684,7 +2040,7 @@ select.btn {
     align-items: center;
     padding: 4px 0;
     font-size: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--subtle-divider);
 }
 
 .popup-row[title] {
@@ -1707,7 +2063,7 @@ select.btn {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-family: var(--fontFamilyMonospace);
     font-size: 11px;
 }
 
@@ -1719,24 +2075,90 @@ select.btn {
 }
 
 .popup-footer {
-    padding: 8px 14px;
+    padding: 8px 16px;
     border-top: 1px solid var(--border);
     text-align: right;
     display: flex;
-    gap: 6px;
+    gap: 8px;
     justify-content: flex-end;
 }
 
 .btn-sm {
-    padding: 4px 10px;
-    font-size: 11px;
+    padding: 0 8px;
+    height: 28px;
+    font-size: 12px;
 }
 
 .status-dot {
     display: inline-block;
-    width: 7px;
-    height: 7px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     margin-right: 4px;
     vertical-align: middle;
+}
+
+/* ---- Fluent 2 Focus States ---- */
+:focus-visible {
+    outline: 2px solid var(--focus-outer);
+    outline-offset: -2px;
+    box-shadow: inset 0 0 0 1px var(--focus-inner);
+}
+
+/* Buttons override focus for better visibility */
+.btn:focus-visible,
+.btn-icon:focus-visible,
+.btn-sm:focus-visible {
+    outline: 2px solid var(--focus-outer);
+    outline-offset: -2px;
+    box-shadow: inset 0 0 0 1px var(--focus-inner);
+}
+
+/* Inputs use bottom-border accent on focus */
+input:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+
+/* ---- Fluent 2 Status Badges / Pills ---- */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: var(--borderRadiusSmall);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-pill.up,
+.status-pill.established,
+.status-pill.success {
+    background: rgba(87, 163, 0, 0.15);
+    color: var(--colorPaletteGreenForeground1);
+    border: 1px solid rgba(87, 163, 0, 0.3);
+}
+
+.status-pill.down,
+.status-pill.error {
+    background: rgba(209, 52, 56, 0.15);
+    color: var(--colorPaletteRedForeground1);
+    border: 1px solid rgba(209, 52, 56, 0.3);
+}
+
+.status-pill.warning {
+    background: rgba(252, 225, 0, 0.15);
+    color: var(--colorPaletteYellowForeground1);
+    border: 1px solid rgba(252, 225, 0, 0.3);
+}
+
+/* ---- Fluent 2 Primary Button ---- */
+.btn-primary {
+    background: var(--colorBrandBackground);
+    border: 1px solid transparent;
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background: var(--colorBrandBackgroundHover);
 }

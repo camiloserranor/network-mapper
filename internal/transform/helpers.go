@@ -111,10 +111,16 @@ func ExtractPathKey(path, key string) string {
 	return path[start : start+end]
 }
 
-// NormalizeInterfaceName converts interface names to canonical format.
+// NormalizeInterfaceName converts interface names to canonical short format.
+// NX-OS uses short names (Eth1/1) everywhere except OpenConfig paths which use
+// the long form (Ethernet1/1). We normalize to short form for consistency.
 func NormalizeInterfaceName(name string) string {
-	if strings.HasPrefix(name, "Ethernet") || strings.HasPrefix(name, "PortChannel") ||
-		strings.HasPrefix(name, "Loopback") || strings.HasPrefix(name, "Management") {
+	// Cisco NX-OS long form → short form: Ethernet1/51 → Eth1/51
+	if strings.HasPrefix(name, "Ethernet") {
+		return "Eth" + name[len("Ethernet"):]
+	}
+	if strings.HasPrefix(name, "PortChannel") || strings.HasPrefix(name, "Loopback") ||
+		strings.HasPrefix(name, "Management") {
 		return name
 	}
 	// Cisco NX-OS: eth1/1 → Eth1/1
