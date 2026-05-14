@@ -99,6 +99,149 @@ func parseVLANIDFromEncap(s string) int {
 	return id
 }
 
+// ParseVLANsOpenConfig extracts VLAN definitions from OpenConfig gNMI responses (SONiC/Dell).
+// Supports both bulk format (vlan[] array) and Subscribe ONCE per-VLAN format.
+func ParseVLANsOpenConfig(notifs []gnmi.Notification, switchID string) []topology.VLAN {
+	var vlans []topology.VLAN
+
+	for _, n := range notifs {
+		for _, u := range n.Updates {
+			m, ok := u.Value.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			// Bulk format: top-level "vlan" array
+			if vlanList := GetSlice(m, "vlan"); vlanList != nil {
+				for _, vRaw := range vlanList {
+					entry, ok := vRaw.(map[string]interface{})
+					if !ok {
+						continue
+					}
+					if v := extractOpenConfigVLAN(entry, switchID); v.ID > 0 {
+						vlans = append(vlans, v)
+					}
+				}
+				continue
+			}
+
+			// Subscribe ONCE format: single VLAN with "state" at top level
+			if state := GetMap(m, "state"); state != nil {
+				if v := extractOpenConfigVLAN(m, switchID); v.ID > 0 {
+					vlans = append(vlans, v)
+					continue
+				}
+			}
+
+			// Fallback: try extracting VLAN ID from path key
+			pathID := ExtractPathKey(u.Path, "vlan-id")
+			if pathID != "" {
+				v := extractOpenConfigVLAN(m, switchID)
+				if v.ID == 0 {
+					v.ID = parseVLANIDFromEncap(pathID)
+					v.SourceSwitch = switchID
+				}
+				if v.ID > 0 {
+					vlans = append(vlans, v)
+				}
+			}
+		}
+	}
+
+	return vlans
+}
+
+func extractOpenConfigVLAN(m map[string]interface{}, switchID string) topology.VLAN {
+	state := GetMap(m, "state")
+	if state == nil {
+		return topology.VLAN{}
+	}
+
+	vlanID := GetInt(state, "vlan-id")
+	if vlanID == 0 {
+		// vlan-id might be a string
+		idStr := GetFirstString(state, "vlan-id")
+		vlanID = parseVLANIDFromEncap(idStr)
+	}
+	if vlanID == 0 {
+		return topology.VLAN{}
+	}
+
+	name := GetFirstString(state, "name")
+	status := GetFirstString(state, "status")
+
+	var memberPorts []string
+	if members := GetMap(m, "members"); members != nil {
+		if memberList := GetSlice(members, "member"); memberList != nil {
+			for _, mRaw := range memberList {
+				member, ok := mRaw.(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				var port string
+				// Try members.member[].state.interface
+				if ms := GetMap(member, "state"); ms != nil {
+					port = GetFirstString(ms, "interface")
+				}
+				// Fallback: members.member[].interface-ref.state.interface
+				if port == "" {
+					if ifRef := GetMap(member, "interface-ref"); ifRef != nil {
+						if irs := GetMap(ifRef, "state"); irs != nil {
+							port = GetFirstString(irs, "interface")
+						}
+					}
+				}
+
+				if port != "" {
+					memberPorts = append(memberPorts, NormalizeInterfaceName(port))
+				}
+			}
+		}
+	}
+
+	return topology.VLAN{
+		ID:           vlanID,
+		Name:         name,
+		Status:       status,
+		MemberPorts:  memberPorts,
+		SourceSwitch: switchID,
+	}
+}
+
+// EnrichInterfaceVLANsFromVLANConfig assigns VLAN membership to interfaces based on
+// the VLAN configuration's member port lists. This is used for OpenConfig platforms
+// where per-port VLAN data is not directly available.
+func EnrichInterfaceVLANsFromVLANConfig(interfaces []topology.Interface, vlans []topology.VLAN) {
+	// Build reverse map: normalized interface name → list of VLAN IDs
+	ifaceVLANs := make(map[string][]int)
+	for _, v := range vlans {
+		for _, port := range v.MemberPorts {
+			norm := NormalizeInterfaceName(port)
+			ifaceVLANs[norm] = append(ifaceVLANs[norm], v.ID)
+		}
+	}
+
+	for i := range interfaces {
+		norm := NormalizeInterfaceName(interfaces[i].Name)
+		vids, ok := ifaceVLANs[norm]
+		if !ok || len(vids) == 0 {
+			continue
+		}
+		// Skip interfaces that already have VLAN data (e.g. from per-port query)
+		if interfaces[i].VLANMode != "" {
+			continue
+		}
+		if len(vids) == 1 {
+			interfaces[i].VLANMode = "access"
+			interfaces[i].AccessVLAN = vids[0]
+		} else {
+			interfaces[i].VLANMode = "trunk"
+			interfaces[i].TrunkVLANs = vids
+		}
+	}
+}
+
 // ParseSVIGateways extracts IP addresses from SVI (VLAN) interfaces to identify gateways.
 // It looks for interfaces named "Vlan<N>" and extracts their IP address.
 func ParseSVIGateways(notifs []gnmi.Notification) map[int]string {

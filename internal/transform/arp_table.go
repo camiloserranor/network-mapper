@@ -8,7 +8,8 @@ import (
 
 // gNMI paths for ARP table.
 const (
-	ARPPathNXOS = "/System/arp-items/inst-items/dom-items/Dom-list/db-items/Db-list/adj-items/AdjEp-list"
+	ARPPathNXOS       = "/System/arp-items/inst-items/dom-items/Dom-list/db-items/Db-list/adj-items/AdjEp-list"
+	ARPPathOpenConfig = "/openconfig-if-ip:interfaces/interface/subinterfaces/subinterface/ipv4/neighbors"
 )
 
 // ARPEntry represents a single ARP table entry mapping IP to MAC.
@@ -119,6 +120,79 @@ func extractARPNested(m map[string]interface{}, switchID string) []ARPEntry {
 	}
 
 	return entries
+}
+
+// ParseARPTableOpenConfig extracts ARP entries from OpenConfig (SONiC/Dell) gNMI responses.
+//
+// OpenConfig path: /openconfig-if-ip:interfaces/interface/subinterfaces/subinterface/ipv4/neighbors
+// The interface name is extracted from the path key [name=X].
+//
+// Bulk Get format:
+//
+//	value: {"neighbor": [{"state": {"ip": "10.0.2.1", "link-layer-address": "aa:bb:cc:dd:ee:ff"}}]}
+//
+// Subscribe ONCE format (per-entry):
+//
+//	value: {"state": {"ip": "10.0.2.1", "link-layer-address": "aa:bb:cc:dd:ee:ff"}}
+func ParseARPTableOpenConfig(notifs []gnmi.Notification, switchID string) []ARPEntry {
+	var entries []ARPEntry
+
+	for _, n := range notifs {
+		for _, u := range n.Updates {
+			iface := ExtractPathKey(u.Path, "name")
+			iface = NormalizeInterfaceName(iface)
+
+			raw, ok := u.Value.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			// Bulk format: {"neighbor": [...]}
+			if neighbors := GetSlice(raw, "neighbor"); neighbors != nil {
+				for _, nbrRaw := range neighbors {
+					nbr, ok := nbrRaw.(map[string]interface{})
+					if !ok {
+						continue
+					}
+					if e, ok := parseOpenConfigNeighbor(nbr, iface, switchID); ok {
+						entries = append(entries, e)
+					}
+				}
+				continue
+			}
+
+			// Subscribe ONCE format: {"state": {...}}
+			if GetMap(raw, "state") != nil {
+				if e, ok := parseOpenConfigNeighbor(raw, iface, switchID); ok {
+					entries = append(entries, e)
+				}
+			}
+		}
+	}
+
+	return entries
+}
+
+// parseOpenConfigNeighbor extracts IP and MAC from a single OpenConfig neighbor map.
+func parseOpenConfigNeighbor(nbr map[string]interface{}, iface, switchID string) (ARPEntry, bool) {
+	state := GetMap(nbr, "state")
+	if state == nil {
+		return ARPEntry{}, false
+	}
+
+	ip := GetFirstString(state, "ip")
+	mac := GetFirstString(state, "link-layer-address")
+
+	if ip == "" {
+		return ARPEntry{}, false
+	}
+
+	return ARPEntry{
+		IP:        ip,
+		MAC:       normalizeMACAddress(mac),
+		Interface: iface,
+		SwitchID:  switchID,
+	}, true
 }
 
 func cleanARPInterface(iface string) string {

@@ -39,6 +39,9 @@ type Interface struct {
 	OperStatus string          `json:"oper_status,omitempty"` // UP, DOWN
 	Speed      string          `json:"speed,omitempty"`       // 1G, 10G, 25G, 100G
 	MTU        int             `json:"mtu,omitempty"`
+	VLANMode   string          `json:"vlan_mode,omitempty"`   // access, trunk
+	AccessVLAN int             `json:"access_vlan,omitempty"` // VLAN ID when mode is access
+	TrunkVLANs []int           `json:"trunk_vlans,omitempty"` // VLAN IDs when mode is trunk
 	Counters   *IfaceCounters  `json:"counters,omitempty"`
 }
 

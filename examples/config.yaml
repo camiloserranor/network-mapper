@@ -4,6 +4,7 @@
 switches:
   - name: TOR-1
     address: "10.0.0.1:8080"
+    # Supported platforms: sonic, nxos, dell-os10
     platform: sonic
     auth:
       username: admin
