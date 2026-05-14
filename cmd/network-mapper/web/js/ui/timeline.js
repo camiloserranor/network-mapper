@@ -124,6 +124,7 @@ NM.ui.Timeline = (() => {
     function applyTopology(topo) {
         var adapted = NM.data.adaptV2(topo);
         NM.state.topology = adapted;
+        NM.state.rawTopology = topo;
         NM.core.showWarnings(adapted.partial_failures);
         NM.ui.Sidebar.setTopology(adapted);
         NM.ui.Popup.setTopology(adapted);
