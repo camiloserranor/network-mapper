@@ -29,6 +29,7 @@ type Client struct {
 // Notification holds a decoded gNMI notification.
 type Notification struct {
 	Timestamp int64
+	Prefix    string // gNMI notification prefix path (contains list keys in Subscribe responses)
 	Updates   []Update
 }
 
@@ -217,28 +218,50 @@ func (c *Client) SubscribeOnce(ctx context.Context, yangPath string) ([]Notifica
 }
 
 // GetWithFallback tries Get first; if the result is empty, falls back to SubscribeOnce.
-// This handles the SONiC quirk where bulk Get on list paths returns empty.
+// This handles the SONiC quirk where bulk Get on list paths returns empty or an empty JSON object.
 func (c *Client) GetWithFallback(ctx context.Context, yangPath string) ([]Notification, error) {
 	notifs, err := c.Get(ctx, yangPath)
 	if err != nil {
 		return nil, err
 	}
 
-	// Check if we got meaningful data
-	hasData := false
-	for _, n := range notifs {
-		if len(n.Updates) > 0 {
-			hasData = true
-			break
-		}
-	}
-
-	if hasData {
+	// Check if we got meaningful data (not just empty maps/slices)
+	if hasNonEmptyData(notifs) {
 		return notifs, nil
 	}
 
 	log.Printf("Get returned empty for %s on %s, falling back to SubscribeOnce", yangPath, c.address)
 	return c.SubscribeOnce(ctx, yangPath)
+}
+
+// hasNonEmptyData returns true if any notification contains an update with a
+// non-trivial value. SONiC often returns a successful Get response with an
+// empty JSON object {} for list paths — this should be treated as empty.
+func hasNonEmptyData(notifs []Notification) bool {
+	for _, n := range notifs {
+		for _, u := range n.Updates {
+			if isNonEmpty(u.Value) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// isNonEmpty checks whether a decoded gNMI value contains actual data.
+func isNonEmpty(v interface{}) bool {
+	switch val := v.(type) {
+	case nil:
+		return false
+	case map[string]interface{}:
+		return len(val) > 0
+	case []interface{}:
+		return len(val) > 0
+	case string:
+		return val != ""
+	default:
+		return true
+	}
 }
 
 // SubscribeStream opens a persistent Subscribe STREAM with ON_CHANGE mode for the
@@ -364,6 +387,9 @@ func decodeGetResponse(resp *gpb.GetResponse, encoding gpb.Encoding) ([]Notifica
 
 func decodeSubscribeNotification(notif *gpb.Notification, encoding gpb.Encoding) *Notification {
 	n := &Notification{Timestamp: notif.GetTimestamp()}
+	if prefix := notif.GetPrefix(); prefix != nil {
+		n.Prefix = pathToString(prefix)
+	}
 	for _, upd := range notif.GetUpdate() {
 		pathStr := pathToString(upd.GetPath())
 		val, err := decodeTypedValue(upd.GetVal(), encoding)

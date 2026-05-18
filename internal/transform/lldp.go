@@ -27,6 +27,11 @@ type LLDPNeighbor struct {
 // ParseLLDPOpenConfig extracts LLDP neighbors from OpenConfig gNMI responses.
 // This works for SONiC and other OpenConfig-compliant switches.
 func ParseLLDPOpenConfig(notifs []gnmi.Notification) []LLDPNeighbor {
+	// Detect SONiC flat-leaf format (Subscribe ONCE with scalar updates)
+	if isFlatLeafFormat(notifs) {
+		return parseLLDPFlatLeaf(notifs)
+	}
+
 	var neighbors []LLDPNeighbor
 
 	for _, n := range notifs {
@@ -94,6 +99,57 @@ func ParseLLDPOpenConfig(notifs []gnmi.Notification) []LLDPNeighbor {
 				}
 			}
 		}
+	}
+
+	return neighbors
+}
+
+// parseLLDPFlatLeaf handles the SONiC Subscribe ONCE flat-leaf format for LLDP.
+// Each notification represents one (interface, neighbor) adjacency. The local port
+// may be available from the notification prefix path key, and neighbor state fields
+// are in the leaf updates with paths like "/state/chassis-id", "/state/port-id", etc.
+func parseLLDPFlatLeaf(notifs []gnmi.Notification) []LLDPNeighbor {
+	var neighbors []LLDPNeighbor
+
+	for _, n := range notifs {
+		leafMap := buildLeafMap(n.Updates)
+
+		// Extract local port from the notification prefix (e.g., /lldp/interfaces/interface[name=Ethernet46]/...)
+		localPort := ExtractPathKey(n.Prefix, "name")
+
+		// Use suffix matching since paths include neighbor list keys
+		// e.g., /neighbors/neighbor[id=X]/state/chassis-id
+		chassisID := getLeafBySuffix(leafMap, "/state/chassis-id")
+		portID := getLeafBySuffix(leafMap, "/state/port-id")
+
+		if chassisID == "" && portID == "" {
+			continue
+		}
+
+		neighbor := LLDPNeighbor{
+			LocalPort:         NormalizeInterfaceName(localPort),
+			ChassisID:         normalizeMACAddress(chassisID),
+			PortID:            portID,
+			PortDescription:   getLeafBySuffix(leafMap, "/state/port-description"),
+			SystemName:        getLeafBySuffix(leafMap, "/state/system-name"),
+			SystemDescription: getLeafBySuffix(leafMap, "/state/system-description"),
+			ManagementAddress: getLeafBySuffix(leafMap, "/state/management-address"),
+		}
+
+		// Extract capabilities from capability paths
+		var caps []string
+		for path, val := range leafMap {
+			if strings.HasSuffix(path, "/state/name") && strings.Contains(path, "/capabilities/capability") {
+				if capName, ok := val.(string); ok {
+					caps = append(caps, capName)
+				}
+			}
+		}
+		if len(caps) > 0 {
+			neighbor.Capabilities = strings.Join(caps, ", ")
+		}
+
+		neighbors = append(neighbors, neighbor)
 	}
 
 	return neighbors

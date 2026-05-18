@@ -2,6 +2,8 @@ package transform
 
 import (
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/camiloserranor/network-mapper/internal/gnmi"
 )
@@ -20,6 +22,11 @@ type SystemInfo struct {
 
 // ParseSystemOpenConfig extracts system info from OpenConfig gNMI responses.
 func ParseSystemOpenConfig(notifs []gnmi.Notification) SystemInfo {
+	// Detect SONiC flat-leaf format
+	if isFlatLeafFormat(notifs) {
+		return parseSystemFlatLeaf(notifs)
+	}
+
 	var info SystemInfo
 
 	for _, n := range notifs {
@@ -38,7 +45,7 @@ func ParseSystemOpenConfig(notifs []gnmi.Notification) SystemInfo {
 
 			// Uptime: might be in nanoseconds or seconds
 			if bootTime := GetFirstString(vals, "boot-time", "boot_time"); bootTime != "" {
-				info.Uptime = "boot: " + bootTime
+				info.Uptime = uptimeFromBootTime(bootTime)
 			}
 			if uptimeStr := GetFirstString(vals, "current-datetime", "uptime"); uptimeStr != "" {
 				info.Uptime = uptimeStr
@@ -54,6 +61,45 @@ func ParseSystemOpenConfig(notifs []gnmi.Notification) SystemInfo {
 	}
 
 	return info
+}
+
+// parseSystemFlatLeaf handles the SONiC Subscribe ONCE flat-leaf format for system info.
+func parseSystemFlatLeaf(notifs []gnmi.Notification) SystemInfo {
+	var info SystemInfo
+
+	for _, n := range notifs {
+		leafMap := buildLeafMap(n.Updates)
+
+		if v := getLeafString(leafMap, "/hostname"); v != "" {
+			info.Hostname = v
+		}
+		if v := getLeafString(leafMap, "/software-version"); v != "" {
+			info.SoftwareVersion = v
+		}
+		if v := getLeafString(leafMap, "/boot-time"); v != "" {
+			info.Uptime = uptimeFromBootTime(v)
+		}
+		if v := getLeafString(leafMap, "/current-datetime"); v != "" {
+			info.Uptime = v
+		}
+	}
+
+	return info
+}
+
+// uptimeFromBootTime converts a boot-time value (nanoseconds since epoch) into
+// a human-readable uptime string. If parsing fails, returns the raw value prefixed.
+func uptimeFromBootTime(bootTimeStr string) string {
+	bootNano, err := strconv.ParseInt(bootTimeStr, 10, 64)
+	if err != nil {
+		return "boot: " + bootTimeStr
+	}
+	bootTime := time.Unix(0, bootNano)
+	uptime := time.Since(bootTime)
+	if uptime < 0 {
+		return "boot: " + bootTimeStr
+	}
+	return formatUptime(uint64(uptime.Seconds()))
 }
 
 func formatUptime(seconds uint64) string {
