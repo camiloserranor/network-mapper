@@ -1,0 +1,407 @@
+{
+  "schema_version": "2.0",
+  "metadata": {
+    "collected_at": "2026-05-11T10:30:00Z",
+    "tool": "network-mapper",
+    "tool_version": "0.4.0",
+    "source_switches": ["TOR-1", "TOR-2"],
+    "summary": {
+      "switch_count": 4,
+      "host_count": 4,
+      "endpoint_count": 8,
+      "unknown_device_count": 0,
+      "total_links": 12,
+      "inter_switch_links": 4,
+      "host_links": 8,
+      "vlan_count": 3,
+      "partial_failures": 0,
+      "attributed_endpoints": 8,
+      "unattributed_endpoints": 0
+    }
+  },
+  "fabric": {
+    "description": "Network fabric layer: TOR switches, interfaces, BGP sessions, and inter-switch links",
+    "switches": [
+      {
+        "id": "TOR-1",
+        "name": "TOR-1",
+        "chassis_id": "aa:bb:cc:dd:ee:01",
+        "management_address": "10.0.0.1",
+        "software_version": "Cisco NX-OS 10.4(5)",
+        "system_description": "Cisco Nexus Operating System (NX-OS) Software 10.4(5)",
+        "interfaces": [
+          {
+            "name": "Eth1/1",
+            "oper_status": "up",
+            "admin_status": "up",
+            "speed": "100G",
+            "mtu": 9216,
+            "description": "uplink-to-spine-1",
+            "vlan_mode": "trunk",
+            "access_vlan": 0,
+            "native_vlan": 1,
+            "trunk_vlans": [100, 200, 300]
+          },
+          {
+            "name": "Eth1/2",
+            "oper_status": "up",
+            "admin_status": "up",
+            "speed": "100G",
+            "mtu": 9216,
+            "description": "uplink-to-spine-2",
+            "vlan_mode": "trunk",
+            "access_vlan": 0,
+            "native_vlan": 1,
+            "trunk_vlans": [100, 200, 300]
+          },
+          {
+            "name": "Eth1/10",
+            "oper_status": "up",
+            "admin_status": "up",
+            "speed": "25G",
+            "mtu": 9216,
+            "description": "host-01-nic-1",
+            "vlan_mode": "trunk",
+            "access_vlan": 0,
+            "native_vlan": 100,
+            "trunk_vlans": [100, 200, 300]
+          },
+          {
+            "name": "Eth1/11",
+            "oper_status": "up",
+            "admin_status": "up",
+            "speed": "25G",
+            "mtu": 9216,
+            "description": "host-02-nic-1",
+            "vlan_mode": "trunk",
+            "access_vlan": 0,
+            "native_vlan": 100,
+            "trunk_vlans": [100, 200, 300]
+          }
+        ],
+        "peer_links": [
+          {
+            "local_port": "Eth1/1",
+            "remote_switch": "Spine-1",
+            "remote_port": "Eth1/1",
+            "oper_status": "UP",
+            "speed": "100G",
+            "mtu": "9216"
+          },
+          {
+            "local_port": "Eth1/2",
+            "remote_switch": "Spine-2",
+            "remote_port": "Eth1/1",
+            "oper_status": "UP",
+            "speed": "100G",
+            "mtu": "9216"
+          }
+        ],
+        "connected_hosts": [
+          {
+            "host_id": "host-01",
+            "host_name": "HOST-01",
+            "local_port": "Eth1/10",
+            "host_chassis_id": "11:22:33:44:55:01",
+            "device_type": "host"
+          },
+          {
+            "host_id": "host-02",
+            "host_name": "HOST-02",
+            "local_port": "Eth1/11",
+            "host_chassis_id": "11:22:33:44:55:02",
+            "device_type": "host"
+          }
+        ],
+        "vlans": [
+          { "id": 100, "name": "Management" },
+          { "id": 200, "name": "Storage" },
+          { "id": 300, "name": "Compute" }
+        ],
+        "bgp_sessions": [
+          {
+            "neighbor_address": "10.0.0.100",
+            "remote_as": 65001,
+            "state": "Established",
+            "uptime": "3d12h"
+          }
+        ]
+      },
+      {
+        "id": "TOR-2",
+        "name": "TOR-2",
+        "chassis_id": "aa:bb:cc:dd:ee:02",
+        "management_address": "10.0.0.2",
+        "software_version": "Cisco NX-OS 10.4(5)",
+        "system_description": "Cisco Nexus Operating System (NX-OS) Software 10.4(5)",
+        "interfaces": [
+          {
+            "name": "Eth1/1",
+            "oper_status": "up",
+            "admin_status": "up",
+            "speed": "100G",
+            "mtu": 9216,
+            "description": "uplink-to-spine-1",
+            "vlan_mode": "trunk",
+            "access_vlan": 0,
+            "native_vlan": 1,
+            "trunk_vlans": [100, 200, 300]
+          },
+          {
+            "name": "Eth1/10",
+            "oper_status": "up",
+            "admin_status": "up",
+            "speed": "25G",
+            "mtu": 9216,
+            "description": "host-03-nic-1",
+            "vlan_mode": "trunk",
+            "access_vlan": 0,
+            "native_vlan": 100,
+            "trunk_vlans": [100, 200, 300]
+          },
+          {
+            "name": "Eth1/11",
+            "oper_status": "up",
+            "admin_status": "up",
+            "speed": "25G",
+            "mtu": 9216,
+            "description": "host-04-nic-1",
+            "vlan_mode": "trunk",
+            "access_vlan": 0,
+            "native_vlan": 100,
+            "trunk_vlans": [100, 200, 300]
+          }
+        ],
+        "peer_links": [
+          {
+            "local_port": "Eth1/1",
+            "remote_switch": "Spine-1",
+            "remote_port": "Eth1/2",
+            "oper_status": "UP",
+            "speed": "100G",
+            "mtu": "9216"
+          }
+        ],
+        "connected_hosts": [
+          {
+            "host_id": "host-03",
+            "host_name": "HOST-03",
+            "local_port": "Eth1/10",
+            "host_chassis_id": "11:22:33:44:55:03",
+            "device_type": "host"
+          },
+          {
+            "host_id": "host-04",
+            "host_name": "HOST-04",
+            "local_port": "Eth1/11",
+            "host_chassis_id": "11:22:33:44:55:04",
+            "device_type": "host"
+          }
+        ],
+        "vlans": [
+          { "id": 100, "name": "Management" },
+          { "id": 200, "name": "Storage" },
+          { "id": 300, "name": "Compute" }
+        ],
+        "bgp_sessions": []
+      },
+      {
+        "id": "Spine-1",
+        "name": "Spine-1",
+        "chassis_id": "aa:bb:cc:dd:ff:01",
+        "management_address": "10.0.0.100",
+        "software_version": "Cisco NX-OS 10.4(5)",
+        "interfaces": [],
+        "peer_links": [
+          {
+            "local_port": "Eth1/1",
+            "remote_switch": "TOR-1",
+            "remote_port": "Eth1/1",
+            "oper_status": "UP",
+            "speed": "100G",
+            "mtu": "9216"
+          },
+          {
+            "local_port": "Eth1/2",
+            "remote_switch": "TOR-2",
+            "remote_port": "Eth1/1",
+            "oper_status": "UP",
+            "speed": "100G",
+            "mtu": "9216"
+          }
+        ],
+        "connected_hosts": [],
+        "vlans": [],
+        "bgp_sessions": []
+      },
+      {
+        "id": "Spine-2",
+        "name": "Spine-2",
+        "chassis_id": "aa:bb:cc:dd:ff:02",
+        "management_address": "10.0.0.101",
+        "software_version": "Cisco NX-OS 10.4(5)",
+        "interfaces": [],
+        "peer_links": [
+          {
+            "local_port": "Eth1/1",
+            "remote_switch": "TOR-1",
+            "remote_port": "Eth1/2",
+            "oper_status": "UP",
+            "speed": "100G",
+            "mtu": "9216"
+          }
+        ],
+        "connected_hosts": [],
+        "vlans": [],
+        "bgp_sessions": []
+      }
+    ]
+  },
+  "compute": {
+    "description": "Compute layer: physical hosts, their network connections, and virtual endpoints",
+    "hosts": [
+      {
+        "id": "host-01",
+        "name": "HOST-01",
+        "chassis_id": "11:22:33:44:55:01",
+        "device_type": "host",
+        "connections": [
+          {
+            "switch_id": "TOR-1",
+            "switch_port": "Eth1/10",
+            "host_port": "NIC1-Port1",
+            "oper_status": "up",
+            "speed": "25G",
+            "access_vlan": 0,
+            "native_vlan": 100,
+            "trunk_vlans": [100, 200, 300]
+          }
+        ],
+        "endpoints": [
+          {
+            "mac": "11:22:33:44:55:10",
+            "ips": ["10.100.0.10"],
+            "vlan": 100,
+            "learned_on": "Eth1/10"
+          },
+          {
+            "mac": "11:22:33:44:55:11",
+            "ips": ["10.200.0.10"],
+            "vlan": 200,
+            "learned_on": "Eth1/10"
+          }
+        ]
+      },
+      {
+        "id": "host-02",
+        "name": "HOST-02",
+        "chassis_id": "11:22:33:44:55:02",
+        "device_type": "host",
+        "connections": [
+          {
+            "switch_id": "TOR-1",
+            "switch_port": "Eth1/11",
+            "host_port": "NIC1-Port1",
+            "oper_status": "up",
+            "speed": "25G",
+            "access_vlan": 0,
+            "native_vlan": 100,
+            "trunk_vlans": [100, 200, 300]
+          }
+        ],
+        "endpoints": [
+          {
+            "mac": "11:22:33:44:55:20",
+            "ips": ["10.100.0.20"],
+            "vlan": 100,
+            "learned_on": "Eth1/11"
+          }
+        ]
+      },
+      {
+        "id": "host-03",
+        "name": "HOST-03",
+        "chassis_id": "11:22:33:44:55:03",
+        "device_type": "host",
+        "connections": [
+          {
+            "switch_id": "TOR-2",
+            "switch_port": "Eth1/10",
+            "host_port": "NIC1-Port1",
+            "oper_status": "up",
+            "speed": "25G",
+            "access_vlan": 0,
+            "native_vlan": 100,
+            "trunk_vlans": [100, 200, 300]
+          }
+        ],
+        "endpoints": []
+      },
+      {
+        "id": "host-04",
+        "name": "HOST-04",
+        "chassis_id": "11:22:33:44:55:04",
+        "device_type": "host",
+        "connections": [
+          {
+            "switch_id": "TOR-2",
+            "switch_port": "Eth1/11",
+            "host_port": "NIC1-Port1",
+            "oper_status": "up",
+            "speed": "25G",
+            "access_vlan": 0,
+            "native_vlan": 100,
+            "trunk_vlans": [100, 200, 300]
+          }
+        ],
+        "endpoints": []
+      }
+    ],
+    "unattributed_endpoints": []
+  },
+  "vlans": {
+    "description": "VLAN summary: which hosts and endpoints are present on each VLAN",
+    "items": [
+      {
+        "id": 100,
+        "name": "Management",
+        "hosts": [
+          { "host_id": "host-01", "host_name": "HOST-01", "switch_id": "TOR-1", "port": "Eth1/10" },
+          { "host_id": "host-02", "host_name": "HOST-02", "switch_id": "TOR-1", "port": "Eth1/11" },
+          { "host_id": "host-03", "host_name": "HOST-03", "switch_id": "TOR-2", "port": "Eth1/10" },
+          { "host_id": "host-04", "host_name": "HOST-04", "switch_id": "TOR-2", "port": "Eth1/11" }
+        ],
+        "endpoints": [
+          { "mac": "11:22:33:44:55:10", "ips": ["10.100.0.10"], "host_device": "host-01" },
+          { "mac": "11:22:33:44:55:20", "ips": ["10.100.0.20"], "host_device": "host-02" }
+        ]
+      },
+      {
+        "id": 200,
+        "name": "Storage",
+        "hosts": [
+          { "host_id": "host-01", "host_name": "HOST-01", "switch_id": "TOR-1", "port": "Eth1/10" },
+          { "host_id": "host-02", "host_name": "HOST-02", "switch_id": "TOR-1", "port": "Eth1/11" },
+          { "host_id": "host-03", "host_name": "HOST-03", "switch_id": "TOR-2", "port": "Eth1/10" },
+          { "host_id": "host-04", "host_name": "HOST-04", "switch_id": "TOR-2", "port": "Eth1/11" }
+        ],
+        "endpoints": [
+          { "mac": "11:22:33:44:55:11", "ips": ["10.200.0.10"], "host_device": "host-01" }
+        ]
+      },
+      {
+        "id": 300,
+        "name": "Compute",
+        "hosts": [
+          { "host_id": "host-01", "host_name": "HOST-01", "switch_id": "TOR-1", "port": "Eth1/10" },
+          { "host_id": "host-02", "host_name": "HOST-02", "switch_id": "TOR-1", "port": "Eth1/11" },
+          { "host_id": "host-03", "host_name": "HOST-03", "switch_id": "TOR-2", "port": "Eth1/10" },
+          { "host_id": "host-04", "host_name": "HOST-04", "switch_id": "TOR-2", "port": "Eth1/11" }
+        ],
+        "endpoints": []
+      }
+    ]
+  },
+  "unknown_devices": [],
+  "warnings": []
+}

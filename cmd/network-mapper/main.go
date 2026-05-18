@@ -6,17 +6,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/camiloserranor/network-mapper/internal/collector"
+	"github.com/camiloserranor/network-mapper/internal/builder"
 	"github.com/camiloserranor/network-mapper/internal/config"
 	"github.com/camiloserranor/network-mapper/internal/gnmi"
 	"github.com/camiloserranor/network-mapper/internal/server"
-	"github.com/camiloserranor/network-mapper/internal/topology"
+	"github.com/camiloserranor/network-mapper/internal/storage"
 )
+
+// version is set at build time via -ldflags.
+var version = "dev"
 
 //go:embed web
 var embeddedWeb embed.FS
@@ -41,10 +46,22 @@ func main() {
 	serveCmd.Flags().StringP("config", "c", "", "Config file for live mode (enables periodic gNMI collection)")
 	serveCmd.Flags().Int("interval", 30, "Collection interval in seconds for live mode")
 	serveCmd.Flags().Bool("profile", false, "Enable /debug/pprof/* profiling endpoints")
+	serveCmd.Flags().String("from-raw", "", "Load raw gNMI dump from directory (offline mode, no live collection)")
+	serveCmd.Flags().Bool("history", false, "Enable historical snapshots, timeline UI, and periodic re-collection")
+	serveCmd.Flags().MarkHidden("history")
+
+	versionCmd := &cobra.Command{
+		Use:   "version",
+		Short: "Print the version number",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("network-mapper %s\n", version)
+		},
+	}
 
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(collectCmd())
 	rootCmd.AddCommand(testConnectionCmd())
+	rootCmd.AddCommand(versionCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
@@ -58,47 +75,106 @@ func runServe(cmd *cobra.Command, args []string) error {
 	cfgPath, _ := cmd.Flags().GetString("config")
 	intervalSec, _ := cmd.Flags().GetInt("interval")
 	enableProfile, _ := cmd.Flags().GetBool("profile")
+	fromRaw, _ := cmd.Flags().GetString("from-raw")
+	enableHistory, _ := cmd.Flags().GetBool("history")
 
 	srv := server.New(topologyPath, port, webFS())
 	srv.SetPprof(enableProfile)
 	addr := fmt.Sprintf("http://localhost:%d", port)
 	fmt.Printf("Network Mapper UI starting at %s\n", addr)
 
-	if cfgPath != "" {
-		// Live mode: periodic gNMI collection + WebSocket push
+	if fromRaw != "" {
+		// Offline mode: load raw gNMI dump, build topology, serve statically
+		fmt.Printf("Loading raw gNMI data from %s...\n", fromRaw)
+		cr, err := collector.LoadFromDisk(fromRaw)
+		if err != nil {
+			return fmt.Errorf("loading raw data: %w", err)
+		}
+
+		builder.ToolVersion = version
+		topo := builder.Build(cr)
+		fmt.Printf("Topology built from raw data: %d switches, %d hosts, %d links\n",
+			topo.Metadata.Summary.SwitchCount,
+			topo.Metadata.Summary.HostCount,
+			topo.Metadata.Summary.TotalLinks)
+
+		srv.SetLiveMode(topo)
+	} else if cfgPath != "" {
+		// Live mode: gNMI collection
 		cfg, err := config.Load(cfgPath)
 		if err != nil {
 			return fmt.Errorf("loading config: %w", err)
 		}
 
-		interval := time.Duration(intervalSec) * time.Second
-		fmt.Printf("Live mode: collecting from %d switch(es) every %s\n", len(cfg.Switches), interval)
+		// Set up file-based logging with rotation
+		if cfg.Storage.LogToFile {
+			logWriter, err := storage.NewLogWriter(cfg.Storage.DataDir, cfg.Storage.LogMaxSizeMB)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "WARNING: failed to set up file logging: %v\n", err)
+			} else {
+				logWriter.Install()
+				defer logWriter.Close()
+				log.Printf("File logging enabled: %s/logs/", cfg.Storage.DataDir)
+			}
+		}
 
 		// Perform initial collection synchronously so the API is ready before the browser opens
 		fmt.Println("Running initial topology collection...")
 		initCtx, initCancel := context.WithTimeout(context.Background(), time.Duration(cfg.Collect.TimeoutSec)*time.Second+30*time.Second)
-		initialTopo, err := collector.Collect(initCtx, cfg)
+		builder.ToolVersion = version
+		cr, err := collector.CollectRaw(initCtx, cfg)
 		initCancel()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: initial collection failed: %v\n", err)
-			initialTopo = &topology.Topology{CollectedAt: time.Now().UTC()}
+			cr = &collector.CollectionResult{CollectedAt: time.Now().UTC()}
 		}
-		fmt.Printf("Initial collection complete: %d devices, %d links\n", len(initialTopo.Devices), len(initialTopo.Links))
+		initialTopo := builder.Build(cr)
+		fmt.Printf("Initial collection complete: %d switches, %d hosts, %d links\n",
+			initialTopo.Metadata.Summary.SwitchCount,
+			initialTopo.Metadata.Summary.HostCount,
+			initialTopo.Metadata.Summary.TotalLinks)
 
 		srv.SetLiveMode(initialTopo)
 
-		sc := collector.NewStreamingCollector(cfg, interval, func(topo *topology.Topology) {
-			srv.UpdateTopology(topo)
-		})
+		if enableHistory {
+			// Historical mode: snapshots + periodic re-collection + retention
+			interval := time.Duration(intervalSec) * time.Second
+			fmt.Printf("History enabled: collecting every %s, saving snapshots\n", interval)
 
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-
-		go func() {
-			if err := sc.Start(ctx); err != nil && err != context.Canceled {
-				fmt.Fprintf(os.Stderr, "Streaming collector error: %v\n", err)
+			snapStore, err := storage.NewSnapshotStore(cfg.Storage.DataDir)
+			if err != nil {
+				return fmt.Errorf("initializing snapshot store: %w", err)
 			}
-		}()
+			srv.SetSnapshots(snapStore)
+
+			// Start retention pruner
+			pruner := storage.NewRetentionPruner(snapStore, cfg.Storage.DataDir, cfg.Storage.RetentionDays, cfg.Storage.MaxSnapshots)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			go pruner.Start(ctx)
+
+			// Save initial snapshot
+			if _, err := snapStore.Save(initialTopo); err != nil {
+				log.Printf("WARNING: failed to save initial snapshot: %v", err)
+			}
+
+			// Start hybrid collector (ON_CHANGE + periodic poll)
+			buildFn := func(cr *collector.CollectionResult) interface{} {
+				return builder.Build(cr)
+			}
+			hc := collector.NewHybridCollector(cfg, interval, snapStore, buildFn, func(topo interface{}) {
+				srv.UpdateTopology(topo)
+				srv.NotifySnapshotSaved()
+			})
+
+			go func() {
+				if err := hc.Start(ctx); err != nil && err != context.Canceled {
+					fmt.Fprintf(os.Stderr, "Hybrid collector error: %v\n", err)
+				}
+			}()
+		} else {
+			fmt.Println("Single collection mode (use --history to enable snapshots and periodic re-collection)")
+		}
 	} else {
 		fmt.Printf("Static mode: serving %s\n", topologyPath)
 	}
@@ -128,6 +204,7 @@ func collectCmd() *cobra.Command {
 
 	cmd.Flags().StringP("config", "c", "config.yaml", "Path to configuration file")
 	cmd.Flags().StringP("output", "o", "topology.json", "Path to write topology JSON output")
+	cmd.Flags().String("from-raw", "", "Load raw gNMI dump from directory instead of collecting from live switches")
 
 	return cmd
 }
@@ -135,7 +212,34 @@ func collectCmd() *cobra.Command {
 func runCollect(cmd *cobra.Command, args []string) error {
 	cfgPath, _ := cmd.Flags().GetString("config")
 	outputPath, _ := cmd.Flags().GetString("output")
+	fromRaw, _ := cmd.Flags().GetString("from-raw")
 
+	// Mode 1: Load from raw gNMI dump directory (no live switches needed)
+	if fromRaw != "" {
+		fmt.Printf("Loading raw gNMI data from %s...\n", fromRaw)
+		cr, err := collector.LoadFromDisk(fromRaw)
+		if err != nil {
+			return fmt.Errorf("loading raw data: %w", err)
+		}
+
+		builder.ToolVersion = version
+		topo := builder.Build(cr)
+
+		return writeJSON(outputPath, topo, func() {
+			s := topo.Metadata.Summary
+			fmt.Printf("Topology written to %s (from raw data)\n", outputPath)
+			fmt.Printf("  Switches:  %d\n", s.SwitchCount)
+			fmt.Printf("  Hosts:     %d\n", s.HostCount)
+			fmt.Printf("  Links:     %d\n", s.TotalLinks)
+			fmt.Printf("  VLANs:     %d\n", s.VLANCount)
+			fmt.Printf("  Endpoints: %d\n", s.EndpointCount)
+			if s.PartialFailures > 0 {
+				fmt.Printf("  Warnings:  %d partial failures\n", s.PartialFailures)
+			}
+		})
+	}
+
+	// Mode 2: Live collection from switches
 	cfg, err := config.Load(cfgPath)
 	if err != nil {
 		return fmt.Errorf("loading config: %w", err)
@@ -143,27 +247,37 @@ func runCollect(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Collecting topology from %d switch(es)...\n", len(cfg.Switches))
 
-	topo, err := collector.Collect(context.Background(), cfg)
+	cr, err := collector.CollectRaw(context.Background(), cfg)
 	if err != nil {
 		return fmt.Errorf("collection failed: %w", err)
 	}
 
-	data, err := json.MarshalIndent(topo, "", "  ")
+	builder.ToolVersion = version
+	topo := builder.Build(cr)
+
+	return writeJSON(outputPath, topo, func() {
+		s := topo.Metadata.Summary
+		fmt.Printf("Topology written to %s\n", outputPath)
+		fmt.Printf("  Switches:  %d\n", s.SwitchCount)
+		fmt.Printf("  Hosts:     %d\n", s.HostCount)
+		fmt.Printf("  Links:     %d\n", s.TotalLinks)
+		fmt.Printf("  VLANs:     %d\n", s.VLANCount)
+		fmt.Printf("  Endpoints: %d\n", s.EndpointCount)
+		if s.PartialFailures > 0 {
+			fmt.Printf("  Warnings:  %d partial failures\n", s.PartialFailures)
+		}
+	})
+}
+
+func writeJSON(path string, v interface{}, onSuccess func()) error {
+	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshaling topology: %w", err)
 	}
-
-	if err := os.WriteFile(outputPath, data, 0644); err != nil {
+	if err := os.WriteFile(path, data, 0644); err != nil {
 		return fmt.Errorf("writing output: %w", err)
 	}
-
-	fmt.Printf("Topology written to %s\n", outputPath)
-	fmt.Printf("  Devices: %d\n", len(topo.Devices))
-	fmt.Printf("  Links:   %d\n", len(topo.Links))
-	if len(topo.PartialFailures) > 0 {
-		fmt.Printf("  Warnings: %d partial failures\n", len(topo.PartialFailures))
-	}
-
+	onSuccess()
 	return nil
 }
 

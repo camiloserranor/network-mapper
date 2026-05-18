@@ -11,7 +11,7 @@ func TestEnrichInterfaceVLANsFromVLANConfig(t *testing.T) {
 		name       string
 		interfaces []topology.Interface
 		vlans      []topology.VLAN
-		wantMode   map[string]string // interface name → expected VLANMode
+		wantMode   map[string]string // interface name → expected Mode
 		wantAccess map[string]int    // interface name → expected AccessVLAN
 		wantTrunk  map[string][]int  // interface name → expected TrunkVLANs
 	}{
@@ -53,7 +53,7 @@ func TestEnrichInterfaceVLANsFromVLANConfig(t *testing.T) {
 		{
 			name: "skip interfaces with existing VLAN mode",
 			interfaces: []topology.Interface{
-				{Name: "Ethernet1/1", VLANMode: "trunk", TrunkVLANs: []int{50}},
+				{Name: "Ethernet1/1", Mode: "trunk", TrunkVLANs: []int{50}},
 			},
 			vlans: []topology.VLAN{
 				{ID: 100, MemberPorts: []string{"Ethernet1/1"}},
@@ -75,8 +75,8 @@ func TestEnrichInterfaceVLANsFromVLANConfig(t *testing.T) {
 
 			for _, iface := range tt.interfaces {
 				if want, ok := tt.wantMode[iface.Name]; ok {
-					if iface.VLANMode != want {
-						t.Errorf("interface %s: VLANMode = %q, want %q", iface.Name, iface.VLANMode, want)
+					if iface.Mode != want {
+						t.Errorf("interface %s: Mode = %q, want %q", iface.Name, iface.Mode, want)
 					}
 				}
 				if want, ok := tt.wantAccess[iface.Name]; ok {

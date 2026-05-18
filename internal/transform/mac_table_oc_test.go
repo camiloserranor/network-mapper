@@ -24,7 +24,7 @@ func TestParseMACTableOpenConfig_BulkFormat(t *testing.T) {
 									"interface": map[string]interface{}{
 										"interface-ref": map[string]interface{}{
 											"state": map[string]interface{}{
-												"interface": "Ethernet48",
+												"interface": "Eth48",
 											},
 										},
 									},
@@ -38,7 +38,7 @@ func TestParseMACTableOpenConfig_BulkFormat(t *testing.T) {
 									"interface": map[string]interface{}{
 										"interface-ref": map[string]interface{}{
 											"state": map[string]interface{}{
-												"interface": "Ethernet1",
+												"interface": "Eth1",
 											},
 										},
 									},
@@ -64,8 +64,8 @@ func TestParseMACTableOpenConfig_BulkFormat(t *testing.T) {
 		typ      string
 		switchID string
 	}{
-		{0, "aa:bb:cc:dd:ee:01", 100, "Ethernet48", "dynamic", "switch-1"},
-		{1, "aa:bb:cc:dd:ee:02", 200, "Ethernet1", "static", "switch-1"},
+		{0, "aa:bb:cc:dd:ee:01", 100, "Eth48", "dynamic", "switch-1"},
+		{1, "aa:bb:cc:dd:ee:02", 200, "Eth1", "static", "switch-1"},
 	}
 	for _, tt := range tests {
 		e := entries[tt.idx]
@@ -103,7 +103,7 @@ func TestParseMACTableOpenConfig_SubscribeONCE(t *testing.T) {
 						"interface": map[string]interface{}{
 							"interface-ref": map[string]interface{}{
 								"state": map[string]interface{}{
-									"interface": "Ethernet10",
+									"interface": "Eth10",
 								},
 							},
 						},
@@ -125,8 +125,8 @@ func TestParseMACTableOpenConfig_SubscribeONCE(t *testing.T) {
 	if e.VLAN != 50 {
 		t.Errorf("VLAN = %d, want 50", e.VLAN)
 	}
-	if e.Port != "Ethernet10" {
-		t.Errorf("Port = %q, want %q", e.Port, "Ethernet10")
+	if e.Port != "Eth10" {
+		t.Errorf("Port = %q, want %q", e.Port, "Eth10")
 	}
 }
 

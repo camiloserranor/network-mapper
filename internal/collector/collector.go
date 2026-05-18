@@ -6,11 +6,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"sync"
 	"time"
 
 	"github.com/camiloserranor/network-mapper/internal/config"
-	"github.com/camiloserranor/network-mapper/internal/deployment"
 	"github.com/camiloserranor/network-mapper/internal/gnmi"
 	"github.com/camiloserranor/network-mapper/internal/topology"
 	"github.com/camiloserranor/network-mapper/internal/transform"
@@ -18,19 +18,71 @@ import (
 
 // switchResult holds all data collected from a single switch.
 type switchResult struct {
-	SwitchName string
-	SwitchID   string
-	Device     topology.Device
-	Neighbors  []transform.LLDPNeighbor
-	Interfaces []topology.Interface
-	MACEntries []transform.MACEntry
-	ARPEntries []transform.ARPEntry
-	VLANs      []topology.VLAN
-	Errors     []topology.PartialError
+	SwitchName   string
+	SwitchID     string
+	Device       topology.Device
+	Neighbors    []transform.LLDPNeighbor
+	Interfaces   []topology.Interface
+	MACEntries   []transform.MACEntry
+	ARPEntries   []transform.ARPEntry
+	VLANs        []topology.VLAN
+	BGPNeighbors []transform.BGPNeighbor
+	Errors       []topology.PartialError
+}
+
+// CollectRaw connects to all configured switches, queries gNMI for LLDP,
+// interface, system data, and returns the raw per-switch results. This is
+// the stage-1 output of the pipeline — pass the result to builder.Build()
+// to produce the v2 topology.
+func CollectRaw(ctx context.Context, cfg *config.Config) (*CollectionResult, error) {
+	now := time.Now()
+
+	results := make([]switchResult, len(cfg.Switches))
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, cfg.Collect.Parallel)
+
+	for i, sw := range cfg.Switches {
+		wg.Add(1)
+		go func(idx int, sw config.SwitchConfig) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			swCtx, cancel := context.WithTimeout(ctx, time.Duration(cfg.Collect.TimeoutSec)*time.Second)
+			defer cancel()
+
+			results[idx] = collectSwitch(swCtx, sw, cfg, now)
+		}(i, sw)
+	}
+
+	wg.Wait()
+
+	cr := &CollectionResult{
+		CollectedAt: now,
+		Switches:    make([]SwitchData, len(results)),
+	}
+	for i, r := range results {
+		cr.Switches[i] = SwitchData{
+			SwitchName:   r.SwitchName,
+			SwitchID:     r.SwitchID,
+			Device:       r.Device,
+			Neighbors:    r.Neighbors,
+			Interfaces:   r.Interfaces,
+			MACEntries:   r.MACEntries,
+			ARPEntries:   r.ARPEntries,
+			VLANs:        r.VLANs,
+			BGPNeighbors: r.BGPNeighbors,
+			Errors:       r.Errors,
+		}
+	}
+
+	return cr, nil
 }
 
 // Collect connects to all configured switches, queries gNMI for LLDP, interface,
 // and system data, and returns a complete Topology.
+//
+// Deprecated: Use CollectRaw + builder.Build for the v2 pipeline.
 func Collect(ctx context.Context, cfg *config.Config) (*topology.Topology, error) {
 	now := time.Now()
 
@@ -55,19 +107,6 @@ func Collect(ctx context.Context, cfg *config.Config) (*topology.Topology, error
 	wg.Wait()
 
 	topo := buildTopology(results, now, cfg.Collect.ReverseDNS)
-
-	// Enrich with deployment data if configured (non-fatal on failure)
-	if cfg.DeploymentJSON != "" {
-		dd, err := deployment.Load(cfg.DeploymentJSON)
-		if err != nil {
-			log.Printf("WARNING: could not load deployment JSON: %v", err)
-			topo.PartialFailures = append(topo.PartialFailures, topology.PartialError{
-				Switch: "deployment", Phase: "enrichment", Message: err.Error(),
-			})
-		} else {
-			deployment.EnrichTopology(topo, dd)
-		}
-	}
 
 	return topo, nil
 }
@@ -149,6 +188,9 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 		transform.EnrichInterfaceVLANsFromVLANConfig(result.Interfaces, result.VLANs)
 	}
 
+	// 9. Collect BGP neighbor state
+	collectBGP(ctx, client, sw, &result)
+
 	log.Printf("  %s: collection completed in %s", sw.Name, time.Since(start))
 
 	return result
@@ -205,10 +247,7 @@ func collectLLDP(ctx context.Context, client *gnmi.Client, sw config.SwitchConfi
 }
 
 func collectInterfaces(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, cfg *config.Config, result *switchResult) {
-	if cfg.Collect.SkipCounters {
-		return
-	}
-
+	// Collect interface state (oper-status, speed, MTU, name)
 	notifs, err := client.GetWithFallback(ctx, transform.InterfacesPathOpenConfig)
 	if err != nil {
 		log.Printf("WARN: interfaces for %s: %v", sw.Name, err)
@@ -219,6 +258,29 @@ func collectInterfaces(ctx context.Context, client *gnmi.Client, sw config.Switc
 	}
 
 	result.Interfaces = transform.ParseInterfacesOpenConfig(notifs)
+
+	// Collect counters separately (different path, often larger payload)
+	if !cfg.Collect.SkipCounters && len(result.Interfaces) > 0 {
+		counterNotifs, counterErr := client.GetWithFallback(ctx, transform.InterfacesCountersPathOpenConfig)
+		if counterErr != nil {
+			log.Printf("  %s: interface counters unavailable: %v", sw.Name, counterErr)
+		} else {
+			transform.MergeInterfaceCounters(result.Interfaces, counterNotifs)
+		}
+	}
+
+	// Collect per-port VLAN configuration (NX-OS only)
+	if sw.Platform == "nxos" && len(result.Interfaces) > 0 {
+		vlanNotifs, vlanErr := client.GetWithFallback(ctx, transform.InterfaceVLANPathNXOS)
+		if vlanErr != nil {
+			log.Printf("  %s: interface VLAN config unavailable: %v", sw.Name, vlanErr)
+		} else {
+			vlanConfigs := transform.ParseInterfaceVLANsNXOS(vlanNotifs)
+			transform.MergeInterfaceVLANConfigs(result.Interfaces, vlanConfigs)
+			log.Printf("  %s: %d interface VLAN configs", sw.Name, len(vlanConfigs))
+		}
+	}
+
 	log.Printf("  %s: %d interfaces", sw.Name, len(result.Interfaces))
 }
 
@@ -329,6 +391,37 @@ func collectVLANs(ctx context.Context, client *gnmi.Client, sw config.SwitchConf
 	log.Printf("  %s: %d VLANs", sw.Name, len(result.VLANs))
 }
 
+func collectBGP(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
+	var notifs []gnmi.Notification
+	var err error
+
+	switch sw.Platform {
+	case "nxos":
+		notifs, err = client.GetWithFallback(ctx, transform.BGPNeighborsPathNXOS)
+		if err != nil {
+			log.Printf("  %s: BGP data unavailable: %v", sw.Name, err)
+			result.Errors = append(result.Errors, topology.PartialError{
+				Switch: sw.Name, Phase: "bgp", Message: err.Error(),
+			})
+			return
+		}
+		result.BGPNeighbors = transform.ParseBGPNXOS(notifs)
+	default:
+		// OpenConfig / SONiC
+		notifs, err = client.GetWithFallback(ctx, transform.BGPNeighborsPathOpenConfig)
+		if err != nil {
+			log.Printf("  %s: BGP data unavailable: %v", sw.Name, err)
+			result.Errors = append(result.Errors, topology.PartialError{
+				Switch: sw.Name, Phase: "bgp", Message: err.Error(),
+			})
+			return
+		}
+		result.BGPNeighbors = transform.ParseBGPOpenConfig(notifs)
+	}
+
+	log.Printf("  %s: %d BGP neighbors", sw.Name, len(result.BGPNeighbors))
+}
+
 func buildTopology(results []switchResult, now time.Time, reverseDNS bool) *topology.Topology {
 	topo := &topology.Topology{
 		SchemaVersion: "1.0",
@@ -350,6 +443,7 @@ func buildTopology(results []switchResult, now time.Time, reverseDNS bool) *topo
 		// Add the switch itself (skip if connect failed and no device was built)
 		switchDev := r.Device
 		switchDev.Interfaces = r.Interfaces
+		switchDev.BGPSessions = bgpNeighborsToSessions(r.BGPNeighbors)
 		if switchDev.ID != "" {
 			deviceMap[switchDev.ID] = &switchDev
 		}
@@ -494,6 +588,9 @@ func buildTopology(results []switchResult, now time.Time, reverseDNS bool) *topo
 		topo.PartialFailures = []topology.PartialError{}
 	}
 
+	// Populate ObservedVLANs on interfaces from MAC table data
+	enrichInterfaceObservedVLANs(topo, results)
+
 	return topo
 }
 
@@ -524,6 +621,53 @@ func classifyDevice(nbr transform.LLDPNeighbor) string {
 	return transform.ClassifyDevice(nbr.SystemDescription, nbr.SystemName, nbr.Capabilities)
 }
 
+// enrichInterfaceObservedVLANs aggregates VLAN IDs from MAC table entries
+// onto the corresponding switch interfaces. This shows which VLANs have
+// active traffic on each port, derived from observed MAC learning.
+func enrichInterfaceObservedVLANs(topo *topology.Topology, results []switchResult) {
+	// Build per-switch, per-port VLAN sets from MAC entries
+	// Key: switchID → portName → set of VLAN IDs
+	type portVLANs map[string]map[int]bool
+	switchPortVLANs := make(map[string]portVLANs)
+
+	for _, r := range results {
+		for _, mac := range r.MACEntries {
+			if mac.Port == "" || mac.VLAN == 0 {
+				continue
+			}
+			port := transform.NormalizeInterfaceName(mac.Port)
+			if switchPortVLANs[r.SwitchID] == nil {
+				switchPortVLANs[r.SwitchID] = make(portVLANs)
+			}
+			if switchPortVLANs[r.SwitchID][port] == nil {
+				switchPortVLANs[r.SwitchID][port] = make(map[int]bool)
+			}
+			switchPortVLANs[r.SwitchID][port][mac.VLAN] = true
+		}
+	}
+
+	// Merge onto device interfaces
+	for i := range topo.Devices {
+		dev := &topo.Devices[i]
+		pvs, ok := switchPortVLANs[dev.ID]
+		if !ok {
+			continue
+		}
+		for j := range dev.Interfaces {
+			vlanSet, ok := pvs[dev.Interfaces[j].Name]
+			if !ok {
+				continue
+			}
+			var vlans []int
+			for v := range vlanSet {
+				vlans = append(vlans, v)
+			}
+			sort.Ints(vlans)
+			dev.Interfaces[j].ObservedVLANs = vlans
+		}
+	}
+}
+
 func extractHost(address string) string {
 	for i := len(address) - 1; i >= 0; i-- {
 		if address[i] == ':' {
@@ -531,4 +675,31 @@ func extractHost(address string) string {
 		}
 	}
 	return address
+}
+
+// bgpNeighborsToSessions converts transform.BGPNeighbor to topology.BGPSession.
+func bgpNeighborsToSessions(neighbors []transform.BGPNeighbor) []topology.BGPSession {
+	if len(neighbors) == 0 {
+		return nil
+	}
+	sessions := make([]topology.BGPSession, len(neighbors))
+	for i, n := range neighbors {
+		sessions[i] = topology.BGPSession{
+			NeighborAddress:        n.NeighborAddress,
+			PeerAS:                 n.PeerAS,
+			LocalAS:                n.LocalAS,
+			PeerType:               n.PeerType,
+			Description:            n.Description,
+			SessionState:           n.SessionState,
+			Enabled:                n.Enabled,
+			EstablishedTransitions: n.EstablishedTransitions,
+			LastEstablished:        n.LastEstablished,
+			VRFName:                n.VRFName,
+			MessagesReceived:       n.MessagesReceived,
+			MessagesSent:           n.MessagesSent,
+			PrefixesReceived:       n.PrefixesReceived,
+			PrefixesSent:           n.PrefixesSent,
+		}
+	}
+	return sessions
 }

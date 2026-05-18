@@ -11,13 +11,14 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 
-	"github.com/camiloserranor/network-mapper/internal/topology"
+	"github.com/camiloserranor/network-mapper/internal/storage"
 )
 
 // Server serves the embedded web UI and the topology API.
@@ -28,10 +29,11 @@ type Server struct {
 	live         bool // true when using streaming collector
 	enablePprof  bool // enable /debug/pprof/* endpoints
 	startTime    time.Time
+	snapshots    *storage.SnapshotStore
 
 	// Live mode state
 	mu        sync.RWMutex
-	liveTopo  *topology.Topology
+	liveTopo  interface{} // *topology.TopologyV2
 	clients   map[*wsClient]struct{}
 	clientsMu sync.Mutex
 }
@@ -57,14 +59,19 @@ func (s *Server) SetPprof(enable bool) {
 	s.enablePprof = enable
 }
 
-// SetLiveMode enables live streaming mode (topology served from memory, WebSocket push).
-func (s *Server) SetLiveMode(initial *topology.Topology) {
+// SetLiveMode puts the server into live mode with initial topology data.
+func (s *Server) SetLiveMode(initial interface{}) {
 	s.live = true
 	s.liveTopo = initial
 }
 
+// SetSnapshots enables the snapshot history API.
+func (s *Server) SetSnapshots(store *storage.SnapshotStore) {
+	s.snapshots = store
+}
+
 // UpdateTopology updates the in-memory topology and broadcasts to all WebSocket clients.
-func (s *Server) UpdateTopology(topo *topology.Topology) {
+func (s *Server) UpdateTopology(topo interface{}) {
 	s.mu.Lock()
 	s.liveTopo = topo
 	s.mu.Unlock()
@@ -88,6 +95,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/health", s.handleHealth)
 	mux.HandleFunc("/api/metrics", s.handleMetrics)
 	mux.HandleFunc("/api/ws", s.handleWebSocket)
+	mux.HandleFunc("/api/snapshots", s.handleSnapshotList)
+	mux.HandleFunc("/api/snapshots/", s.handleSnapshotLoad)
 
 	if s.enablePprof {
 		log.Println("[pprof] Profiling endpoints enabled at /debug/pprof/")
@@ -275,6 +284,84 @@ func (s *Server) broadcast(data []byte) {
 			delete(s.clients, client)
 		}
 	}
+}
+
+func (s *Server) handleSnapshotList(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if s.snapshots == nil {
+		json.NewEncoder(w).Encode([]storage.SnapshotInfo{})
+		return
+	}
+
+	list, err := s.snapshots.List()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(list)
+}
+
+func (s *Server) handleSnapshotLoad(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if s.snapshots == nil {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": "snapshots not enabled"})
+		return
+	}
+
+	// Extract timestamp from path: /api/snapshots/{timestamp}
+	tsStr := strings.TrimPrefix(r.URL.Path, "/api/snapshots/")
+	tsStr = strings.TrimSpace(tsStr)
+	if tsStr == "" {
+		// Redirect to list endpoint
+		s.handleSnapshotList(w, r)
+		return
+	}
+
+	ts, err := time.Parse(storage.TimestampFormat, tsStr)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid timestamp format, expected " + storage.TimestampFormat})
+		return
+	}
+
+	topo, err := s.snapshots.Load(ts)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(topo)
+}
+
+// NotifySnapshotSaved broadcasts a snapshot list update to all WebSocket clients.
+func (s *Server) NotifySnapshotSaved() {
+	if s.snapshots == nil {
+		return
+	}
+
+	list, err := s.snapshots.List()
+	if err != nil {
+		log.Printf("[ws] Failed to list snapshots for notification: %v", err)
+		return
+	}
+
+	msg := map[string]interface{}{
+		"type":      "snapshot_list",
+		"snapshots": list,
+	}
+
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return
+	}
+
+	s.broadcast(data)
 }
 
 // OpenBrowser opens the default browser to the given URL.

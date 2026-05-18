@@ -257,7 +257,7 @@ func TestParseVLANsOpenConfig_MembersViaInterfaceRef(t *testing.T) {
 	if len(vlans[0].MemberPorts) != 1 {
 		t.Fatalf("MemberPorts count = %d, want 1", len(vlans[0].MemberPorts))
 	}
-	if vlans[0].MemberPorts[0] != "Ethernet5" {
-		t.Errorf("MemberPorts[0] = %q, want %q", vlans[0].MemberPorts[0], "Ethernet5")
+	if vlans[0].MemberPorts[0] != "Eth5" {
+		t.Errorf("MemberPorts[0] = %q, want %q", vlans[0].MemberPorts[0], "Eth5")
 	}
 }
