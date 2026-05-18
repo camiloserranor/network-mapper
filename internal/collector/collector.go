@@ -260,7 +260,8 @@ func collectInterfaces(ctx context.Context, client *gnmi.Client, sw config.Switc
 	result.Interfaces = transform.ParseInterfacesOpenConfig(notifs)
 
 	// Collect counters separately (different path, often larger payload)
-	if !cfg.Collect.SkipCounters && len(result.Interfaces) > 0 {
+	// Skip for SONiC — counters are already included in the flat-leaf interface response.
+	if !cfg.Collect.SkipCounters && len(result.Interfaces) > 0 && sw.Platform != "sonic" {
 		counterNotifs, counterErr := client.GetWithFallback(ctx, transform.InterfacesCountersPathOpenConfig)
 		if counterErr != nil {
 			log.Printf("  %s: interface counters unavailable: %v", sw.Name, counterErr)
@@ -406,8 +407,19 @@ func collectBGP(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig
 			return
 		}
 		result.BGPNeighbors = transform.ParseBGPNXOS(notifs)
+	case "sonic":
+		// SONiC doesn't support wildcard paths — use explicit default VRF path
+		notifs, err = client.GetWithFallback(ctx, transform.BGPNeighborsPathSONiC)
+		if err != nil {
+			log.Printf("  %s: BGP data unavailable (SONiC): %v", sw.Name, err)
+			result.Errors = append(result.Errors, topology.PartialError{
+				Switch: sw.Name, Phase: "bgp", Message: "BGP neighbors not available: " + err.Error(),
+			})
+			return
+		}
+		result.BGPNeighbors = transform.ParseBGPOpenConfig(notifs)
 	default:
-		// OpenConfig / SONiC
+		// OpenConfig generic
 		notifs, err = client.GetWithFallback(ctx, transform.BGPNeighborsPathOpenConfig)
 		if err != nil {
 			log.Printf("  %s: BGP data unavailable: %v", sw.Name, err)

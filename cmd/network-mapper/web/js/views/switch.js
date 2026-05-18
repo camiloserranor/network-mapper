@@ -342,8 +342,13 @@ function buildFrontPanelSVG(swDev, ifaces, portMap, role, ifacesUp, hostCount, e
         svg += '<rect x="' + px + '" y="' + py + '" width="' + portW + '" height="' + portH + '" rx="3" ';
         svg += 'fill="' + fillColor + '" stroke="' + borderCol + '" stroke-width="1.2"/>';
 
-        // Port label (short)
-        const shortName = portName.replace(/.*\//, '').replace(/Ethernet/, 'E').substring(0, 4);
+        // Port label (short) — extract just the port number for display
+        var shortName = portName.replace(/.*\//, '');  // Strip slot prefix (e.g., Eth1/48 → 48)
+        if (shortName === portName) {
+            // No slash — strip known prefixes to get numeric part
+            shortName = shortName.replace(/^(Ethernet|Eth|eth|Et)/, '');
+        }
+        if (shortName.length > 4) shortName = shortName.substring(0, 4);
         svg += '<text x="' + (px + portW / 2) + '" y="' + (py + portH / 2 + 3.5) + '" ';
         svg += 'font-size="7" fill="#d2d0ce" text-anchor="middle" font-family="Cascadia Code, Consolas, monospace">';
         svg += esc(shortName);
