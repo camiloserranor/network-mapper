@@ -12,6 +12,7 @@ import (
 
 	"github.com/camiloserranor/network-mapper/internal/config"
 	"github.com/camiloserranor/network-mapper/internal/gnmi"
+	"github.com/camiloserranor/network-mapper/internal/platform"
 	"github.com/camiloserranor/network-mapper/internal/topology"
 	"github.com/camiloserranor/network-mapper/internal/transform"
 )
@@ -118,11 +119,8 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 		SwitchID:   sw.Name,
 	}
 
-	// Determine encoding based on platform
-	encoding := "JSON_IETF"
-	if sw.Platform == "nxos" {
-		encoding = "JSON"
-	}
+	// Resolve the platform strategy
+	p := platform.ForPlatform(sw.Platform)
 
 	// Connect
 	client, err := gnmi.NewClient(ctx, gnmi.ClientOptions{
@@ -137,7 +135,7 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 			ClientCert: cfg.TLS.ClientCert,
 			ClientKey:  cfg.TLS.ClientKey,
 		},
-		Encoding: encoding,
+		Encoding: p.Encoding(),
 	})
 	if err != nil {
 		result.Errors = append(result.Errors, topology.PartialError{
@@ -150,7 +148,13 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 	log.Printf("Connected to %s (%s)", sw.Name, sw.Address)
 
 	// 1. Collect system info
-	sysInfo := collectSystemInfo(ctx, client, sw, &result)
+	sysInfo, err := p.CollectSystem(ctx, client)
+	if err != nil {
+		log.Printf("WARN: system info for %s: %v", sw.Name, err)
+		result.Errors = append(result.Errors, topology.PartialError{
+			Switch: sw.Name, Phase: "system", Message: err.Error(),
+		})
+	}
 
 	// Build the switch device entry
 	result.Device = topology.Device{
@@ -166,272 +170,99 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 	}
 
 	// 2. Collect LLDP neighbors
-	collectLLDP(ctx, client, sw, &result)
-
-	// 3. Collect interface state
-	collectInterfaces(ctx, client, sw, cfg, &result)
-
-	// 4. Collect switch resource utilization (CPU/memory)
-	collectResources(ctx, client, sw, &result)
-
-	// 5. Collect MAC table (for VM endpoint discovery)
-	collectMACTable(ctx, client, sw, &result)
-
-	// 6. Collect ARP table (for IP-to-MAC mapping)
-	collectARPTable(ctx, client, sw, &result)
-
-	// 7. Collect VLAN configuration
-	collectVLANs(ctx, client, sw, &result)
-
-	// 8. Enrich interfaces with VLAN data (for OpenConfig platforms)
-	if sw.Platform != "nxos" && len(result.VLANs) > 0 {
-		transform.EnrichInterfaceVLANsFromVLANConfig(result.Interfaces, result.VLANs)
-	}
-
-	// 9. Collect BGP neighbor state
-	collectBGP(ctx, client, sw, &result)
-
-	log.Printf("  %s: collection completed in %s", sw.Name, time.Since(start))
-
-	return result
-}
-
-func collectSystemInfo(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) transform.SystemInfo {
-	// For NX-OS, try the richer native system path first
-	if sw.Platform == "nxos" {
-		notifs, err := client.Get(ctx, transform.SystemPathNXOS)
-		if err == nil {
-			info := transform.ParseSystemNXOS(notifs)
-			if info.Hostname != "" || info.SoftwareVersion != "" {
-				return info
-			}
-		}
-		// Fall through to OpenConfig if NX-OS path fails
-	}
-
-	notifs, err := client.Get(ctx, transform.SystemPathOpenConfig)
-	if err != nil {
-		log.Printf("WARN: system info for %s: %v", sw.Name, err)
-		result.Errors = append(result.Errors, topology.PartialError{
-			Switch: sw.Name, Phase: "system", Message: err.Error(),
-		})
-		return transform.SystemInfo{}
-	}
-	return transform.ParseSystemOpenConfig(notifs)
-}
-
-func collectLLDP(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
-	var lldpPath string
-	if sw.Platform == "nxos" {
-		lldpPath = transform.LLDPPathNXOS
-	} else {
-		lldpPath = transform.LLDPPathOpenConfig
-	}
-
-	notifs, err := client.GetWithFallback(ctx, lldpPath)
+	neighbors, err := p.CollectLLDP(ctx, client)
 	if err != nil {
 		log.Printf("WARN: LLDP for %s: %v", sw.Name, err)
 		result.Errors = append(result.Errors, topology.PartialError{
 			Switch: sw.Name, Phase: "lldp", Message: err.Error(),
 		})
-		return
-	}
-
-	if sw.Platform == "nxos" {
-		result.Neighbors = transform.ParseLLDPNXOS(notifs)
 	} else {
-		result.Neighbors = transform.ParseLLDPOpenConfig(notifs)
+		result.Neighbors = neighbors
+		log.Printf("  %s: %d LLDP neighbors", sw.Name, len(neighbors))
 	}
 
-	log.Printf("  %s: %d LLDP neighbors", sw.Name, len(result.Neighbors))
-}
-
-func collectInterfaces(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, cfg *config.Config, result *switchResult) {
-	// Collect interface state (oper-status, speed, MTU, name)
-	notifs, err := client.GetWithFallback(ctx, transform.InterfacesPathOpenConfig)
+	// 3. Collect interface state
+	ifaces, err := p.CollectInterfaces(ctx, client)
 	if err != nil {
 		log.Printf("WARN: interfaces for %s: %v", sw.Name, err)
 		result.Errors = append(result.Errors, topology.PartialError{
 			Switch: sw.Name, Phase: "interfaces", Message: err.Error(),
 		})
-		return
+	} else {
+		result.Interfaces = ifaces
+		log.Printf("  %s: %d interfaces", sw.Name, len(ifaces))
 	}
 
-	result.Interfaces = transform.ParseInterfacesOpenConfig(notifs)
-
-	// Collect counters separately (different path, often larger payload)
-	// Skip for SONiC — counters are already included in the flat-leaf interface response.
-	if !cfg.Collect.SkipCounters && len(result.Interfaces) > 0 && sw.Platform != "sonic" {
-		counterNotifs, counterErr := client.GetWithFallback(ctx, transform.InterfacesCountersPathOpenConfig)
-		if counterErr != nil {
-			log.Printf("  %s: interface counters unavailable: %v", sw.Name, counterErr)
-		} else {
-			transform.MergeInterfaceCounters(result.Interfaces, counterNotifs)
+	// 4. Collect switch resource utilization (CPU/memory)
+	stats, err := p.CollectResources(ctx, client)
+	if err != nil {
+		log.Printf("  %s: resource stats unavailable: %v", sw.Name, err)
+	} else {
+		result.Device.CPUUtilization = stats.CPUUtilization
+		result.Device.MemoryUsed = stats.MemoryUsed
+		result.Device.MemoryTotal = stats.MemoryTotal
+		if stats.MemoryTotal > 0 {
+			memPct := float64(stats.MemoryUsed) / float64(stats.MemoryTotal) * 100
+			log.Printf("  %s: CPU %.1f%%, Memory %.1f%% (%d/%d bytes)", sw.Name, stats.CPUUtilization, memPct, stats.MemoryUsed, stats.MemoryTotal)
 		}
 	}
 
-	// Collect per-port VLAN configuration (NX-OS only)
-	if sw.Platform == "nxos" && len(result.Interfaces) > 0 {
-		vlanNotifs, vlanErr := client.GetWithFallback(ctx, transform.InterfaceVLANPathNXOS)
-		if vlanErr != nil {
-			log.Printf("  %s: interface VLAN config unavailable: %v", sw.Name, vlanErr)
-		} else {
-			vlanConfigs := transform.ParseInterfaceVLANsNXOS(vlanNotifs)
-			transform.MergeInterfaceVLANConfigs(result.Interfaces, vlanConfigs)
-			log.Printf("  %s: %d interface VLAN configs", sw.Name, len(vlanConfigs))
-		}
-	}
-
-	log.Printf("  %s: %d interfaces", sw.Name, len(result.Interfaces))
-}
-
-func collectResources(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
-	cpuPath := transform.CPUPathOpenConfig
-	memPath := transform.MemoryPathOpenConfig
-	if sw.Platform == "nxos" {
-		cpuPath = transform.CPUPathNXOS
-		memPath = transform.MemoryPathNXOS
-	}
-
-	cpuNotifs, cpuErr := client.GetWithFallback(ctx, cpuPath)
-	memNotifs, memErr := client.GetWithFallback(ctx, memPath)
-
-	if cpuErr != nil && memErr != nil {
-		log.Printf("  %s: resource stats unavailable (CPU: %v, Memory: %v)", sw.Name, cpuErr, memErr)
-		return
-	}
-
-	var stats transform.ResourceStats
-	if sw.Platform == "nxos" {
-		stats = transform.ParseResourceStatsNXOS(cpuNotifs, memNotifs)
-	} else {
-		stats = transform.ParseResourceStatsOpenConfig(cpuNotifs, memNotifs)
-	}
-	result.Device.CPUUtilization = stats.CPUUtilization
-	result.Device.MemoryUsed = stats.MemoryUsed
-	result.Device.MemoryTotal = stats.MemoryTotal
-
-	if stats.MemoryTotal > 0 {
-		memPct := float64(stats.MemoryUsed) / float64(stats.MemoryTotal) * 100
-		log.Printf("  %s: CPU %.1f%%, Memory %.1f%% (%d/%d bytes)", sw.Name, stats.CPUUtilization, memPct, stats.MemoryUsed, stats.MemoryTotal)
-	}
-}
-
-func collectMACTable(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
-	var macPath string
-	if sw.Platform == "nxos" {
-		macPath = transform.MACTablePathNXOS
-	} else {
-		macPath = transform.MACTablePathOpenConfig
-	}
-
-	notifs, err := client.GetWithFallback(ctx, macPath)
+	// 5. Collect MAC table (for VM endpoint discovery)
+	macEntries, err := p.CollectMACTable(ctx, client, sw.Name)
 	if err != nil {
 		log.Printf("  %s: MAC table unavailable: %v", sw.Name, err)
 		result.Errors = append(result.Errors, topology.PartialError{
 			Switch: sw.Name, Phase: "mac-table", Message: err.Error(),
 		})
-		return
-	}
-
-	if sw.Platform == "nxos" {
-		result.MACEntries = transform.ParseMACTableNXOS(notifs, sw.Name)
 	} else {
-		result.MACEntries = transform.ParseMACTableOpenConfig(notifs, sw.Name)
-	}
-	log.Printf("  %s: %d MAC table entries", sw.Name, len(result.MACEntries))
-}
-
-func collectARPTable(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
-	var arpPath string
-	if sw.Platform == "nxos" {
-		arpPath = transform.ARPPathNXOS
-	} else {
-		arpPath = transform.ARPPathOpenConfig
+		result.MACEntries = macEntries
+		log.Printf("  %s: %d MAC table entries", sw.Name, len(macEntries))
 	}
 
-	notifs, err := client.GetWithFallback(ctx, arpPath)
+	// 6. Collect ARP table (for IP-to-MAC mapping)
+	arpEntries, err := p.CollectARPTable(ctx, client, sw.Name)
 	if err != nil {
 		log.Printf("  %s: ARP table unavailable: %v", sw.Name, err)
 		result.Errors = append(result.Errors, topology.PartialError{
 			Switch: sw.Name, Phase: "arp-table", Message: err.Error(),
 		})
-		return
-	}
-
-	if sw.Platform == "nxos" {
-		result.ARPEntries = transform.ParseARPTableNXOS(notifs, sw.Name)
 	} else {
-		result.ARPEntries = transform.ParseARPTableOpenConfig(notifs, sw.Name)
-	}
-	log.Printf("  %s: %d ARP entries", sw.Name, len(result.ARPEntries))
-}
-
-func collectVLANs(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
-	var vlanPath string
-	if sw.Platform == "nxos" {
-		vlanPath = transform.VLANPathNXOS
-	} else {
-		vlanPath = transform.VLANPathOpenConfig
+		result.ARPEntries = arpEntries
+		log.Printf("  %s: %d ARP entries", sw.Name, len(arpEntries))
 	}
 
-	notifs, err := client.GetWithFallback(ctx, vlanPath)
+	// 7. Collect VLAN configuration
+	vlans, err := p.CollectVLANs(ctx, client, sw.Name)
 	if err != nil {
 		log.Printf("  %s: VLAN config unavailable: %v", sw.Name, err)
 		result.Errors = append(result.Errors, topology.PartialError{
 			Switch: sw.Name, Phase: "vlan-config", Message: err.Error(),
 		})
-		return
-	}
-
-	if sw.Platform == "nxos" {
-		result.VLANs = transform.ParseVLANsNXOS(notifs, sw.Name)
 	} else {
-		result.VLANs = transform.ParseVLANsOpenConfig(notifs, sw.Name)
-	}
-	log.Printf("  %s: %d VLANs", sw.Name, len(result.VLANs))
-}
-
-func collectBGP(ctx context.Context, client *gnmi.Client, sw config.SwitchConfig, result *switchResult) {
-	var notifs []gnmi.Notification
-	var err error
-
-	switch sw.Platform {
-	case "nxos":
-		notifs, err = client.GetWithFallback(ctx, transform.BGPNeighborsPathNXOS)
-		if err != nil {
-			log.Printf("  %s: BGP data unavailable: %v", sw.Name, err)
-			result.Errors = append(result.Errors, topology.PartialError{
-				Switch: sw.Name, Phase: "bgp", Message: err.Error(),
-			})
-			return
-		}
-		result.BGPNeighbors = transform.ParseBGPNXOS(notifs)
-	case "sonic":
-		// SONiC doesn't support wildcard paths — use explicit default VRF path
-		notifs, err = client.GetWithFallback(ctx, transform.BGPNeighborsPathSONiC)
-		if err != nil {
-			log.Printf("  %s: BGP data unavailable (SONiC): %v", sw.Name, err)
-			result.Errors = append(result.Errors, topology.PartialError{
-				Switch: sw.Name, Phase: "bgp", Message: "BGP neighbors not available: " + err.Error(),
-			})
-			return
-		}
-		result.BGPNeighbors = transform.ParseBGPOpenConfig(notifs)
-	default:
-		// OpenConfig generic
-		notifs, err = client.GetWithFallback(ctx, transform.BGPNeighborsPathOpenConfig)
-		if err != nil {
-			log.Printf("  %s: BGP data unavailable: %v", sw.Name, err)
-			result.Errors = append(result.Errors, topology.PartialError{
-				Switch: sw.Name, Phase: "bgp", Message: err.Error(),
-			})
-			return
-		}
-		result.BGPNeighbors = transform.ParseBGPOpenConfig(notifs)
+		result.VLANs = vlans
+		log.Printf("  %s: %d VLANs", sw.Name, len(vlans))
 	}
 
-	log.Printf("  %s: %d BGP neighbors", sw.Name, len(result.BGPNeighbors))
+	// 8. Enrich interfaces with VLAN data (for platforms without per-port VLAN paths)
+	if p.EnrichInterfacesFromVLANs() && len(result.VLANs) > 0 {
+		transform.EnrichInterfaceVLANsFromVLANConfig(result.Interfaces, result.VLANs)
+	}
+
+	// 9. Collect BGP neighbor state
+	bgpNeighbors, err := p.CollectBGP(ctx, client)
+	if err != nil {
+		log.Printf("  %s: BGP data unavailable: %v", sw.Name, err)
+		result.Errors = append(result.Errors, topology.PartialError{
+			Switch: sw.Name, Phase: "bgp", Message: err.Error(),
+		})
+	} else {
+		result.BGPNeighbors = bgpNeighbors
+		log.Printf("  %s: %d BGP neighbors", sw.Name, len(bgpNeighbors))
+	}
+
+	log.Printf("  %s: collection completed in %s", sw.Name, time.Since(start))
+
+	return result
 }
 
 func buildTopology(results []switchResult, now time.Time, reverseDNS bool) *topology.Topology {
