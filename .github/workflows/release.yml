@@ -1,0 +1,186 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.2605.1)'
+        required: true
+      prerelease:
+        description: 'Mark as pre-release'
+        required: true
+        default: true
+        type: boolean
+
+env:
+  GO_VERSION: '1.26'
+  BINARY_NAME: network-mapper
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run tests
+        run: go test -v -count=1 ./...
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            suffix: linux-amd64
+          - goos: windows
+            goarch: amd64
+            suffix: windows-amd64
+            extension: .exe
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build binary
+        env:
+          CGO_ENABLED: 0
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          go build \
+            -ldflags="-s -w -X main.version=${VERSION}" \
+            -o "${{ env.BINARY_NAME }}${{ matrix.extension }}" \
+            ./cmd/network-mapper/
+
+          echo "Binary built:"
+          ls -lh "${{ env.BINARY_NAME }}${{ matrix.extension }}"
+
+      - name: Create release package
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          ARCHIVE_NAME="${{ env.BINARY_NAME }}-${VERSION}-${{ matrix.suffix }}"
+
+          mkdir -p dist
+          cp "${{ env.BINARY_NAME }}${{ matrix.extension }}" dist/
+          cp README.md dist/
+          cp examples/config.yaml dist/config.example.yaml
+
+          cd dist
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            zip "../${ARCHIVE_NAME}.zip" *
+          else
+            tar -czf "../${ARCHIVE_NAME}.tar.gz" *
+          fi
+          cd ..
+
+          echo "Package created:"
+          ls -lh ${ARCHIVE_NAME}.*
+
+      - name: Generate checksum
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          ARCHIVE_NAME="${{ env.BINARY_NAME }}-${VERSION}-${{ matrix.suffix }}"
+          
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            sha256sum "${ARCHIVE_NAME}.zip" > "${ARCHIVE_NAME}.zip.sha256"
+          else
+            sha256sum "${ARCHIVE_NAME}.tar.gz" > "${ARCHIVE_NAME}.tar.gz.sha256"
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.suffix }}
+          path: |
+            *.tar.gz
+            *.zip
+            *.sha256
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" -o -name "*.sha256" \) -exec cp {} release-assets/ \;
+          echo "Release assets:"
+          ls -la release-assets/
+
+      - name: Create Git Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ github.event.inputs.version }}" -m "Release ${{ github.event.inputs.version }}"
+          git push origin "${{ github.event.inputs.version }}"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: Network Mapper ${{ github.event.inputs.version }}
+          body: |
+            # Network Mapper - ${{ github.event.inputs.version }}
+
+            Azure Local physical topology discovery tool. Connects to TOR switches via gNMI,
+            collects LLDP/BGP/interface data, and produces an interactive topology visualization.
+
+            ## 📦 Downloads
+
+            | Platform | File |
+            |----------|------|
+            | Windows (x64) | `network-mapper-${{ github.event.inputs.version }}-windows-amd64.zip` |
+            | Linux (x64) | `network-mapper-${{ github.event.inputs.version }}-linux-amd64.tar.gz` |
+
+            ## 🚀 Quick Start
+
+            ```bash
+            # Extract (Linux)
+            tar -xzf network-mapper-${{ github.event.inputs.version }}-linux-amd64.tar.gz
+
+            # Extract (Windows - PowerShell)
+            Expand-Archive network-mapper-${{ github.event.inputs.version }}-windows-amd64.zip -DestinationPath .
+
+            # Edit configuration
+            cp config.example.yaml config.yaml
+            # Set switch credentials as environment variables
+
+            # Collect topology
+            ./network-mapper collect --config config.yaml --output topology.json
+
+            # Launch web UI
+            ./network-mapper serve --data topology.json --port 8080
+            ```
+
+            ## 🔒 Checksums
+
+            Verify download integrity with the `.sha256` files included in the release assets.
+          prerelease: ${{ github.event.inputs.prerelease }}
+          files: release-assets/*
+          token: ${{ secrets.GITHUB_TOKEN }}

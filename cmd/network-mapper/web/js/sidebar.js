@@ -17,7 +17,7 @@ function normalizeMAC(mac) {
     return m;
 }
 
-const Sidebar = (() => {
+NM.ui.Sidebar = (() => {
     const sidebar = () => document.getElementById('sidebar');
     const title = () => document.getElementById('sidebar-title');
     const content = () => document.getElementById('sidebar-content');
@@ -47,7 +47,7 @@ const Sidebar = (() => {
         const elapsed = lastShowTime ? Date.now() - lastShowTime : 9999;
         if (lastShowTime && elapsed < 500) return;
         sidebar().classList.add('hidden');
-        const cy = NetworkGraph.getInstance();
+        const cy = NM.graph.getInstance();
         if (cy) cy.elements().unselect();
     }
 

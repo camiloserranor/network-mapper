@@ -127,7 +127,7 @@ gnmic -a <switch-ip>:50051 \
 Or use Network Mapper's built-in connectivity test:
 
 ```bash
-network-mapper test-connection --config config.yaml
+network-mapper test-connection --address 10.0.0.1:50051 --username <user> --password <pass>
 ```
 
 ---
@@ -204,7 +204,7 @@ Run through this checklist before your first collection:
 | 4 | Service account exists | `show user-account <gnmi-user>` |
 | 5 | Firewall allows gRPC | No ACL blocking TCP 50051 from the VM subnet |
 | 6 | Key Vault secrets created | `az keyvault secret show --vault-name <vault> --name gnmi-username` |
-| 7 | Network Mapper test | `network-mapper test-connection --config config.yaml` → ✓ |
+| 7 | Network Mapper test | `network-mapper test-connection --address <switch>:50051 --username <user> --password <pass>` → ✓ |
 
 ---
 

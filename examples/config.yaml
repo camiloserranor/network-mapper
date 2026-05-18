@@ -4,15 +4,15 @@
 switches:
   - name: TOR-1
     address: "10.0.0.1:8080"
-    # Supported platforms: sonic, nxos, dell-os10
-    platform: sonic
+    # Supported platforms: nxos, sonic, dell-os10
+    platform: nxos
     auth:
       username: admin
       password: "${SWITCH_PASSWORD}"
 
   - name: TOR-2
     address: "10.0.0.2:8080"
-    platform: sonic
+    platform: nxos
     auth:
       username: admin
       password: "${SWITCH_PASSWORD}"
@@ -28,8 +28,3 @@ collect:
   timeout_sec: 30     # Per-switch timeout
   parallel: 2         # Max concurrent switch connections
   skip_counters: false # Set true to skip interface counter collection
-
-# Optional: Azure Local deployment design JSON for topology enrichment.
-# When provided, enriches discovered devices with authoritative hostnames,
-# MAC addresses, and IP addresses from the deployment plan.
-# deployment_json: /path/to/deployment.json

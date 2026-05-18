@@ -27,8 +27,8 @@ func TestParseSystemNXOS_FullResponse(t *testing.T) {
 	if info.Hostname != "TOR-SWITCH-01" {
 		t.Errorf("Hostname = %q, want %q", info.Hostname, "TOR-SWITCH-01")
 	}
-	if info.SoftwareVersion != "10.5(1)" {
-		t.Errorf("SoftwareVersion = %q, want %q", info.SoftwareVersion, "10.5(1)")
+	if info.SoftwareVersion != "NX-OS 10.5(1)" {
+		t.Errorf("SoftwareVersion = %q, want %q", info.SoftwareVersion, "NX-OS 10.5(1)")
 	}
 	if info.Uptime != "10d 0h 0m" {
 		t.Errorf("Uptime = %q, want %q", info.Uptime, "10d 0h 0m")
@@ -129,8 +129,8 @@ func TestParseSystemNXOS_ArrayValue(t *testing.T) {
 	if info.Hostname != "array-switch" {
 		t.Errorf("Hostname = %q, want %q", info.Hostname, "array-switch")
 	}
-	if info.SoftwareVersion != "9.3(8)" {
-		t.Errorf("SoftwareVersion = %q, want %q", info.SoftwareVersion, "9.3(8)")
+	if info.SoftwareVersion != "NX-OS 9.3(8)" {
+		t.Errorf("SoftwareVersion = %q, want %q", info.SoftwareVersion, "NX-OS 9.3(8)")
 	}
 }
 

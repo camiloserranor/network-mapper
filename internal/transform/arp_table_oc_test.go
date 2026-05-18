@@ -45,8 +45,8 @@ func TestParseARPTableOpenConfig_BulkFormat(t *testing.T) {
 		iface     string
 		switchID  string
 	}{
-		{0, "10.0.2.1", "aa:bb:cc:dd:ee:01", "Ethernet48", "tor-1"},
-		{1, "10.0.2.2", "aa:bb:cc:dd:ee:02", "Ethernet48", "tor-1"},
+		{0, "10.0.2.1", "aa:bb:cc:dd:ee:01", "Eth48", "tor-1"},
+		{1, "10.0.2.2", "aa:bb:cc:dd:ee:02", "Eth48", "tor-1"},
 	}
 	for _, tt := range tests {
 		e := entries[tt.idx]
@@ -94,8 +94,8 @@ func TestParseARPTableOpenConfig_SubscribeONCE(t *testing.T) {
 	if e.MAC != "de:ad:be:ef:00:01" {
 		t.Errorf("MAC = %q, want %q", e.MAC, "de:ad:be:ef:00:01")
 	}
-	if e.Interface != "Ethernet1" {
-		t.Errorf("Interface = %q, want %q", e.Interface, "Ethernet1")
+	if e.Interface != "Eth1" {
+		t.Errorf("Interface = %q, want %q", e.Interface, "Eth1")
 	}
 }
 
@@ -190,10 +190,10 @@ func TestParseARPTableOpenConfig_MultipleNotifications(t *testing.T) {
 	if len(entries) != 2 {
 		t.Fatalf("got %d entries, want 2", len(entries))
 	}
-	if entries[0].Interface != "Ethernet1" {
-		t.Errorf("[0] Interface = %q, want %q", entries[0].Interface, "Ethernet1")
+	if entries[0].Interface != "Eth1" {
+		t.Errorf("[0] Interface = %q, want %q", entries[0].Interface, "Eth1")
 	}
-	if entries[1].Interface != "Ethernet2" {
-		t.Errorf("[1] Interface = %q, want %q", entries[1].Interface, "Ethernet2")
+	if entries[1].Interface != "Eth2" {
+		t.Errorf("[1] Interface = %q, want %q", entries[1].Interface, "Eth2")
 	}
 }

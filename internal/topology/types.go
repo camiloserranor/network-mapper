@@ -30,19 +30,40 @@ type Device struct {
 	MemoryTotal       uint64            `json:"memory_total,omitempty"`      // bytes
 	VLANs             []int             `json:"vlans,omitempty"`             // VLAN IDs this device participates in
 	Interfaces        []Interface       `json:"interfaces,omitempty"`
+	BGPSessions       []BGPSession      `json:"bgp_sessions,omitempty"`
 	Annotations       map[string]string `json:"annotations,omitempty"`
+}
+
+// BGPSession holds the state of a BGP peering session on a device.
+type BGPSession struct {
+	NeighborAddress        string `json:"neighbor_address"`
+	PeerAS                 uint32 `json:"peer_as"`
+	LocalAS                uint32 `json:"local_as,omitempty"`
+	PeerType               string `json:"peer_type,omitempty"`    // INTERNAL, EXTERNAL
+	Description            string `json:"description,omitempty"`
+	SessionState           string `json:"session_state"`          // ESTABLISHED, IDLE, ACTIVE, etc.
+	Enabled                bool   `json:"enabled"`
+	EstablishedTransitions uint64 `json:"established_transitions,omitempty"`
+	LastEstablished        string `json:"last_established,omitempty"`
+	VRFName                string `json:"vrf_name,omitempty"`
+	MessagesReceived       int64  `json:"messages_received,omitempty"`
+	MessagesSent           int64  `json:"messages_sent,omitempty"`
+	PrefixesReceived       int64  `json:"prefixes_received,omitempty"`
+	PrefixesSent           int64  `json:"prefixes_sent,omitempty"`
 }
 
 // Interface represents a network interface on a device.
 type Interface struct {
-	Name       string          `json:"name"`
-	OperStatus string          `json:"oper_status,omitempty"` // UP, DOWN
-	Speed      string          `json:"speed,omitempty"`       // 1G, 10G, 25G, 100G
-	MTU        int             `json:"mtu,omitempty"`
-	VLANMode   string          `json:"vlan_mode,omitempty"`   // access, trunk
-	AccessVLAN int             `json:"access_vlan,omitempty"` // VLAN ID when mode is access
-	TrunkVLANs []int           `json:"trunk_vlans,omitempty"` // VLAN IDs when mode is trunk
-	Counters   *IfaceCounters  `json:"counters,omitempty"`
+	Name          string          `json:"name"`
+	OperStatus    string          `json:"oper_status,omitempty"`    // UP, DOWN
+	Speed         string          `json:"speed,omitempty"`          // 1G, 10G, 25G, 100G
+	MTU           int             `json:"mtu,omitempty"`
+	Mode          string          `json:"mode,omitempty"`           // access, trunk, routed
+	AccessVLAN    int             `json:"access_vlan,omitempty"`    // configured access VLAN
+	NativeVLAN    int             `json:"native_vlan,omitempty"`    // configured native VLAN (trunk)
+	TrunkVLANs    []int           `json:"trunk_vlans,omitempty"`    // configured trunk allowed VLANs
+	ObservedVLANs []int           `json:"observed_vlans,omitempty"` // VLANs seen in MAC table traffic
+	Counters      *IfaceCounters  `json:"counters,omitempty"`
 }
 
 // IfaceCounters holds interface traffic counters.

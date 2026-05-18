@@ -241,6 +241,62 @@ func (c *Client) GetWithFallback(ctx context.Context, yangPath string) ([]Notifi
 	return c.SubscribeOnce(ctx, yangPath)
 }
 
+// SubscribeStream opens a persistent Subscribe STREAM with ON_CHANGE mode for the
+// given YANG paths. It calls onChange for each received notification. The function
+// blocks until ctx is canceled or the stream encounters an error.
+func (c *Client) SubscribeStream(ctx context.Context, yangPaths []string, onChange func(path string)) error {
+	ctx = c.authContext(ctx)
+
+	var subs []*gpb.Subscription
+	for _, yp := range yangPaths {
+		path, err := parsePath(yp)
+		if err != nil {
+			return fmt.Errorf("parsing subscribe path %q: %w", yp, err)
+		}
+		subs = append(subs, &gpb.Subscription{
+			Path: path,
+			Mode: gpb.SubscriptionMode_ON_CHANGE,
+		})
+	}
+
+	req := &gpb.SubscribeRequest{
+		Request: &gpb.SubscribeRequest_Subscribe{
+			Subscribe: &gpb.SubscriptionList{
+				Subscription: subs,
+				Mode:         gpb.SubscriptionList_STREAM,
+				Encoding:     c.encoding,
+			},
+		},
+	}
+
+	stream, err := c.gnmi.Subscribe(ctx)
+	if err != nil {
+		return fmt.Errorf("subscribe stream to %s: %w", c.address, err)
+	}
+	if err := stream.Send(req); err != nil {
+		return fmt.Errorf("sending subscribe request to %s: %w", c.address, err)
+	}
+
+	synced := false
+	for {
+		resp, err := stream.Recv()
+		if err != nil {
+			return fmt.Errorf("subscribe recv from %s: %w", c.address, err)
+		}
+
+		switch r := resp.Response.(type) {
+		case *gpb.SubscribeResponse_Update:
+			path := pathToString(r.Update.GetPrefix())
+			if synced && onChange != nil {
+				onChange(path)
+			}
+		case *gpb.SubscribeResponse_SyncResponse:
+			synced = true
+			log.Printf("[subscribe] Initial sync complete for %s (%d paths)", c.address, len(yangPaths))
+		}
+	}
+}
+
 func (c *Client) authContext(ctx context.Context) context.Context {
 	if c.username != "" || c.password != "" {
 		md := metadata.Pairs("username", c.username, "password", c.password)

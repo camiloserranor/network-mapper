@@ -111,10 +111,16 @@ func ExtractPathKey(path, key string) string {
 	return path[start : start+end]
 }
 
-// NormalizeInterfaceName converts interface names to canonical format.
+// NormalizeInterfaceName converts interface names to canonical short format.
+// NX-OS uses short names (Eth1/1) everywhere except OpenConfig paths which use
+// the long form (Ethernet1/1). We normalize to short form for consistency.
 func NormalizeInterfaceName(name string) string {
-	if strings.HasPrefix(name, "Ethernet") || strings.HasPrefix(name, "PortChannel") ||
-		strings.HasPrefix(name, "Loopback") || strings.HasPrefix(name, "Management") {
+	// Cisco NX-OS long form → short form: Ethernet1/51 → Eth1/51
+	if strings.HasPrefix(name, "Ethernet") {
+		return "Eth" + name[len("Ethernet"):]
+	}
+	if strings.HasPrefix(name, "PortChannel") || strings.HasPrefix(name, "Loopback") ||
+		strings.HasPrefix(name, "Management") {
 		return name
 	}
 	// Cisco NX-OS: eth1/1 → Eth1/1
@@ -122,4 +128,21 @@ func NormalizeInterfaceName(name string) string {
 		return "Eth" + name[3:]
 	}
 	return name
+}
+
+// GetBool extracts a boolean value from a map.
+func GetBool(m map[string]interface{}, key string) bool {
+	v, ok := m[key]
+	if !ok {
+		return false
+	}
+	switch b := v.(type) {
+	case bool:
+		return b
+	case string:
+		return b == "true" || b == "True" || b == "1"
+	case float64:
+		return b != 0
+	}
+	return false
 }

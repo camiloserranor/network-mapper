@@ -9,19 +9,19 @@
 #   username: "${GNMI_USER}"
 #   password: "${GNMI_PASS}"
 auth:
-  username: "administrator"
+  username: "admin"
   password_keyvault: https://azurestack-network.vault.azure.net/secrets/Net-Admin/222d9bb58f644b78b1670caef1ac7358
 
 switches:
   - name: TOR-1
-    #address: "100.71.34.149:50051"
-    # address: "10.218.191.143:50051"
-    address: "100.100.81.129:50051" #-> 
+    address: "100.100.81.129:8080" 
     platform: sonic
-    # Per-switch auth override (optional — omit to use global auth):
-    # auth:
-    #   username_keyvault: https://myvault.vault.azure.net/secrets/tor1-user
-    #   password_keyvault: https://myvault.vault.azure.net/secrets/tor1-pass
+
+  - name: TOR-2
+    address: "100.100.81.130:8080"
+    platform: sonic    
+
+    
 tls:
   # Trust-On-First-Use: fetch and cache switch certs on first connection
   # tofu: true
