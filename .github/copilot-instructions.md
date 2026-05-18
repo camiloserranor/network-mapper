@@ -105,3 +105,18 @@ go build -o network-mapper.exe ./cmd/network-mapper
 - Run tests with `go test ./...`.
 - Test data files go in `testdata/` at the repo root.
 - When writing tests for gNMI transform functions, use raw JSON samples from real switch output.
+
+## Security — Never Commit Secrets
+
+This repo uses **gitleaks** (via pre-commit hooks and CI) to block sensitive data. All commits are scanned automatically.
+
+- **NEVER** hardcode credentials in source files. All auth values (passwords, tokens, connection strings) MUST use `${ENV_VAR}` substitution syntax as shown in `examples/config.yaml`.
+- **NEVER** commit real switch IP addresses, hostnames, or Key Vault URLs. Use placeholder values like `${TOR_SWITCH_ADDRESS}`, `${KEY_VAULT_URL}`.
+- **NEVER** commit config files containing real infrastructure data. Such files belong in `.gitignore`.
+- When writing test files or examples, use obviously-fake values:
+  - IPs: `192.0.2.x` (TEST-NET per RFC 5737) or `10.0.0.x` with a clear comment
+  - Hostnames: `switch-example.local`, `tor-1.example.com`
+  - Passwords: `${SWITCH_PASS}` (env-var reference, never a literal)
+  - Key Vault: `${KEY_VAULT_URL}` or `https://example.vault.azure.net`
+- **Do NOT** run `git commit --no-verify` or `SKIP=gitleaks` to bypass scanning.
+- **Do NOT** proactively commit or push without the user's explicit request. Present changes for review first.

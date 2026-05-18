@@ -1,0 +1,18 @@
+repos:
+  # Secret scanning — blocks commits containing credentials, IPs, Key Vault URLs
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.2
+    hooks:
+      - id: gitleaks
+        name: gitleaks (secret scan)
+
+  # General safety checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: detect-private-key
+      - id: check-yaml
+      - id: check-json
+        exclude: '^testdata/'
+      - id: no-commit-to-branch
+        args: ['--branch', 'main']
