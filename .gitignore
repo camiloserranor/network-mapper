@@ -12,6 +12,7 @@ topology-cml.json
 # Test/local config (may contain credentials)
 config.*test*.yaml
 **/config.*test*.yaml
+examples/config.sonic.yaml
 
 # Real deployment data (contains internal hostnames/IPs)
 examples/sample-deployment.json
