@@ -7,6 +7,7 @@ This document describes **what data** network-mapper collects from TOR switches,
 ## Table of Contents
 
 - [Collection Overview](#collection-overview)
+- [Multi-Vendor Support](#multi-vendor-support)
 - [Pipeline Stages](#pipeline-stages)
 - [Data Categories](#data-categories)
   - [1. System Information](#1-system-information)
@@ -35,7 +36,68 @@ Network-mapper connects to each configured TOR switch via **gNMI** (gRPC Network
 - **Non-destructive**: Collection does not impact switch forwarding performance.
 - **Graceful degradation**: If a data category fails, the error is recorded and collection continues with remaining categories.
 - **Parallel execution**: Multiple switches are queried concurrently (configurable).
-- **Platform-aware**: Each switch is queried using the correct YANG paths and encoding for its platform (NX-OS native).
+- **Platform-aware**: Each switch is queried using the correct YANG paths and encoding for its platform.
+
+---
+
+## Multi-Vendor Support
+
+The tool uses a `platform` field in the switch configuration to select the correct gNMI paths and encoding for each switch. This allows a single topology collection to span switches from different vendors.
+
+### Supported Platform Values
+
+| Platform Value | Vendor | gNMI Encoding | Path Style |
+|---|---|---|---|
+| `nxos` | Cisco NX-OS | JSON | Native NX-OS paths (`/System/...`) |
+| `sonic` | SONiC | JSON_IETF | OpenConfig (`/openconfig-lldp:lldp/...`) |
+| `dell-os10` | Dell OS10 | JSON_IETF | OpenConfig (same as SONiC) |
+
+> **Note:** Cisco NX-OS is the primary tested platform. Other OpenConfig-compatible platforms are supported by the architecture but may require additional validation.
+
+### How Platform Selection Works
+
+When the collector processes a switch, it branches on the `platform` field to determine:
+
+1. **gNMI paths** — NX-OS uses native Cisco YANG paths; OpenConfig platforms use standard OpenConfig paths.
+2. **Encoding** — NX-OS uses `JSON`; OpenConfig platforms use `JSON_IETF`.
+3. **Response parsing** — Each platform has dedicated transform functions (e.g., `ParseLLDPNXOS` vs. `ParseLLDPOpenConfig`).
+4. **Get vs. Subscribe** — Some platforms may return empty responses for bulk Get on list paths; the client falls back to Subscribe ONCE automatically.
+
+### gNMI Paths by Platform
+
+| Data Category | NX-OS Path | OpenConfig Path |
+|---|---|---|
+| LLDP Neighbors | `/System/lldp-items/inst-items/if-items/If-list` | `/openconfig-lldp:lldp/interfaces/interface/neighbors` |
+| Interfaces | `/System/intf-items/phys-items/PhysIf-list` | `/openconfig-interfaces:interfaces/interface` |
+| System Info | `/System/showversion-items` | `/openconfig-system:system/state` |
+
+### Configuration
+
+Set the `platform` field on each switch entry in your config YAML:
+
+```yaml
+switches:
+  - name: TOR-1
+    address: "10.0.0.1:50051"
+    platform: nxos          # Cisco NX-OS
+    auth:
+      username_keyvault: https://myvault.vault.azure.net/secrets/gnmi-username
+      password_keyvault: https://myvault.vault.azure.net/secrets/gnmi-password
+
+  - name: TOR-2
+    address: "10.0.0.2:50051"
+    platform: dell-os10     # Dell OS10 (OpenConfig)
+    auth:
+      username_keyvault: https://myvault.vault.azure.net/secrets/gnmi-username
+      password_keyvault: https://myvault.vault.azure.net/secrets/gnmi-password
+```
+
+#### Example Config Files
+
+| File | Description |
+|---|---|
+| `examples/config.yaml` | NX-OS switches (primary example) |
+| `examples/config-sonic.yaml` | OpenConfig platforms (SONiC / Dell OS10) |
 
 ---
 
@@ -280,16 +342,16 @@ Stages marked "No" under Required are best-effort — failures are logged but do
 
 ---
 
-## Platform Details
+## Platform Differences
 
-| Aspect | Cisco NX-OS |
-|--------|-------------|
-| Encoding | `JSON` |
-| Get behavior | Standard Get works |
-| Interface naming | `eth1/1`, `Ethernet1/1` |
-| MAC/ARP/VLAN | Fully supported |
-| BGP paths | NX-OS native YANG |
-| Authentication | gRPC metadata (username/password) |
+| Aspect | Cisco NX-OS | OpenConfig (SONiC / Dell OS10) |
+|--------|-------------|-------------------------------|
+| Encoding | `JSON` | `JSON_IETF` |
+| Get behavior | Standard Get works | May need Subscribe ONCE fallback |
+| Interface naming | `eth1/1`, `Ethernet1/1` | `Ethernet0`, `Ethernet4` |
+| MAC/ARP/VLAN | Fully supported | Best-effort |
+| BGP paths | NX-OS native YANG | OpenConfig BGP paths |
+| Authentication | gRPC metadata (username/password) | gRPC metadata (username/password) |
 
 ---
 

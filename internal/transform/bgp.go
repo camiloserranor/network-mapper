@@ -10,7 +10,10 @@ import (
 // BGP gNMI paths per platform.
 const (
 	BGPNeighborsPathOpenConfig = "/openconfig-network-instance:network-instances/network-instance/protocols/protocol/bgp/neighbors"
-	BGPNeighborsPathNXOS       = "/System/bgp-items/inst-items/dom-items/Dom-list/peer-items/Peer-list"
+	// SONiC does not support wildcard paths in the protocol subtree.
+	// Use a path that stops before requiring protocol keys.
+	BGPNeighborsPathSONiC = "/openconfig-network-instance:network-instances/network-instance[name=default]/protocols"
+	BGPNeighborsPathNXOS  = "/System/bgp-items/inst-items/dom-items/Dom-list/peer-items/Peer-list"
 )
 
 // BGPNeighbor holds parsed BGP neighbor state from a gNMI response.

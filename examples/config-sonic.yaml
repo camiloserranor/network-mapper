@@ -1,0 +1,30 @@
+# Network Mapper configuration for SONiC switches (Dell Enterprise SONiC / Dell OS10)
+# SONiC uses OpenConfig YANG models via gNMI on port 8080 with JSON_IETF encoding.
+
+switches:
+  - name: sonic-tor-1
+    address: ${SONIC_SWITCH_ADDRESS}:8080
+    platform: sonic
+    auth:
+      username: ${SWITCH_USER}
+      password: ${SWITCH_PASS}
+    tls:
+      skip_verify: true
+
+  # Dell OS10 (SONiC-based) uses the same OpenConfig paths
+  # - name: dell-tor-1
+  #   address: ${DELL_SWITCH_ADDRESS}:8080
+  #   platform: dell-os10
+  #   auth:
+  #     username: ${SWITCH_USER}
+  #     password: ${SWITCH_PASS}
+  #   tls:
+  #     skip_verify: true
+
+collect:
+  parallel: 2
+  timeout_sec: 60
+  skip_counters: false
+
+tls:
+  skip_verify: true

@@ -69,7 +69,7 @@ auth:
 switches:
   - name: TOR-1
     address: "10.0.0.1:50051"
-    platform: nxos
+    platform: nxos             # Supported platforms: nxos, sonic, dell-os10
 
   - name: TOR-2
     address: "10.0.0.2:50051"
@@ -274,11 +274,14 @@ The embedded web UI provides an interactive topology visualization (Azure portal
 
 ## Supported Platforms
 
-| Vendor | Platform | LLDP Path | Encoding |
+| Vendor | Platform Value | Status | Encoding |
 |---|---|---|---|
 | Cisco | NX-OS | Native `/System/lldp-items/...` | JSON |
 
+The architecture supports any OpenConfig-compatible platform via the `platform` config field. See [`docs/DATA-COLLECTION.md`](docs/DATA-COLLECTION.md) for details on the multi-vendor collection pipeline.
+
 The tool automatically handles:
+- **Vendor-specific gNMI paths** — NX-OS native paths vs. OpenConfig paths for other platforms
 - **JSON_IETF prefix stripping** — removes `module-name:` prefixes from response keys (RFC 7951)
 - **Interface name normalization** — `eth1/1` → `Eth1/1`, `Ethernet0` unchanged
 
@@ -288,7 +291,7 @@ The tool classifies every discovered device into one of five types. Classificati
 
 | Type | Meaning | How identified |
 |------|---------|---------------|
-| **switch** | Network switch (TOR, spine, leaf) | LLDP capabilities (Bridge/Router), or system description keywords: NX-OS, Arista, Cumulus, FTOS, Dell EMC, Cisco |
+| **switch** | Network switch (TOR, spine, leaf) | LLDP capabilities (Bridge/Router), or system description keywords: NX-OS, Arista, Cumulus, FTOS, Dell EMC, Cisco, SONiC |
 | **host** | Physical server | LLDP capabilities (Station only), or system description keywords: Linux, Ubuntu, Windows, Red Hat, CentOS, SLES. Also promoted from `unknown` via ARP enrichment |
 | **bmc** | Baseboard Management Controller | Name or description contains: iDRAC, iLO, BMC, IPMI, Redfish |
 | **vm** | Virtual machine / endpoint | MAC address learned on a switch port that does NOT match (or nearly match) the LLDP chassis-id of the neighbor on that port |
@@ -310,6 +313,8 @@ This classification is computed client-side from the link data and used only for
 | 1 | Config name (queried switches) | `TOR-1` | Always — user-assigned name from `config.yaml` |
 | 2 | LLDP system-name (neighbors) | `rr1-n42-r14-93180hl-8-1a` | When the neighbor reports a hostname |
 | 3 | LLDP chassis-id (neighbors) | `d8:94:24:f2:cf:b4` | Fallback when system-name is empty |
+
+For full details on device correlation and MAC offset handling, see [`docs/DEVICE-CORRELATION.md`](docs/DEVICE-CORRELATION.md).
 
 ## Architecture
 
@@ -344,6 +349,7 @@ network-mapper/
 │   └── SWITCH-SETUP.md        # gNMI setup on TOR switches
 └── examples/
     ├── config.yaml            # Sample config for 2 TOR switches
+    ├── config-sonic.yaml      # Sample config (OpenConfig platforms)
     └── topology-v2-sample.json # Sample v2 output from real switches
 ```
 
@@ -352,7 +358,8 @@ network-mapper/
 This project builds on patterns from [arc-switch](../arc-switch), specifically:
 - gNMI client with gRPC metadata auth and 64MB max message size
 - TLS/TOFU certificate bootstrapping and caching
-- NX-OS native LLDP response transformers
+- Subscribe ONCE fallback for OpenConfig list path quirks
+- Multi-vendor LLDP response transformers (NX-OS native + OpenConfig)
 - JSON_IETF module prefix stripping (RFC 7951)
 
 ## Documentation

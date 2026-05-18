@@ -9,7 +9,8 @@ import (
 
 // gNMI paths for MAC address table.
 const (
-	MACTablePathNXOS = "/System/mac-items"
+	MACTablePathNXOS       = "/System/mac-items"
+	MACTablePathOpenConfig = "/openconfig-network-instance:network-instances/network-instance[name=default]/fdb/mac-table"
 )
 
 // MACEntry represents a single learned MAC address entry from the switch.
@@ -55,6 +56,116 @@ func ParseMACTableNXOS(notifs []gnmi.Notification, switchID string) []MACEntry {
 	}
 
 	return entries
+}
+
+// ParseMACTableOpenConfig extracts MAC address table entries from OpenConfig gNMI responses.
+//
+// OpenConfig path: /openconfig-network-instance:network-instances/network-instance[name=default]/fdb/mac-table
+// Response structure (verified on SONiC/Dell switches):
+//
+//	value = {
+//	  "entries": {
+//	    "entry": [
+//	      {
+//	        "state": {"mac-address":"aa:bb:cc:dd:ee:ff","vlan":"100","entry-type":"DYNAMIC"},
+//	        "interface": {"interface-ref": {"state": {"interface": "Ethernet48"}}}
+//	      }
+//	    ]
+//	  }
+//	}
+//
+// Subscribe ONCE responses may deliver each entry as a separate notification
+// with "state" at the top level.
+func ParseMACTableOpenConfig(notifs []gnmi.Notification, switchID string) []MACEntry {
+	var entries []MACEntry
+
+	for _, n := range notifs {
+		for _, u := range n.Updates {
+			root := AsMapSlice(u.Value)
+			if root == nil {
+				continue
+			}
+
+			for _, item := range root {
+				entries = append(entries, extractMACFromOpenConfig(item, switchID)...)
+			}
+		}
+	}
+
+	return entries
+}
+
+// extractMACFromOpenConfig handles bulk (entries.entry[]) and single-entry formats.
+func extractMACFromOpenConfig(item map[string]interface{}, switchID string) []MACEntry {
+	// Bulk format: entries → entry[]
+	if entriesMap := GetMap(item, "entries"); entriesMap != nil {
+		if entryList := GetSlice(entriesMap, "entry"); entryList != nil {
+			return parseOpenConfigEntryList(entryList, switchID)
+		}
+	}
+
+	// Direct entry[] at root (some implementations)
+	if entryList := GetSlice(item, "entry"); entryList != nil {
+		return parseOpenConfigEntryList(entryList, switchID)
+	}
+
+	// Single entry (Subscribe ONCE): state at top level
+	if state := GetMap(item, "state"); state != nil {
+		if e, ok := parseOpenConfigSingleEntry(item, switchID); ok {
+			return []MACEntry{e}
+		}
+	}
+
+	return nil
+}
+
+func parseOpenConfigEntryList(entryList []interface{}, switchID string) []MACEntry {
+	var entries []MACEntry
+
+	for _, raw := range entryList {
+		entry, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if e, ok := parseOpenConfigSingleEntry(entry, switchID); ok {
+			entries = append(entries, e)
+		}
+	}
+
+	return entries
+}
+
+func parseOpenConfigSingleEntry(entry map[string]interface{}, switchID string) (MACEntry, bool) {
+	state := GetMap(entry, "state")
+	if state == nil {
+		return MACEntry{}, false
+	}
+
+	mac := GetFirstString(state, "mac-address", "macAddress")
+	if mac == "" {
+		return MACEntry{}, false
+	}
+
+	vlanID := parseVLANID(GetFirstString(state, "vlan"))
+	entryType := strings.ToLower(GetFirstString(state, "entry-type", "entryType"))
+
+	// Extract port from interface.interface-ref.state.interface
+	var port string
+	if ifaceMap := GetMap(entry, "interface"); ifaceMap != nil {
+		if ifRef := GetMap(ifaceMap, "interface-ref"); ifRef != nil {
+			if refState := GetMap(ifRef, "state"); refState != nil {
+				port = GetFirstString(refState, "interface")
+			}
+		}
+	}
+
+	return MACEntry{
+		MAC:      normalizeMACAddress(mac),
+		VLAN:     vlanID,
+		Port:     NormalizeInterfaceName(port),
+		Type:     entryType,
+		SwitchID: switchID,
+	}, true
 }
 
 // extractMACFromRoot navigates the NX-OS MAC table structure to find entries.

@@ -15,6 +15,11 @@ const (
 
 // ParseInterfacesOpenConfig extracts interface state from OpenConfig gNMI responses.
 func ParseInterfacesOpenConfig(notifs []gnmi.Notification) []topology.Interface {
+	// Detect SONiC flat-leaf format (Subscribe ONCE with scalar updates)
+	if isFlatLeafFormat(notifs) {
+		return parseInterfacesFlatLeaf(notifs)
+	}
+
 	var ifaces []topology.Interface
 
 	for _, n := range notifs {
@@ -144,6 +149,61 @@ func normalizeSpeed(s string) string {
 		return fmt.Sprintf("%dM", mbps)
 	}
 	return s
+}
+
+// parseInterfacesFlatLeaf handles the SONiC Subscribe ONCE flat-leaf format where
+// each notification represents one interface with scalar path/value updates.
+func parseInterfacesFlatLeaf(notifs []gnmi.Notification) []topology.Interface {
+	var ifaces []topology.Interface
+	for _, n := range notifs {
+		leafMap := buildLeafMap(n.Updates)
+
+		name := getLeafString(leafMap, "/state/name")
+		if name == "" {
+			// Try extracting from prefix path key
+			name = ExtractPathKey(n.Prefix, "name")
+		}
+		if name == "" {
+			continue
+		}
+
+		iface := topology.Interface{
+			Name:       NormalizeInterfaceName(name),
+			OperStatus: normalizeOperStatus(getLeafString(leafMap, "/state/oper-status")),
+			MTU:        getLeafInt(leafMap, "/state/mtu"),
+			Speed:      normalizeSpeed(getLeafString(leafMap, "/state/speed")),
+		}
+
+		// Counters - combine individual and aggregate packet counters
+		inPkts := getLeafNumber(leafMap, "/state/counters/in-pkts") +
+			getLeafNumber(leafMap, "/state/counters/in-unicast-pkts") +
+			getLeafNumber(leafMap, "/state/counters/in-broadcast-pkts") +
+			getLeafNumber(leafMap, "/state/counters/in-multicast-pkts")
+		outPkts := getLeafNumber(leafMap, "/state/counters/out-pkts") +
+			getLeafNumber(leafMap, "/state/counters/out-unicast-pkts") +
+			getLeafNumber(leafMap, "/state/counters/out-broadcast-pkts") +
+			getLeafNumber(leafMap, "/state/counters/out-multicast-pkts")
+
+		hasCounters := getLeafNumber(leafMap, "/state/counters/in-octets") > 0 ||
+			getLeafNumber(leafMap, "/state/counters/out-octets") > 0 ||
+			inPkts > 0 || outPkts > 0
+
+		if hasCounters {
+			iface.Counters = &topology.IfaceCounters{
+				InOctets:    getLeafNumber(leafMap, "/state/counters/in-octets"),
+				OutOctets:   getLeafNumber(leafMap, "/state/counters/out-octets"),
+				InPkts:      inPkts,
+				OutPkts:     outPkts,
+				InErrors:    getLeafNumber(leafMap, "/state/counters/in-errors"),
+				OutErrors:   getLeafNumber(leafMap, "/state/counters/out-errors"),
+				InDiscards:  getLeafNumber(leafMap, "/state/counters/in-discards"),
+				OutDiscards: getLeafNumber(leafMap, "/state/counters/out-discards"),
+			}
+		}
+
+		ifaces = append(ifaces, iface)
+	}
+	return ifaces
 }
 
 // MergeInterfaceCounters merges counter data from a separate gNMI response into
