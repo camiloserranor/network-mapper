@@ -134,7 +134,16 @@ func extractARPNested(m map[string]interface{}, switchID string) []ARPEntry {
 // Subscribe ONCE format (per-entry):
 //
 //	value: {"state": {"ip": "10.0.2.1", "link-layer-address": "aa:bb:cc:dd:ee:ff"}}
+//
+// Flat-leaf format (SONiC Subscribe ONCE):
+//
+//	Each notification has scalar updates: /ip, /link-layer-address, /origin
 func ParseARPTableOpenConfig(notifs []gnmi.Notification, switchID string) []ARPEntry {
+	// Detect SONiC flat-leaf format
+	if isFlatLeafFormat(notifs) {
+		return parseARPFlatLeaf(notifs, switchID)
+	}
+
 	var entries []ARPEntry
 
 	for _, n := range notifs {
@@ -170,6 +179,32 @@ func ParseARPTableOpenConfig(notifs []gnmi.Notification, switchID string) []ARPE
 		}
 	}
 
+	return entries
+}
+
+// parseARPFlatLeaf handles the SONiC Subscribe ONCE flat-leaf format for ARP.
+// Each notification represents one ARP entry with scalar updates like /ip, /link-layer-address.
+func parseARPFlatLeaf(notifs []gnmi.Notification, switchID string) []ARPEntry {
+	var entries []ARPEntry
+	for _, n := range notifs {
+		leafMap := buildLeafMap(n.Updates)
+
+		ip := getLeafString(leafMap, "/ip")
+		mac := getLeafString(leafMap, "/link-layer-address")
+		if ip == "" || mac == "" {
+			continue
+		}
+
+		// Try to get interface from prefix path key
+		iface := ExtractPathKey(n.Prefix, "name")
+
+		entries = append(entries, ARPEntry{
+			IP:        ip,
+			MAC:       normalizeMACAddress(mac),
+			Interface: NormalizeInterfaceName(iface),
+			SwitchID:  switchID,
+		})
+	}
 	return entries
 }
 

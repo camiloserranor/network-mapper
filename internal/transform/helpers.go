@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/camiloserranor/network-mapper/internal/gnmi"
 )
 
 // GetString safely extracts a string value from a map.
@@ -128,6 +130,108 @@ func NormalizeInterfaceName(name string) string {
 		return "Eth" + name[3:]
 	}
 	return name
+}
+
+// --- Flat-leaf helpers for SONiC Subscribe ONCE format ---
+
+// isFlatLeafFormat detects whether notifications are in the SONiC flat-leaf format
+// where each notification has multiple updates with scalar values and path-like keys.
+func isFlatLeafFormat(notifs []gnmi.Notification) bool {
+	if len(notifs) == 0 {
+		return false
+	}
+	first := notifs[0]
+	if len(first.Updates) < 2 {
+		return false
+	}
+	for _, u := range first.Updates {
+		if _, isMap := u.Value.(map[string]interface{}); isMap {
+			return false
+		}
+		if _, isSlice := u.Value.([]interface{}); isSlice {
+			return false
+		}
+	}
+	return true
+}
+
+// buildLeafMap creates a map from update paths to their values for flat-leaf format.
+func buildLeafMap(updates []gnmi.Update) map[string]interface{} {
+	m := make(map[string]interface{}, len(updates))
+	for _, u := range updates {
+		m[u.Path] = u.Value
+	}
+	return m
+}
+
+// getLeafString extracts a string value from a leaf map by path.
+func getLeafString(m map[string]interface{}, path string) string {
+	v, ok := m[path]
+	if !ok {
+		return ""
+	}
+	switch s := v.(type) {
+	case string:
+		return s
+	case float64:
+		return fmt.Sprintf("%.0f", s)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
+// getLeafInt extracts an integer value from a leaf map by path.
+func getLeafInt(m map[string]interface{}, path string) int {
+	v, ok := m[path]
+	if !ok {
+		return 0
+	}
+	switch n := v.(type) {
+	case float64:
+		return int(n)
+	case int64:
+		return int(n)
+	case uint64:
+		return int(n)
+	default:
+		return 0
+	}
+}
+
+// getLeafNumber extracts a uint64 value from a leaf map by path.
+func getLeafNumber(m map[string]interface{}, path string) uint64 {
+	v, ok := m[path]
+	if !ok {
+		return 0
+	}
+	switch n := v.(type) {
+	case float64:
+		return uint64(n)
+	case int64:
+		return uint64(n)
+	case uint64:
+		return n
+	default:
+		return 0
+	}
+}
+
+// getLeafBySuffix finds the first value in a leaf map whose key ends with the given suffix.
+// This is useful for LLDP where paths include list keys (e.g., /neighbors/neighbor[id=X]/state/chassis-id).
+func getLeafBySuffix(m map[string]interface{}, suffix string) string {
+	for k, v := range m {
+		if strings.HasSuffix(k, suffix) {
+			switch s := v.(type) {
+			case string:
+				return s
+			case float64:
+				return fmt.Sprintf("%.0f", s)
+			default:
+				return fmt.Sprintf("%v", v)
+			}
+		}
+	}
+	return ""
 }
 
 // GetBool extracts a boolean value from a map.
