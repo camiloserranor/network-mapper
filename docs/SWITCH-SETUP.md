@@ -102,7 +102,12 @@ show grpc gnmi service statistics
 ! Check for active sessions and successful RPCs
 ```
 
-Test gNMI connectivity from a Linux machine with `gnmic` (optional):
+Use Network Mapper's built-in connectivity test:
+
+```bash
+network-mapper test-connection --address 10.0.0.1:50051 --username <user> --password <pass>
+```
+Or test gNMI connectivity from a Linux machine with `gnmic` (optional):
 
 ```bash
 # Install gnmic (one-time)
@@ -124,17 +129,33 @@ gnmic -a <switch-ip>:50051 \
   --encoding json
 ```
 
-Or use Network Mapper's built-in connectivity test:
 
-```bash
-network-mapper test-connection --address 10.0.0.1:50051 --username <user> --password <pass>
-```
 
 ---
 
 ## Store Credentials in Azure Key Vault
 
 Switch credentials must be stored in Azure Key Vault — **never in plaintext config files**. Create two separate secrets: one for the username and one for the password.
+
+### Azure Authentication (DefaultAzureCredential)
+
+Network Mapper uses the **Azure Default Credential** chain to authenticate to Key Vault. This means the tool will automatically try the following methods in order until one succeeds:
+
+1. **Environment variables** — `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_CLIENT_SECRET` (service principal)
+2. **Workload Identity** — for pods running in AKS with federated identity
+3. **Managed Identity** — for Azure VMs or Arc-enabled servers (recommended for production)
+4. **Azure CLI** — uses the identity from `az login` (recommended for development)
+
+**For production deployments** on Arc-enabled VMs, ensure the VM's managed identity has the **Key Vault Secrets User** role on the vault. No additional configuration is needed — the tool detects the managed identity automatically.
+
+**For development/testing**, log in with the Azure CLI before running the tool:
+
+```bash
+az login
+az account set --subscription <your-subscription-id>
+```
+
+> **Tip:** You can verify your identity has access with: `az keyvault secret show --vault-name <vault> --name <secret-name>`
 
 ### Create the secrets
 
