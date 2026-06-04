@@ -124,6 +124,9 @@ NM.views.renderSwitch = function(switchId) {
         html += '</div></div>';
     }
 
+    // QoS / RDMA Health panel
+    html += buildQoSPanel(switchId, topology, esc);
+
     // Annotations
     const annotations = swDev.annotations || {};
     const annotationKeys = Object.keys(annotations);
@@ -328,7 +331,7 @@ function buildFrontPanelSVG(swDev, ifaces, portMap, role, ifacesUp, hostCount, e
         const borderCol = conn ? (colors[conn.remoteType] || '#605e5c') : (isUp ? '#605e5c' : '#3a3a3a');
         const opacity = isUp ? '1' : '0.4';
 
-        svg += '<g class="svg-port" data-port="' + esc(portName) + '"';
+        svg += '<g class="svg-port" data-port="' + esc(portName) + '" data-device-id="' + esc(swDev.id) + '"';
         if (conn) {
             svg += ' data-remote-id="' + esc(conn.remoteId) + '"';
             svg += ' data-remote-type="' + esc(conn.remoteType) + '"';
@@ -555,6 +558,28 @@ function showSvgTooltip(e, port) {
         }
     }
 
+    // Link health from telemetry counters
+    var deviceId = port.dataset.deviceId || '';
+    if (deviceId && portName) {
+        var c = NM.data.getInterfaceCounters(deviceId, portName);
+        if (c) {
+            html += '<div class="port-tooltip-row" style="border-top:1px solid #333;margin-top:4px;padding-top:4px"><span class="port-tooltip-label">Rx:</span><span class="port-tooltip-value">' + fmtBytes(c.in_octets) + ' (' + fmtNum(c.in_pkts) + ' pkts)</span></div>';
+            html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Tx:</span><span class="port-tooltip-value">' + fmtBytes(c.out_octets) + ' (' + fmtNum(c.out_pkts) + ' pkts)</span></div>';
+            if (c.in_errors > 0 || c.out_errors > 0) {
+                html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Errors:</span><span class="port-tooltip-value" style="color:#f85149">' + (c.in_errors + c.out_errors) + '</span></div>';
+            }
+            if (c.in_discards > 0 || c.out_discards > 0) {
+                html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Drops:</span><span class="port-tooltip-value" style="color:#f0883e">' + (c.in_discards + c.out_discards) + '</span></div>';
+            }
+            if (c.crc_errors > 0) {
+                html += '<div class="port-tooltip-row"><span class="port-tooltip-label">CRC Errors:</span><span class="port-tooltip-value" style="color:#f85149">' + c.crc_errors + '</span></div>';
+            }
+            if (c.pause_frames_in > 0 || c.pause_frames_out > 0) {
+                html += '<div class="port-tooltip-row"><span class="port-tooltip-label">PFC Pause:</span><span class="port-tooltip-value" style="color:#f0883e">' + (c.pause_frames_in || 0) + ' in / ' + (c.pause_frames_out || 0) + ' out</span></div>';
+            }
+        }
+    }
+
     tooltip.innerHTML = html;
     tooltip.style.display = 'block';
 
@@ -571,4 +596,130 @@ function hideSvgTooltip() {
 function infoRow(label, value) {
     const esc = NM.core.escapeHtml;
     return '<div class="info-row"><span class="info-row-label">' + esc(String(label)) + '</span><span class="info-row-value">' + esc(String(value)) + '</span></div>';
+}
+
+function fmtBytes(bytes) {
+    if (!bytes) return '0 B';
+    var sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    var i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return parseFloat((bytes / Math.pow(1024, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function fmtNum(n) {
+    if (!n) return '0';
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return String(n);
+}
+
+function buildQoSPanel(switchId, topology, esc) {
+    var v2 = topology._v2;
+    if (!v2 || !v2.fabric || !v2.fabric.switches) return '';
+
+    var sw = null;
+    var switches = v2.fabric.switches;
+    for (var i = 0; i < switches.length; i++) {
+        if (switches[i].id === switchId) { sw = switches[i]; break; }
+    }
+    if (!sw) return '';
+
+    var qosStats = sw.qos_stats || [];
+    var pfcConfig = sw.pfc_config || [];
+
+    if (qosStats.length === 0 && pfcConfig.length === 0) return '';
+
+    var html = '';
+    html += '<div class="info-panel wide collapsible">';
+    html += '<div class="info-panel-title">QoS / RDMA Health';
+
+    // Summary badge
+    var hasIssues = false;
+    for (var q = 0; q < qosStats.length; q++) {
+        var s = qosStats[q];
+        if (s.pfc_pause_frames_tx || s.pfc_pause_frames_rx ||
+            s.pfc_watchdog_drops || s.ecn_marked_packets || s.drop_packets) {
+            hasIssues = true;
+            break;
+        }
+    }
+    if (hasIssues) {
+        html += ' <span class="qos-badge qos-badge-warning">\u26a0 Issues</span>';
+    } else if (qosStats.length > 0) {
+        html += ' <span class="qos-badge qos-badge-ok">\u2713 Healthy</span>';
+    }
+    html += ' <span class="panel-chevron">\u25be</span></div>';
+    html += '<div class="panel-body">';
+
+    // PFC Configuration summary
+    if (pfcConfig.length > 0) {
+        html += '<h4 class="qos-section-title">PFC Configuration</h4>';
+        html += '<table class="conn-table"><thead><tr>';
+        html += '<th>Interface</th><th>Mode</th><th>Lossless CoS</th><th>DCBX TLV</th>';
+        html += '</tr></thead><tbody>';
+        for (var p = 0; p < pfcConfig.length; p++) {
+            var pfc = pfcConfig[p];
+            var modeClass = pfc.mode === 'on' ? 'pfc-on' : (pfc.mode === 'auto' ? 'pfc-auto' : 'pfc-off');
+            html += '<tr>';
+            html += '<td>' + esc(pfc.interface_name) + '</td>';
+            html += '<td><span class="pfc-mode ' + modeClass + '">' + esc(pfc.mode || 'unknown') + '</span></td>';
+            html += '<td>' + (pfc.lossless_cos && pfc.lossless_cos.length ? pfc.lossless_cos.join(', ') : '\u2014') + '</td>';
+            html += '<td>' + (pfc.send_tlv ? '\u2713' : '\u2717') + '</td>';
+            html += '</tr>';
+        }
+        html += '</tbody></table>';
+    }
+
+    // QoS per-queue stats
+    if (qosStats.length > 0) {
+        html += '<h4 class="qos-section-title">Per-Queue Counters</h4>';
+
+        // Group by interface
+        var byIface = {};
+        for (var qi = 0; qi < qosStats.length; qi++) {
+            var stat = qosStats[qi];
+            var ifName = stat.interface_name || 'unknown';
+            if (!byIface[ifName]) byIface[ifName] = [];
+            byIface[ifName].push(stat);
+        }
+
+        var ifaceNames = Object.keys(byIface).sort(function(a, b) {
+            return a.localeCompare(b, undefined, { numeric: true });
+        });
+
+        html += '<table class="conn-table qos-table"><thead><tr>';
+        html += '<th>Interface</th><th>Queue</th><th>Dir</th>';
+        html += '<th>TX Bytes</th><th>TX Pkts</th>';
+        html += '<th>PFC Rx</th><th>PFC Tx</th><th>PFC WD</th>';
+        html += '<th>ECN Marked</th><th>Drops</th><th>Q Depth</th>';
+        html += '</tr></thead><tbody>';
+
+        for (var fi = 0; fi < ifaceNames.length; fi++) {
+            var ifStats = byIface[ifaceNames[fi]];
+            for (var si = 0; si < ifStats.length; si++) {
+                var qs = ifStats[si];
+                var rowClass = '';
+                if (qs.pfc_watchdog_drops || qs.drop_packets) rowClass = 'qos-row-critical';
+                else if (qs.pfc_pause_frames_tx || qs.pfc_pause_frames_rx || qs.ecn_marked_packets) rowClass = 'qos-row-warning';
+
+                html += '<tr class="' + rowClass + '">';
+                html += '<td>' + esc(qs.interface_name) + '</td>';
+                html += '<td>' + esc(qs.queue_name) + '</td>';
+                html += '<td>' + esc(qs.direction || '') + '</td>';
+                html += '<td>' + fmtBytes(qs.tx_bytes || 0) + '</td>';
+                html += '<td>' + fmtNum(qs.tx_packets || 0) + '</td>';
+                html += '<td>' + fmtNum(qs.pfc_pause_frames_rx || 0) + '</td>';
+                html += '<td>' + fmtNum(qs.pfc_pause_frames_tx || 0) + '</td>';
+                html += '<td>' + fmtNum(qs.pfc_watchdog_drops || 0) + '</td>';
+                html += '<td>' + fmtNum(qs.ecn_marked_packets || 0) + '</td>';
+                html += '<td>' + fmtNum(qs.drop_packets || 0) + '</td>';
+                html += '<td>' + fmtBytes(qs.current_queue_depth_bytes || 0) + '</td>';
+                html += '</tr>';
+            }
+        }
+        html += '</tbody></table>';
+    }
+
+    html += '</div></div>';
+    return html;
 }

@@ -517,16 +517,18 @@ func (b *buildState) assemble() *topology.TopologyV2 {
 						InterfaceName:     qs.InterfaceName,
 						QueueName:         q.QueueName,
 						Direction:         q.Direction,
-						PFCPauseFramesTx:  q.PFCPauseFramesTx,
-						PFCPauseFramesRx:  q.PFCPauseFramesRx,
-						PFCWatchdogDrops:  q.PFCWatchdogDrops,
-						ECNMarkedPackets:  q.ECNMarkedPackets,
-						DropPackets:       q.DropPackets,
-						CurrentQueueDepth: q.CurrentQueueDepth,
-						MaxQueueDepth:     q.MaxQueueDepth,
-					})
+							TxBytes:           q.TxBytes,
+							TxPackets:         q.TxPackets,
+							PFCPauseFramesTx:  q.PFCPauseFramesTx,
+							PFCPauseFramesRx:  q.PFCPauseFramesRx,
+							PFCWatchdogDrops:  q.PFCWatchdogDrops,
+							ECNMarkedPackets:  q.ECNMarkedPackets,
+							DropPackets:       q.DropPackets,
+							CurrentQueueDepth: q.CurrentQueueDepth,
+							MaxQueueDepth:     q.MaxQueueDepth,
+						})
+					}
 				}
-			}
 			// Wire PFC config
 			for _, pfc := range crSw.PFCConfig {
 				fsw.PFCConfig = append(fsw.PFCConfig, topology.PFCConfigEntry{

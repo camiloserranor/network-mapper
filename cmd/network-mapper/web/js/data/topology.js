@@ -388,3 +388,362 @@ NM.data.buildPortMap = function(topology, switchId) {
     }
     return portMap;
 };
+
+// Look up interface counters from the telemetry snapshot.
+// Returns a counters object or null if unavailable.
+NM.data.getInterfaceCounters = function(deviceId, interfaceName) {
+    var telemetry = NM.state.telemetry;
+    if (!telemetry || !telemetry.devices) return null;
+
+    for (var i = 0; i < telemetry.devices.length; i++) {
+        var dev = telemetry.devices[i];
+        if (dev.id !== deviceId) continue;
+        if (!dev.interfaces) return null;
+        for (var j = 0; j < dev.interfaces.length; j++) {
+            if (dev.interfaces[j].name === interfaceName) {
+                return dev.interfaces[j].counters;
+            }
+        }
+        return null;
+    }
+    return null;
+};
+
+// Get device health metrics from telemetry.
+NM.data.getDeviceHealth = function(deviceId) {
+    var telemetry = NM.state.telemetry;
+    if (!telemetry || !telemetry.devices) return null;
+
+    for (var i = 0; i < telemetry.devices.length; i++) {
+        if (telemetry.devices[i].id === deviceId) {
+            return telemetry.devices[i].health || null;
+        }
+    }
+    return null;
+};
+
+// --- DCB Health Checks ---
+// Computes network health findings from topology + telemetry data.
+// Returns an array of finding objects: {severity, category, title, detail, deviceId, portName}
+// severity: 'critical' | 'warning' | 'info'
+// category: 'errors' | 'discards' | 'pfc' | 'mtu' | 'speed' | 'vlan' | 'link'
+NM.data.computeHealthChecks = function(topology, telemetry) {
+    if (!topology) return [];
+    var findings = [];
+
+    var devices = topology.devices || [];
+    var links = topology.links || [];
+
+    // Build device lookup
+    var devMap = {};
+    for (var i = 0; i < devices.length; i++) {
+        devMap[devices[i].id] = devices[i];
+    }
+
+    // Build telemetry lookup
+    var telDevMap = {};
+    if (telemetry && telemetry.devices) {
+        for (var i = 0; i < telemetry.devices.length; i++) {
+            var td = telemetry.devices[i];
+            telDevMap[td.id] = {};
+            if (td.interfaces) {
+                for (var j = 0; j < td.interfaces.length; j++) {
+                    telDevMap[td.id][td.interfaces[j].name] = td.interfaces[j];
+                }
+            }
+        }
+    }
+
+    function getTelIface(deviceId, portName) {
+        var dev = telDevMap[deviceId];
+        if (!dev) return null;
+        return dev[portName] || null;
+    }
+
+    function getCounters(deviceId, portName) {
+        var ti = getTelIface(deviceId, portName);
+        return ti ? (ti.counters || null) : null;
+    }
+
+    function getInterface(deviceId, portName) {
+        var dev = devMap[deviceId];
+        if (!dev || !dev.interfaces) return null;
+        for (var k = 0; k < dev.interfaces.length; k++) {
+            if (dev.interfaces[k].name === portName) return dev.interfaces[k];
+        }
+        return null;
+    }
+
+    function deviceName(id) {
+        var d = devMap[id];
+        return d ? (d.system_name || d.id) : id;
+    }
+
+    function fmtNum(n) {
+        if (n >= 1e12) return (n / 1e12).toFixed(1) + 'T';
+        if (n >= 1e9) return (n / 1e9).toFixed(1) + 'G';
+        if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+        if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+        return String(n);
+    }
+
+    // --- Counter-based checks (require telemetry) ---
+
+    // Check 1: CRC errors
+    for (var i = 0; i < devices.length; i++) {
+        var dev = devices[i];
+        if (dev.type !== 'switch') continue;
+        var ifaces = dev.interfaces || [];
+        for (var j = 0; j < ifaces.length; j++) {
+            var iface = ifaces[j];
+            var c = getCounters(dev.id, iface.name);
+            if (!c) continue;
+            if (c.crc_errors > 0) {
+                findings.push({
+                    severity: 'critical',
+                    category: 'errors',
+                    title: 'CRC errors detected',
+                    detail: deviceName(dev.id) + ':' + iface.name + ' \u2014 ' + fmtNum(c.crc_errors) + ' CRC errors (physical layer issue)',
+                    deviceId: dev.id,
+                    portName: iface.name
+                });
+            }
+        }
+    }
+
+    // Check 2: Interface errors (in_errors + out_errors)
+    for (var i = 0; i < devices.length; i++) {
+        var dev = devices[i];
+        if (dev.type !== 'switch') continue;
+        var ifaces = dev.interfaces || [];
+        for (var j = 0; j < ifaces.length; j++) {
+            var iface = ifaces[j];
+            var c = getCounters(dev.id, iface.name);
+            if (!c) continue;
+            var totalErrors = (c.in_errors || 0) + (c.out_errors || 0);
+            if (totalErrors > 0) {
+                findings.push({
+                    severity: 'warning',
+                    category: 'errors',
+                    title: 'Interface errors',
+                    detail: deviceName(dev.id) + ':' + iface.name + ' \u2014 ' +
+                            fmtNum(c.in_errors || 0) + ' in / ' + fmtNum(c.out_errors || 0) + ' out errors',
+                    deviceId: dev.id,
+                    portName: iface.name
+                });
+            }
+        }
+    }
+
+    // Check 3: Interface discards (packet drops)
+    for (var i = 0; i < devices.length; i++) {
+        var dev = devices[i];
+        if (dev.type !== 'switch') continue;
+        var ifaces = dev.interfaces || [];
+        for (var j = 0; j < ifaces.length; j++) {
+            var iface = ifaces[j];
+            var c = getCounters(dev.id, iface.name);
+            if (!c) continue;
+            var totalDiscards = (c.in_discards || 0) + (c.out_discards || 0);
+            if (totalDiscards > 0) {
+                findings.push({
+                    severity: 'warning',
+                    category: 'discards',
+                    title: 'Packet discards',
+                    detail: deviceName(dev.id) + ':' + iface.name + ' \u2014 ' +
+                            fmtNum(c.in_discards || 0) + ' in / ' + fmtNum(c.out_discards || 0) + ' out discards',
+                    deviceId: dev.id,
+                    portName: iface.name
+                });
+            }
+        }
+    }
+
+    // Check 4: PFC pause frames (flow-control congestion indicator)
+    for (var i = 0; i < devices.length; i++) {
+        var dev = devices[i];
+        if (dev.type !== 'switch') continue;
+        var ifaces = dev.interfaces || [];
+        for (var j = 0; j < ifaces.length; j++) {
+            var iface = ifaces[j];
+            var c = getCounters(dev.id, iface.name);
+            if (!c) continue;
+            var totalPause = (c.pause_frames_in || 0) + (c.pause_frames_out || 0);
+            if (totalPause > 0) {
+                var sev = (c.in_discards > 0 || c.out_discards > 0 || c.in_errors > 0) ? 'warning' : 'info';
+                findings.push({
+                    severity: sev,
+                    category: 'pfc',
+                    title: 'PFC pause frames',
+                    detail: deviceName(dev.id) + ':' + iface.name + ' \u2014 ' + fmtNum(totalPause) + ' pause frames' +
+                            (c.in_discards > 0 ? ', ' + fmtNum(c.in_discards) + ' drops' : ''),
+                    deviceId: dev.id,
+                    portName: iface.name
+                });
+            }
+        }
+    }
+
+    // --- Topology-based checks (work without telemetry) ---
+
+    // Check 5: MTU mismatches across links
+    for (var i = 0; i < links.length; i++) {
+        var link = links[i];
+        var localIf = getInterface(link.local_device, link.local_port);
+        var remoteIf = getInterface(link.remote_device, link.remote_port);
+        var localMtu = (localIf && localIf.mtu) || (link.mtu ? parseInt(link.mtu) : 0);
+        var remoteMtu = (remoteIf && remoteIf.mtu) || 0;
+        if (localMtu > 0 && remoteMtu > 0 && localMtu !== remoteMtu) {
+            findings.push({
+                severity: 'warning',
+                category: 'mtu',
+                title: 'MTU mismatch',
+                detail: deviceName(link.local_device) + ':' + link.local_port + ' (MTU ' + localMtu + ') \u2194 ' +
+                        deviceName(link.remote_device) + ':' + link.remote_port + ' (MTU ' + remoteMtu + ')',
+                deviceId: link.local_device,
+                portName: link.local_port
+            });
+        }
+    }
+
+    // Check 6: Speed mismatches across links (from telemetry speed field)
+    for (var i = 0; i < links.length; i++) {
+        var link = links[i];
+        var localTel = getTelIface(link.local_device, link.local_port);
+        var remoteTel = getTelIface(link.remote_device, link.remote_port);
+        var localSpeed = (localTel && localTel.speed) || link.speed || '';
+        var remoteSpeed = (remoteTel && remoteTel.speed) || '';
+        if (localSpeed && remoteSpeed && localSpeed !== remoteSpeed) {
+            findings.push({
+                severity: 'warning',
+                category: 'speed',
+                title: 'Speed mismatch',
+                detail: deviceName(link.local_device) + ':' + link.local_port + ' (' + localSpeed + ') \u2194 ' +
+                        deviceName(link.remote_device) + ':' + link.remote_port + ' (' + remoteSpeed + ')',
+                deviceId: link.local_device,
+                portName: link.local_port
+            });
+        }
+    }
+
+    // Check 7: Native VLAN mismatch on inter-switch links
+    for (var i = 0; i < links.length; i++) {
+        var link = links[i];
+        var localDev = devMap[link.local_device];
+        var remoteDev = devMap[link.remote_device];
+        if (!localDev || !remoteDev) continue;
+        if (localDev.type !== 'switch' || remoteDev.type !== 'switch') continue;
+        var localIf = getInterface(link.local_device, link.local_port);
+        var remoteIf = getInterface(link.remote_device, link.remote_port);
+        if (!localIf || !remoteIf) continue;
+        var localNative = localIf.native_vlan || 0;
+        var remoteNative = remoteIf.native_vlan || 0;
+        if (localNative > 0 && remoteNative > 0 && localNative !== remoteNative) {
+            findings.push({
+                severity: 'warning',
+                category: 'vlan',
+                title: 'Native VLAN mismatch',
+                detail: deviceName(link.local_device) + ':' + link.local_port + ' (native ' + localNative + ') \u2194 ' +
+                        deviceName(link.remote_device) + ':' + link.remote_port + ' (native ' + remoteNative + ')',
+                deviceId: link.local_device,
+                portName: link.local_port
+            });
+        }
+    }
+
+    // Check 8: Port mode mismatch on inter-switch links (access vs trunk)
+    for (var i = 0; i < links.length; i++) {
+        var link = links[i];
+        var localDev = devMap[link.local_device];
+        var remoteDev = devMap[link.remote_device];
+        if (!localDev || !remoteDev) continue;
+        if (localDev.type !== 'switch' || remoteDev.type !== 'switch') continue;
+        var localIf = getInterface(link.local_device, link.local_port);
+        var remoteIf = getInterface(link.remote_device, link.remote_port);
+        if (!localIf || !remoteIf) continue;
+        var localMode = localIf.mode || '';
+        var remoteMode = remoteIf.mode || '';
+        if (localMode && remoteMode && localMode !== remoteMode) {
+            findings.push({
+                severity: 'warning',
+                category: 'vlan',
+                title: 'Port mode mismatch',
+                detail: deviceName(link.local_device) + ':' + link.local_port + ' (' + localMode + ') \u2194 ' +
+                        deviceName(link.remote_device) + ':' + link.remote_port + ' (' + remoteMode + ')',
+                deviceId: link.local_device,
+                portName: link.local_port
+            });
+        }
+    }
+
+    // Check 9: Link down — port has LLDP neighbor but is operationally down
+    for (var i = 0; i < links.length; i++) {
+        var link = links[i];
+        var localIf = getInterface(link.local_device, link.local_port);
+        var localTel = getTelIface(link.local_device, link.local_port);
+        var operStatus = (localTel && localTel.oper_status) || (localIf && localIf.oper_status) || '';
+        if (operStatus && operStatus.toUpperCase() === 'DOWN') {
+            findings.push({
+                severity: 'info',
+                category: 'link',
+                title: 'Connected port is down',
+                detail: deviceName(link.local_device) + ':' + link.local_port + ' \u2192 ' +
+                        deviceName(link.remote_device) + ' \u2014 port operationally DOWN but has known neighbor',
+                deviceId: link.local_device,
+                portName: link.local_port
+            });
+        }
+    }
+
+    // Check 10: QoS per-queue RDMA issues from v2 topology data
+    var v2 = topology._v2;
+    if (v2 && v2.fabric && v2.fabric.switches) {
+        var v2Switches = v2.fabric.switches;
+        for (var i = 0; i < v2Switches.length; i++) {
+            var sw = v2Switches[i];
+            var qosStats = sw.qos_stats || [];
+            for (var q = 0; q < qosStats.length; q++) {
+                var qs = qosStats[q];
+                if (qs.pfc_watchdog_drops > 0) {
+                    findings.push({
+                        severity: 'critical',
+                        category: 'pfc',
+                        title: 'PFC Watchdog drops',
+                        detail: (sw.name || sw.id) + ':' + qs.interface_name + ' queue ' + qs.queue_name +
+                                ' \u2014 ' + fmtNum(qs.pfc_watchdog_drops) + ' watchdog-flushed packets (RDMA traffic loss)',
+                        deviceId: sw.id,
+                        portName: qs.interface_name
+                    });
+                }
+                if (qs.ecn_marked_packets > 0) {
+                    findings.push({
+                        severity: 'warning',
+                        category: 'pfc',
+                        title: 'ECN congestion marking',
+                        detail: (sw.name || sw.id) + ':' + qs.interface_name + ' queue ' + qs.queue_name +
+                                ' \u2014 ' + fmtNum(qs.ecn_marked_packets) + ' ECN-marked packets',
+                        deviceId: sw.id,
+                        portName: qs.interface_name
+                    });
+                }
+                if (qs.drop_packets > 0 && qs.queue_name && qs.queue_name.indexOf('q3') >= 0) {
+                    findings.push({
+                        severity: 'critical',
+                        category: 'pfc',
+                        title: 'RDMA queue drops',
+                        detail: (sw.name || sw.id) + ':' + qs.interface_name + ' queue ' + qs.queue_name +
+                                ' \u2014 ' + fmtNum(qs.drop_packets) + ' dropped packets on lossless queue',
+                        deviceId: sw.id,
+                        portName: qs.interface_name
+                    });
+                }
+            }
+        }
+    }
+
+    // Sort: critical first, then warning, then info
+    var sevOrder = { critical: 0, warning: 1, info: 2 };
+    findings.sort(function(a, b) { return (sevOrder[a.severity] || 9) - (sevOrder[b.severity] || 9); });
+
+    return findings;
+};

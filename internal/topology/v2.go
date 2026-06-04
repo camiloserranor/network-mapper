@@ -215,6 +215,8 @@ type QoSStatEntry struct {
 	InterfaceName     string `json:"interface_name"`
 	QueueName         string `json:"queue_name"`
 	Direction         string `json:"direction"`
+	TxBytes           uint64 `json:"tx_bytes,omitempty"`
+	TxPackets         uint64 `json:"tx_packets,omitempty"`
 	PFCPauseFramesTx  uint64 `json:"pfc_pause_frames_tx,omitempty"`
 	PFCPauseFramesRx  uint64 `json:"pfc_pause_frames_rx,omitempty"`
 	PFCWatchdogDrops  uint64 `json:"pfc_watchdog_drops,omitempty"`
