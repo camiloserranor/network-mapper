@@ -48,6 +48,18 @@ type SwitchData struct {
 	// BGPNeighbors are the BGP peering sessions on this switch.
 	BGPNeighbors []transform.BGPNeighbor `json:"bgp_neighbors,omitempty"`
 
+	// NVEPeers are the remote VTEP peers discovered on this switch (VXLAN/EVPN).
+	NVEPeers []transform.NVEPeer `json:"nve_peers,omitempty"`
+
+	// L2RIBMacs are L2RIB MAC routes with next-hop VTEP IPs (VXLAN correlation).
+	L2RIBMacs []transform.L2RIBEntry `json:"l2rib_macs,omitempty"`
+
+	// QoSStats are per-queue QoS counters (PFC, ECN, drops) per interface.
+	QoSStats []transform.QoSStats `json:"qos_stats,omitempty"`
+
+	// PFCConfig is the PFC configuration per interface.
+	PFCConfig []transform.PFCConfig `json:"pfc_config,omitempty"`
+
 	// Errors are non-fatal errors encountered during collection.
 	Errors []topology.PartialError `json:"errors,omitempty"`
 }

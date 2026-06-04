@@ -65,6 +65,8 @@ type FabricSwitch struct {
 	BGPSessions       []BGPSession      `json:"bgp_sessions,omitempty"`
 	PeerLinks         []PeerLink        `json:"peer_links,omitempty"`
 	ConnectedHosts    []ConnectedHost   `json:"connected_hosts,omitempty"`
+	QoSStats          []QoSStatEntry    `json:"qos_stats,omitempty"`
+	PFCConfig         []PFCConfigEntry  `json:"pfc_config,omitempty"`
 	Annotations       map[string]string `json:"annotations,omitempty"`
 }
 
@@ -98,6 +100,7 @@ type ConnectedHost struct {
 // endpoints (VMs).
 type Compute struct {
 	Hosts                    []ComputeHost           `json:"hosts"`
+	VTEPGroups               []VTEPGroup             `json:"vtep_groups,omitempty"`
 	UnattributedEndpoints    *UnattributedEndpointSet `json:"unattributed_endpoints,omitempty"`
 }
 
@@ -142,6 +145,18 @@ type HostEndpoint struct {
 type UnattributedEndpointSet struct {
 	Count int            `json:"count"`
 	Items []HostEndpoint `json:"items"`
+}
+
+// VTEPGroup groups VM endpoints under a common VTEP peer. This is used in
+// VXLAN/EVPN environments where VMs cannot be directly attributed to a host
+// via port-based correlation, but can be grouped by their L2RIB next-hop VTEP IP.
+type VTEPGroup struct {
+	VTEPIP           string         `json:"vtep_ip"`
+	VTEPMAC          string         `json:"vtep_mac,omitempty"`
+	HostID           string         `json:"host_id,omitempty"`            // resolved host if VTEP IP matches LLDP mgmt IP
+	ResolutionSource string         `json:"resolution_source,omitempty"` // "lldp-mgmt-ip", "unresolved"
+	EndpointCount    int            `json:"endpoint_count"`
+	Endpoints        []HostEndpoint `json:"endpoints,omitempty"`
 }
 
 // VLANMap provides a network-wide view of VLANs: which switches carry
@@ -192,4 +207,28 @@ type DeviceAttachment struct {
 	Port       string `json:"port"`
 	OperStatus string `json:"oper_status,omitempty"`
 	MTU        string `json:"mtu,omitempty"`
+}
+
+// QoSStatEntry holds per-queue QoS counters for an interface on a switch.
+// Critical for RDMA health: PFC storms, ECN marking, lossless queue drops.
+type QoSStatEntry struct {
+	InterfaceName     string `json:"interface_name"`
+	QueueName         string `json:"queue_name"`
+	Direction         string `json:"direction"`
+	PFCPauseFramesTx  uint64 `json:"pfc_pause_frames_tx,omitempty"`
+	PFCPauseFramesRx  uint64 `json:"pfc_pause_frames_rx,omitempty"`
+	PFCWatchdogDrops  uint64 `json:"pfc_watchdog_drops,omitempty"`
+	ECNMarkedPackets  uint64 `json:"ecn_marked_packets,omitempty"`
+	DropPackets       uint64 `json:"drop_packets,omitempty"`
+	CurrentQueueDepth uint64 `json:"current_queue_depth_bytes,omitempty"`
+	MaxQueueDepth     uint64 `json:"max_queue_depth_bytes,omitempty"`
+}
+
+// PFCConfigEntry holds PFC configuration for an interface on a switch.
+// Validates RDMA lossless requirements (mode=on, correct CoS priorities).
+type PFCConfigEntry struct {
+	InterfaceName string `json:"interface_name"`
+	Mode          string `json:"mode"`                    // "on", "off", "auto"
+	SendTLV       bool   `json:"send_tlv"`
+	LosslessCos   []int  `json:"lossless_cos,omitempty"`
 }

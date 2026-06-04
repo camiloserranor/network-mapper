@@ -13,6 +13,7 @@ package builder
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/camiloserranor/network-mapper/internal/collector"
@@ -34,6 +35,7 @@ func Build(cr *collector.CollectionResult) *topology.TopologyV2 {
 
 	b.ingestSwitches()
 	b.ingestLLDPNeighbors()
+	b.discoverHostsFromDescriptions()
 	b.enrichHosts(cr)
 	b.correlateEndpoints(cr)
 	b.buildVLANs(cr)
@@ -274,7 +276,81 @@ func (b *buildState) ingestLLDPNeighbors() {
 	}
 }
 
-// enrichHosts uses ARP-port correlation to resolve unknown devices to hosts.
+// discoverHostsFromDescriptions infers host connections from interface port
+// descriptions on UP ports that have no LLDP neighbor. This covers environments
+// where hosts don't run LLDP but switches are configured with descriptive port names.
+func (b *buildState) discoverHostsFromDescriptions() {
+	// Build set of switch ports that already have links (from LLDP)
+	linkedPorts := make(map[string]bool) // "switchID|portName"
+	for _, li := range b.links {
+		linkedPorts[li.localDevice+"|"+li.localPort] = true
+	}
+
+	// Known switch-indicator keywords in port descriptions (case-insensitive matching)
+	switchKeywords := []string{"spine", "tor", "leaf", "switch", "router", "fw", "firewall"}
+
+	for _, sw := range b.cr.Switches {
+		for _, iface := range sw.Interfaces {
+			// Only consider UP ports with descriptions that aren't already linked
+			if iface.OperStatus != "UP" || iface.Description == "" {
+				continue
+			}
+			portKey := sw.SwitchID + "|" + iface.Name
+			if linkedPorts[portKey] {
+				continue
+			}
+
+			// Skip loopback, management, and virtual interfaces
+			name := strings.ToLower(iface.Name)
+			if strings.HasPrefix(name, "lo") || strings.HasPrefix(name, "mgmt") ||
+				strings.HasPrefix(name, "nve") || strings.HasPrefix(name, "vlan") ||
+				strings.HasPrefix(name, "sup") {
+				continue
+			}
+
+			// Skip descriptions that look like switch-to-switch links
+			descLower := strings.ToLower(iface.Description)
+			isSwitch := false
+			for _, kw := range switchKeywords {
+				if strings.Contains(descLower, kw) {
+					isSwitch = true
+					break
+				}
+			}
+			if isSwitch {
+				continue
+			}
+
+			// Create or merge a host device from the port description
+			hostID := iface.Description
+			if _, exists := b.deviceMap[hostID]; !exists {
+				b.deviceMap[hostID] = &deviceEntry{
+					device: topology.Device{
+						ID:         hostID,
+						Type:       "host",
+						SystemName: hostID,
+					},
+					isSwitch: false,
+				}
+			}
+
+			// Create a link from switch port to inferred host
+			li := linkInfo{
+				localDevice: sw.SwitchID,
+				localPort:   iface.Name,
+				remoteDevice: hostID,
+				remotePort:   "", // unknown — host port not learned
+				operStatus:   iface.OperStatus,
+				speed:        iface.Speed,
+			}
+			if iface.MTU > 0 {
+				li.mtu = fmt.Sprintf("%d", iface.MTU)
+			}
+			b.links = append(b.links, li)
+			linkedPorts[portKey] = true
+		}
+	}
+}
 func (b *buildState) enrichHosts(cr *collector.CollectionResult) {
 	// Build a temporary v1 topology with just the devices we've found so far,
 	// then call the existing enrichment logic.
@@ -321,6 +397,8 @@ func (b *buildState) correlateEndpoints(cr *collector.CollectionResult) {
 				Neighbors:  sw.Neighbors,
 				MACEntries: sw.MACEntries,
 				ARPEntries: sw.ARPEntries,
+				NVEPeers:   sw.NVEPeers,
+				L2RIBMacs:  sw.L2RIBMacs,
 			})
 		}
 	}
@@ -425,6 +503,43 @@ func (b *buildState) assemble() *topology.TopologyV2 {
 		v2.Fabric.Switches = append(v2.Fabric.Switches, sw)
 	}
 
+	// Enrich fabric switches with QoS/PFC data from collection results
+	for i := range v2.Fabric.Switches {
+		fsw := &v2.Fabric.Switches[i]
+		for _, crSw := range b.cr.Switches {
+			if crSw.SwitchID != fsw.ID {
+				continue
+			}
+			// Wire QoS stats
+			for _, qs := range crSw.QoSStats {
+				for _, q := range qs.Queues {
+					fsw.QoSStats = append(fsw.QoSStats, topology.QoSStatEntry{
+						InterfaceName:     qs.InterfaceName,
+						QueueName:         q.QueueName,
+						Direction:         q.Direction,
+						PFCPauseFramesTx:  q.PFCPauseFramesTx,
+						PFCPauseFramesRx:  q.PFCPauseFramesRx,
+						PFCWatchdogDrops:  q.PFCWatchdogDrops,
+						ECNMarkedPackets:  q.ECNMarkedPackets,
+						DropPackets:       q.DropPackets,
+						CurrentQueueDepth: q.CurrentQueueDepth,
+						MaxQueueDepth:     q.MaxQueueDepth,
+					})
+				}
+			}
+			// Wire PFC config
+			for _, pfc := range crSw.PFCConfig {
+				fsw.PFCConfig = append(fsw.PFCConfig, topology.PFCConfigEntry{
+					InterfaceName: pfc.InterfaceName,
+					Mode:          pfc.Mode,
+					SendTLV:       pfc.SendTLV,
+					LosslessCos:   pfc.LosslessCos,
+				})
+			}
+			break
+		}
+	}
+
 	// Build links: peer_links and connected_hosts
 	for _, li := range b.links {
 		localIsSwitch := switchIDs[li.localDevice]
@@ -497,7 +612,27 @@ func (b *buildState) assemble() *topology.TopologyV2 {
 		}
 	}
 
-	// Distribute endpoints to hosts or unattributed
+	// Distribute endpoints to hosts, VTEP groups, or unattributed
+	// Build host mgmt IP lookup for VTEP→host resolution
+	hostMgmtIPToID := make(map[string]string)
+	for _, host := range v2.Compute.Hosts {
+		if host.ManagementAddress != "" {
+			hostMgmtIPToID[host.ManagementAddress] = host.ID
+		}
+	}
+
+	// Collect all NVE peer data for VTEP MAC lookup
+	nvePeerMAC := make(map[string]string) // VTEP IP → VTEP MAC
+	for _, sw := range b.cr.Switches {
+		for _, peer := range sw.NVEPeers {
+			if peer.PeerIP != "" && peer.PeerMAC != "" {
+				nvePeerMAC[peer.PeerIP] = peer.PeerMAC
+			}
+		}
+	}
+
+	vtepGroupMap := make(map[string]*topology.VTEPGroup) // VTEP IP → group
+
 	for _, ep := range b.endpoints {
 		he := topology.HostEndpoint{
 			MAC:             ep.MAC,
@@ -508,6 +643,8 @@ func (b *buildState) assemble() *topology.TopologyV2 {
 			LearnedOnPort:   ep.HostPort,
 		}
 		attributed := false
+
+		// Try port-based attribution first
 		if ep.HostDevice != "" {
 			for i := range v2.Compute.Hosts {
 				if v2.Compute.Hosts[i].ID == ep.HostDevice {
@@ -517,6 +654,28 @@ func (b *buildState) assemble() *topology.TopologyV2 {
 				}
 			}
 		}
+
+		// Try VTEP-based grouping for NVE-learned MACs
+		if !attributed && ep.VTEPIP != "" {
+			group, exists := vtepGroupMap[ep.VTEPIP]
+			if !exists {
+				group = &topology.VTEPGroup{
+					VTEPIP:           ep.VTEPIP,
+					VTEPMAC:          nvePeerMAC[ep.VTEPIP],
+					ResolutionSource: "unresolved",
+				}
+				// Conservative VTEP→host resolution: only if VTEP IP matches
+				// an LLDP host's management address (deterministic match)
+				if hostID, ok := hostMgmtIPToID[ep.VTEPIP]; ok {
+					group.HostID = hostID
+					group.ResolutionSource = "lldp-mgmt-ip"
+				}
+				vtepGroupMap[ep.VTEPIP] = group
+			}
+			group.Endpoints = append(group.Endpoints, he)
+			attributed = true
+		}
+
 		if !attributed {
 			if v2.Compute.UnattributedEndpoints == nil {
 				v2.Compute.UnattributedEndpoints = &topology.UnattributedEndpointSet{}
@@ -524,6 +683,13 @@ func (b *buildState) assemble() *topology.TopologyV2 {
 			v2.Compute.UnattributedEndpoints.Items = append(v2.Compute.UnattributedEndpoints.Items, he)
 		}
 	}
+
+	// Finalize VTEP groups
+	for _, group := range vtepGroupMap {
+		group.EndpointCount = len(group.Endpoints)
+		v2.Compute.VTEPGroups = append(v2.Compute.VTEPGroups, *group)
+	}
+
 	if v2.Compute.UnattributedEndpoints != nil {
 		v2.Compute.UnattributedEndpoints.Count = len(v2.Compute.UnattributedEndpoints.Items)
 	}
@@ -819,6 +985,10 @@ func computeSummary(v2 *topology.TopologyV2) {
 	// Count endpoints
 	for _, h := range v2.Compute.Hosts {
 		s.AttributedEndpoints += len(h.Endpoints)
+	}
+	// VTEP-grouped endpoints count as attributed (they have a known VTEP owner)
+	for _, g := range v2.Compute.VTEPGroups {
+		s.AttributedEndpoints += g.EndpointCount
 	}
 	if v2.Compute.UnattributedEndpoints != nil {
 		s.UnattributedEndpoints = v2.Compute.UnattributedEndpoints.Count
