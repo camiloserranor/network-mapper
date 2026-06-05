@@ -179,7 +179,7 @@ NM.data.adaptV2 = function(topology) {
         var unk = unknowns[ud];
         var unkDev = {
             id: unk.id,
-            type: 'unknown',
+            type: unk.device_type || 'unknown',
             chassis_id: unk.chassis_id || '',
             system_name: unk.id,
             system_description: unk.system_description || '',

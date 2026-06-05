@@ -72,10 +72,11 @@ func BuildFromV1(v1 *topology.Topology) *topology.TopologyV2 {
 		default:
 			ud := topology.UnknownDevice{
 				ID:                d.ID,
-				ChassisID:         d.ChassisID,
-				ManagementAddress: d.ManagementAddress,
-				SystemDescription: d.SystemDescription,
-			}
+					DeviceType:        d.Type,
+					ChassisID:         d.ChassisID,
+					ManagementAddress: d.ManagementAddress,
+					SystemDescription: d.SystemDescription,
+				}
 			if v2.UnknownDevices == nil {
 				v2.UnknownDevices = &topology.UnknownDeviceSet{}
 			}
@@ -326,18 +327,20 @@ func (b *buildState) discoverHostsFromDescriptions() {
 				continue
 			}
 
-			// Skip descriptions that look like switch-to-switch links
-			descLower := strings.ToLower(iface.Description)
-			isSwitch := false
-			for _, kw := range switchKeywords {
-				if strings.Contains(descLower, kw) {
-					isSwitch = true
-					break
+			// Skip descriptions that look like switch-to-switch links.
+				// Use word-boundary matching: "switch" should match "to-switch-1"
+				// but NOT "Switched-Compute" where "switch" is a prefix of "switched".
+				descLower := strings.ToLower(iface.Description)
+				isSwitch := false
+				for _, kw := range switchKeywords {
+					if containsWholeWord(descLower, kw) {
+						isSwitch = true
+						break
+					}
 				}
-			}
-			if isSwitch {
-				continue
-			}
+				if isSwitch {
+					continue
+				}
 
 			// Create or merge a host device from the port description.
 				// If a device with this ID already exists (e.g., from LLDP), just add
@@ -493,6 +496,41 @@ func isPhysicalPort(portName string) bool {
 		}
 	}
 	return false
+}
+
+// containsWholeWord checks if s contains keyword as a whole word — not as a
+// prefix/suffix of a longer word. A word boundary is any non-alphanumeric
+// character or start/end of string. Examples:
+//   - containsWholeWord("to-switch-1", "switch") → true
+//   - containsWholeWord("Switched-Compute", "switch") → false ("switched" ≠ "switch")
+//   - containsWholeWord("fw-external", "fw") → true
+func containsWholeWord(s, word string) bool {
+	idx := 0
+	for {
+		pos := strings.Index(s[idx:], word)
+		if pos < 0 {
+			return false
+		}
+		absPos := idx + pos
+		endPos := absPos + len(word)
+
+		// Check left boundary: start of string or non-alphanumeric
+		leftOK := absPos == 0 || !isAlphaNum(s[absPos-1])
+		// Check right boundary: end of string or non-alphanumeric
+		rightOK := endPos >= len(s) || !isAlphaNum(s[endPos])
+
+		if leftOK && rightOK {
+			return true
+		}
+		idx = absPos + 1
+		if idx >= len(s) {
+			return false
+		}
+	}
+}
+
+func isAlphaNum(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')
 }
 
 // looksLikeSwitchDevice checks if a device has switch-like characteristics.
@@ -905,13 +943,14 @@ func (b *buildState) assemble() *topology.TopologyV2 {
 			}
 			v2.Compute.Hosts = append(v2.Compute.Hosts, host)
 		} else {
-			// Unknown device
+				// Non-host, non-switch device (BMC, unknown, etc.)
 			ud := topology.UnknownDevice{
 				ID:                entry.device.ID,
-				ChassisID:         entry.device.ChassisID,
-				ManagementAddress: entry.device.ManagementAddress,
-				SystemDescription: entry.device.SystemDescription,
-			}
+					DeviceType:        entry.device.Type,
+					ChassisID:         entry.device.ChassisID,
+					ManagementAddress: entry.device.ManagementAddress,
+					SystemDescription: entry.device.SystemDescription,
+				}
 			for _, li := range b.links {
 				if li.remoteDevice == entry.device.ID {
 					ud.ConnectedTo = append(ud.ConnectedTo, topology.DeviceAttachment{

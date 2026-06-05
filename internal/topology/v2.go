@@ -194,10 +194,11 @@ type UnknownDeviceSet struct {
 
 // UnknownDevice is an unclassified network device.
 type UnknownDevice struct {
-	ID                string            `json:"id"`
-	ChassisID         string            `json:"chassis_id,omitempty"`
-	ManagementAddress string            `json:"management_address,omitempty"`
-	SystemDescription string            `json:"system_description,omitempty"`
+	ID                string             `json:"id"`
+	DeviceType        string             `json:"device_type,omitempty"` // "bmc", "unknown", etc.
+	ChassisID         string             `json:"chassis_id,omitempty"`
+	ManagementAddress string             `json:"management_address,omitempty"`
+	SystemDescription string             `json:"system_description,omitempty"`
 	ConnectedTo       []DeviceAttachment `json:"connected_to,omitempty"`
 }
 
