@@ -40,6 +40,7 @@ func Build(cr *collector.CollectionResult) *topology.TopologyV2 {
 	b.discoverHostsFromDescriptions()
 	b.enrichHosts(cr)
 	b.mergeDualHomedHosts()
+	b.promoteUnknownOnPhysicalPorts()
 	b.correlateEndpoints(cr)
 	b.buildVLANs(cr)
 
@@ -388,6 +389,109 @@ func (b *buildState) enrichHosts(cr *collector.CollectionResult) {
 			}
 		}
 	}
+}
+
+// promoteUnknownOnPhysicalPorts reclassifies "unknown" devices as "host" when
+// they are connected to a switch on a physical port (Ethernet/Eth). In datacenter
+// environments, physical switch ports connect to hosts, BMCs, or other switches.
+// If a device is NOT identifiable as a switch/BMC and is on a physical port, it
+// is almost certainly a host. This handles cases where LLDP capabilities are
+// absent and no MAC/ARP data is available for enrichment.
+func (b *buildState) promoteUnknownOnPhysicalPorts() {
+	// Collect all known switch IDs
+	switchIDs := make(map[string]bool)
+	for id, entry := range b.deviceMap {
+		if entry.isSwitch || entry.device.Type == "switch" {
+			switchIDs[id] = true
+		}
+	}
+
+	// Build map: remote device ID → local ports connecting it to switches
+	type portInfo struct {
+		localPort string
+	}
+	devicePorts := make(map[string][]portInfo)
+	for _, li := range b.links {
+		if switchIDs[li.localDevice] && !switchIDs[li.remoteDevice] {
+			devicePorts[li.remoteDevice] = append(devicePorts[li.remoteDevice], portInfo{
+				localPort: li.localPort,
+			})
+		}
+	}
+
+	promoted := 0
+	for id, entry := range b.deviceMap {
+		if entry.device.Type != "unknown" {
+			continue
+		}
+		ports, hasPorts := devicePorts[id]
+		if !hasPorts {
+			continue
+		}
+
+		// Check if at least one connection is on a physical port
+		onPhysical := false
+		for _, p := range ports {
+			if isPhysicalPort(p.localPort) {
+				onPhysical = true
+				break
+			}
+		}
+		if !onPhysical {
+			continue
+		}
+
+		// Skip if it looks like a switch (by description/name)
+		if looksLikeSwitchDevice(entry.device) {
+			continue
+		}
+
+		entry.device.Type = "host"
+		if entry.device.Annotations == nil {
+			entry.device.Annotations = make(map[string]string)
+		}
+		entry.device.Annotations["classification_source"] = "physical_port_heuristic"
+		promoted++
+	}
+
+	if promoted > 0 {
+		log.Printf("[host-enrichment] Promoted %d unknown devices to host (physical port heuristic)", promoted)
+	}
+}
+
+// isPhysicalPort returns true if the port name indicates a physical interface
+// (Ethernet, Eth, HundredGigE, etc.) as opposed to virtual interfaces.
+func isPhysicalPort(portName string) bool {
+	lower := strings.ToLower(portName)
+	// Physical port prefixes used by NX-OS and other platforms
+	physicalPrefixes := []string{
+		"ethernet", "eth", "hundredgige", "fortygige", "tengige",
+		"gigabitethernet", "ge-", "xe-", "et-",
+	}
+	for _, pfx := range physicalPrefixes {
+		if strings.HasPrefix(lower, pfx) {
+			return true
+		}
+	}
+	return false
+}
+
+// looksLikeSwitchDevice checks if a device has switch-like characteristics.
+func looksLikeSwitchDevice(dev topology.Device) bool {
+	desc := strings.ToLower(dev.SystemDescription)
+	name := strings.ToLower(dev.SystemName)
+	for _, hint := range []string{"sonic", "nx-os", "arista", "cumulus", "ftos", "cisco", "dell emc", "junos"} {
+		if strings.Contains(desc, hint) || strings.Contains(name, hint) {
+			return true
+		}
+	}
+	// Also check for switch/router/spine/leaf in name
+	for _, hint := range []string{"spine", "leaf", "switch", "router", "fw-", "firewall"} {
+		if strings.Contains(name, hint) {
+			return true
+		}
+	}
+	return false
 }
 
 // mergeDualHomedHosts identifies "unknown" devices that are the second NIC of
