@@ -12,7 +12,9 @@ package builder
 
 import (
 	"fmt"
+	"log"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -37,6 +39,7 @@ func Build(cr *collector.CollectionResult) *topology.TopologyV2 {
 	b.ingestLLDPNeighbors()
 	b.discoverHostsFromDescriptions()
 	b.enrichHosts(cr)
+	b.mergeDualHomedHosts()
 	b.correlateEndpoints(cr)
 	b.buildVLANs(cr)
 
@@ -385,6 +388,116 @@ func (b *buildState) enrichHosts(cr *collector.CollectionResult) {
 			}
 		}
 	}
+}
+
+// mergeDualHomedHosts identifies "unknown" devices that are the second NIC of
+// a dual-homed host (common in Azure Local). In these environments, each server
+// has two NICs — one per TOR — with adjacent MAC addresses (differ by ±1 or ±2).
+// This pass finds such pairs and merges the unknown device into the host,
+// adding the second TOR connection.
+func (b *buildState) mergeDualHomedHosts() {
+	// Build index: chassis-ID (MAC) → device ID for all hosts
+	type hostInfo struct {
+		id  string
+		mac uint64 // parsed MAC as integer for adjacency comparison
+	}
+	hosts := make([]hostInfo, 0)
+	for _, entry := range b.deviceMap {
+		if entry.device.Type != "host" {
+			continue
+		}
+		mac := parseMACToUint64(entry.device.ChassisID)
+		if mac == 0 {
+			continue
+		}
+		hosts = append(hosts, hostInfo{id: entry.device.ID, mac: mac})
+	}
+
+	if len(hosts) == 0 {
+		return
+	}
+
+	// For each unknown device, try to match to a host via MAC adjacency
+	merged := 0
+	for id, entry := range b.deviceMap {
+		if entry.device.Type != "unknown" {
+			continue
+		}
+		unknownMAC := parseMACToUint64(entry.device.ChassisID)
+		if unknownMAC == 0 {
+			continue
+		}
+
+		// Find a host with MAC within ±2
+		var matchedHostID string
+		for _, h := range hosts {
+			diff := int64(unknownMAC) - int64(h.mac)
+			if diff < 0 {
+				diff = -diff
+			}
+			if diff >= 1 && diff <= 2 {
+				matchedHostID = h.id
+				break
+			}
+		}
+		if matchedHostID == "" {
+			continue
+		}
+
+		// Merge: transfer the unknown's links to the matched host
+		hostEntry := b.deviceMap[matchedHostID]
+		for i := range b.links {
+			if b.links[i].remoteDevice == id {
+				b.links[i].remoteDevice = matchedHostID
+			}
+		}
+
+		// If the host has no management address but the unknown has one, adopt it
+		if hostEntry.device.ManagementAddress == "" && entry.device.ManagementAddress != "" {
+			hostEntry.device.ManagementAddress = entry.device.ManagementAddress
+		}
+
+		// Remove the unknown device from the map
+		delete(b.deviceMap, id)
+		merged++
+	}
+
+	if merged > 0 {
+		log.Printf("[host-enrichment] Dual-homed merge: %d unknown devices merged into hosts", merged)
+	}
+}
+
+// parseMACToUint64 converts a colon-separated MAC address to a 48-bit integer.
+func parseMACToUint64(mac string) uint64 {
+	mac = strings.ToLower(strings.TrimSpace(mac))
+	parts := strings.Split(mac, ":")
+	if len(parts) != 6 {
+		// Try dot-separated (xxxx.xxxx.xxxx)
+		parts = strings.Split(mac, ".")
+		if len(parts) == 3 {
+			// Convert to 6-octet form
+			full := strings.Join(parts, "")
+			if len(full) == 12 {
+				parts = make([]string, 6)
+				for i := 0; i < 6; i++ {
+					parts[i] = full[i*2 : i*2+2]
+				}
+			} else {
+				return 0
+			}
+		} else {
+			return 0
+		}
+	}
+	var result uint64
+	for _, p := range parts {
+		b, err := strconv.ParseUint(p, 16, 8)
+		if err != nil {
+			return 0
+		}
+		result = (result << 8) | b
+	}
+	return result
 }
 
 // correlateEndpoints discovers VM endpoints from MAC/ARP data.
