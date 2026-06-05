@@ -118,16 +118,18 @@ type ComputeHost struct {
 
 // HostConnection describes how a host connects to a switch.
 type HostConnection struct {
-	SwitchName string `json:"switch_name"`
-	SwitchID   string `json:"switch_id"`
-	SwitchPort string `json:"switch_port"`
-	OperStatus string `json:"oper_status,omitempty"`
-	Speed      string `json:"speed,omitempty"`
-	MTU        string `json:"mtu,omitempty"`
-	VLANMode   string `json:"vlan_mode,omitempty"`
-	AccessVLAN int    `json:"access_vlan,omitempty"`
-	NativeVLAN int    `json:"native_vlan,omitempty"`
-	TrunkVLANs []int  `json:"trunk_vlans,omitempty"`
+	SwitchName        string `json:"switch_name"`
+	SwitchID          string `json:"switch_id"`
+	SwitchPort        string `json:"switch_port"`
+	RemotePortID      string `json:"remote_port_id,omitempty"`
+	ManagementAddress string `json:"management_address,omitempty"`
+	OperStatus        string `json:"oper_status,omitempty"`
+	Speed             string `json:"speed,omitempty"`
+	MTU               string `json:"mtu,omitempty"`
+	VLANMode          string `json:"vlan_mode,omitempty"`
+	AccessVLAN        int    `json:"access_vlan,omitempty"`
+	NativeVLAN        int    `json:"native_vlan,omitempty"`
+	TrunkVLANs        []int  `json:"trunk_vlans,omitempty"`
 }
 
 // HostEndpoint is a VM or virtual endpoint attributed to a specific host.

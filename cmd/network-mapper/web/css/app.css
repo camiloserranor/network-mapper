@@ -1133,6 +1133,14 @@ select.btn {
 .nic-card-status.up { background: var(--success); }
 .nic-card-status.down { background: var(--danger); }
 
+.nic-card-identity {
+    display: flex;
+    gap: 12px;
+    font-size: 11px;
+    font-family: var(--fontFamilyMonospace);
+    color: var(--text-muted);
+}
+
 .nic-card-remote {
     flex: 1;
     font-size: 12px;

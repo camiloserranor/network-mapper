@@ -20,6 +20,8 @@ NM.views.renderHost = function(hostId) {
             name: label,
             switchId: conn.switch_id || '',
             switchPort: conn.switch_port || '',
+            remotePortId: conn.remote_port_id || '',
+            managementAddress: conn.management_address || '',
             operStatus: conn.oper_status || '',
             speed: conn.speed || '',
             mtu: conn.mtu || '',
@@ -83,7 +85,15 @@ NM.views.renderHost = function(hostId) {
         html += '<div class="nic-card-remote">\u2192 ' + esc(nic.name) + '</div>';
         html += '</div>';
 
-        // Row 2: badges (speed, MTU, type)
+        // Row 2: NIC identity (MAC + IP from LLDP)
+        if (nic.remotePortId || nic.managementAddress) {
+            html += '<div class="nic-card-identity">';
+            if (nic.remotePortId) html += '<span title="NIC MAC address (LLDP Port ID)">\u2318 ' + esc(nic.remotePortId) + '</span>';
+            if (nic.managementAddress) html += '<span title="Management IP address (LLDP)">\u2316 ' + esc(nic.managementAddress) + '</span>';
+            html += '</div>';
+        }
+
+        // Row 3: badges (speed, MTU)
         html += '<div class="nic-card-badges">';
         if (nic.speed) html += '<div class="nic-card-speed">' + esc(nic.speed) + '</div>';
         var mtu = 0;

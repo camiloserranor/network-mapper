@@ -182,14 +182,15 @@ type buildState struct {
 }
 
 type linkInfo struct {
-	localDevice  string
-	localPort    string
-	remoteDevice string
-	remotePort   string
-	chassisID    string
-	operStatus   string
-	speed        string
-	mtu          string
+	localDevice       string
+	localPort         string
+	remoteDevice      string
+	remotePort        string
+	chassisID         string
+	managementAddress string
+	operStatus        string
+	speed             string
+	mtu               string
 }
 
 // connectionInfo describes a device's connection to a switch port.
@@ -273,11 +274,12 @@ func (b *buildState) ingestLLDPNeighbors() {
 
 			// Build link with interface enrichment
 			li := linkInfo{
-				localDevice:  sw.SwitchID,
-				localPort:    nbr.LocalPort,
-				remoteDevice: remoteID,
-				remotePort:   transform.SanitizeIdentifier(nbr.PortID),
-				chassisID:    transform.SanitizeIdentifier(nbr.ChassisID),
+				localDevice:       sw.SwitchID,
+				localPort:         nbr.LocalPort,
+				remoteDevice:      remoteID,
+				remotePort:        transform.SanitizeIdentifier(nbr.PortID),
+				chassisID:         transform.SanitizeIdentifier(nbr.ChassisID),
+				managementAddress: nbr.ManagementAddress,
 			}
 			for _, iface := range sw.Interfaces {
 				if iface.Name == nbr.LocalPort {
@@ -918,12 +920,14 @@ func (b *buildState) assemble() *topology.TopologyV2 {
 			for _, li := range b.links {
 				if li.remoteDevice == host.ID {
 					host.Connections = append(host.Connections, topology.HostConnection{
-						SwitchName: li.localDevice,
-						SwitchID:   li.localDevice,
-						SwitchPort: li.localPort,
-						OperStatus: li.operStatus,
-						Speed:      li.speed,
-						MTU:        li.mtu,
+						SwitchName:        li.localDevice,
+						SwitchID:          li.localDevice,
+						SwitchPort:        li.localPort,
+						RemotePortID:      li.remotePort,
+						ManagementAddress: li.managementAddress,
+						OperStatus:        li.operStatus,
+						Speed:             li.speed,
+						MTU:               li.mtu,
 					})
 				}
 			}
