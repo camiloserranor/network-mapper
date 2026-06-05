@@ -191,6 +191,12 @@ type linkInfo struct {
 	mtu          string
 }
 
+// connectionInfo describes a device's connection to a switch port.
+type connectionInfo struct {
+	switchID  string
+	localPort string
+}
+
 // buildSystemNameIndex creates a mapping from system hostname → switch config ID.
 func buildSystemNameIndex(switches []collector.SwitchData) map[string]string {
 	idx := make(map[string]string)
@@ -243,18 +249,26 @@ func (b *buildState) ingestLLDPNeighbors() {
 				}
 			} else {
 				devType := transform.ClassifyDevice(nbr.SystemDescription, nbr.SystemName, nbr.Capabilities)
-				b.deviceMap[remoteID] = &deviceEntry{
-					device: topology.Device{
-						ID:                remoteID,
-						Type:              devType,
-						ChassisID:         nbr.ChassisID,
-						SystemName:        nbr.SystemName,
-						SystemDescription: nbr.SystemDescription,
-						ManagementAddress: nbr.ManagementAddress,
-					},
-					isSwitch: devType == "switch",
+					annotations := map[string]string{}
+					switch {
+					case nbr.Capabilities != "":
+						annotations["classification_source"] = "lldp_capabilities"
+					case devType != "unknown":
+						annotations["classification_source"] = "lldp_description"
+					}
+					b.deviceMap[remoteID] = &deviceEntry{
+						device: topology.Device{
+							ID:                remoteID,
+							Type:              devType,
+							ChassisID:         nbr.ChassisID,
+							SystemName:        nbr.SystemName,
+							SystemDescription: nbr.SystemDescription,
+							ManagementAddress: nbr.ManagementAddress,
+							Annotations:       annotations,
+						},
+						isSwitch: devType == "switch",
+					}
 				}
-			}
 
 			// Build link with interface enrichment
 			li := linkInfo{
@@ -325,18 +339,23 @@ func (b *buildState) discoverHostsFromDescriptions() {
 				continue
 			}
 
-			// Create or merge a host device from the port description
-			hostID := iface.Description
-			if _, exists := b.deviceMap[hostID]; !exists {
-				b.deviceMap[hostID] = &deviceEntry{
-					device: topology.Device{
-						ID:         hostID,
-						Type:       "host",
-						SystemName: hostID,
-					},
-					isSwitch: false,
+			// Create or merge a host device from the port description.
+				// If a device with this ID already exists (e.g., from LLDP), just add
+				// the link — don't overwrite the existing classification.
+				hostID := iface.Description
+				if _, exists := b.deviceMap[hostID]; !exists {
+					b.deviceMap[hostID] = &deviceEntry{
+						device: topology.Device{
+							ID:         hostID,
+							Type:       "host",
+							SystemName: hostID,
+							Annotations: map[string]string{
+								"classification_source": "port_description",
+							},
+						},
+						isSwitch: false,
+					}
 				}
-			}
 
 			// Create a link from switch port to inferred host
 			li := linkInfo{
@@ -497,13 +516,18 @@ func looksLikeSwitchDevice(dev topology.Device) bool {
 // mergeDualHomedHosts identifies "unknown" devices that are the second NIC of
 // a dual-homed host (common in Azure Local). In these environments, each server
 // has two NICs — one per TOR — with adjacent MAC addresses (differ by ±1 or ±2).
-// This pass finds such pairs and merges the unknown device into the host,
-// adding the second TOR connection.
+//
+// To reduce false positives, merging requires TWO confirming signals:
+//   - MAC adjacency: chassis-IDs within ±2 of each other
+//   - Port-position match: both connected on the same-numbered port on different switches
+//
+// If port-position cannot be confirmed (e.g., port names are non-numeric), MAC
+// adjacency alone is accepted as a fallback.
 func (b *buildState) mergeDualHomedHosts() {
 	// Build index: chassis-ID (MAC) → device ID for all hosts
 	type hostInfo struct {
 		id  string
-		mac uint64 // parsed MAC as integer for adjacency comparison
+		mac uint64
 	}
 	hosts := make([]hostInfo, 0)
 	for _, entry := range b.deviceMap {
@@ -521,7 +545,16 @@ func (b *buildState) mergeDualHomedHosts() {
 		return
 	}
 
-	// For each unknown device, try to match to a host via MAC adjacency
+	// Build device → port connections index for port-position confirmation
+	deviceConnections := make(map[string][]connectionInfo)
+	for _, li := range b.links {
+		deviceConnections[li.remoteDevice] = append(deviceConnections[li.remoteDevice], connectionInfo{
+			switchID:  li.localDevice,
+			localPort: li.localPort,
+		})
+	}
+
+	// For each unknown device, try to match to a host via MAC adjacency + port confirmation
 	merged := 0
 	for id, entry := range b.deviceMap {
 		if entry.device.Type != "unknown" {
@@ -548,6 +581,20 @@ func (b *buildState) mergeDualHomedHosts() {
 			continue
 		}
 
+		// Confirm via port-position: the unknown and host should be on the
+		// same-numbered port on different switches.
+		if !confirmDualHomedByPort(deviceConnections[matchedHostID], deviceConnections[id]) {
+			// Port confirmation failed — only merge if we can't extract port numbers
+			// at all (i.e., non-standard naming where confirmation is impossible).
+			hostPorts := deviceConnections[matchedHostID]
+			unknownPorts := deviceConnections[id]
+			if hasExtractablePortNumber(hostPorts) && hasExtractablePortNumber(unknownPorts) {
+				// Both have parseable port numbers but they don't match — skip merge
+				continue
+			}
+			// Cannot extract port numbers from either side — allow MAC-only merge as fallback
+		}
+
 		// Merge: transfer the unknown's links to the matched host
 		hostEntry := b.deviceMap[matchedHostID]
 		for i := range b.links {
@@ -569,6 +616,57 @@ func (b *buildState) mergeDualHomedHosts() {
 	if merged > 0 {
 		log.Printf("[host-enrichment] Dual-homed merge: %d unknown devices merged into hosts", merged)
 	}
+}
+
+// confirmDualHomedByPort checks if two sets of connections share the same port
+// number on different switches — the expected pattern for dual-homed hosts.
+func confirmDualHomedByPort(hostConns, unknownConns []connectionInfo) bool {
+	for _, hc := range hostConns {
+		hNum := extractPortNumber(hc.localPort)
+		if hNum == "" {
+			continue
+		}
+		for _, uc := range unknownConns {
+			// Must be on different switches
+			if uc.switchID == hc.switchID {
+				continue
+			}
+			uNum := extractPortNumber(uc.localPort)
+			if uNum == hNum {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// hasExtractablePortNumber returns true if any connection has a parseable port number.
+func hasExtractablePortNumber(conns []connectionInfo) bool {
+	for _, c := range conns {
+		if extractPortNumber(c.localPort) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// extractPortNumber extracts the numeric port identifier from interface names
+// like "Eth1/15", "Ethernet1/15", "GigabitEthernet0/0/1". Returns the last
+// numeric segment (the port number within a slot/module).
+func extractPortNumber(portName string) string {
+	// Find the last '/' and return everything after it
+	lastSlash := strings.LastIndex(portName, "/")
+	if lastSlash >= 0 && lastSlash < len(portName)-1 {
+		suffix := portName[lastSlash+1:]
+		// Verify it's numeric
+		for _, c := range suffix {
+			if c < '0' || c > '9' {
+				return ""
+			}
+		}
+		return suffix
+	}
+	return ""
 }
 
 // parseMACToUint64 converts a colon-separated MAC address to a 48-bit integer.

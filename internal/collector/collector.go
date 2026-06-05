@@ -4,6 +4,7 @@ package collector
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -272,7 +273,17 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 	if vc, ok := p.(platform.VXLANCollector); ok {
 		nvePeers, nveErr := vc.CollectNVEPeers(ctx, client)
 		if nveErr != nil {
-			log.Printf("  %s: NVE peers unavailable: %v", sw.Name, nveErr)
+			// Classify the error for better diagnostics
+			var errPath *gnmi.ErrPathNotSupported
+			var errAuth *gnmi.ErrAuth
+			switch {
+			case errors.As(nveErr, &errPath):
+				log.Printf("  %s: NVE/VXLAN not configured (path not supported)", sw.Name)
+			case errors.As(nveErr, &errAuth):
+				log.Printf("  %s: NVE path access denied (auth/permission error)", sw.Name)
+			default:
+				log.Printf("  %s: NVE peers unavailable: %v", sw.Name, nveErr)
+			}
 			result.Errors = append(result.Errors, topology.PartialError{
 				Switch: sw.Name, Phase: "nve-peers", Message: nveErr.Error(),
 			})
