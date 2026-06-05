@@ -117,6 +117,7 @@ NM.views.renderHealth = function() {
             if (dev) {
                 if (dev.type === 'switch') NM.state.ViewManager.navigateTo('switch', devId);
                 else if (dev.type === 'host') NM.state.ViewManager.navigateTo('host', devId);
+                else if (dev.type === 'bmc') NM.state.ViewManager.navigateTo('bmc', devId);
             }
         });
     });

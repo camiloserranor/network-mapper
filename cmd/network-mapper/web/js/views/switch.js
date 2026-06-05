@@ -197,6 +197,7 @@ NM.views.renderSwitch = function(switchId) {
             if (!remoteId) return;
             if (remoteType === 'switch') NM.state.ViewManager.navigateTo('switch', remoteId);
             else if (remoteType === 'host') NM.state.ViewManager.navigateTo('host', remoteId);
+            else if (remoteType === 'bmc') NM.state.ViewManager.navigateTo('bmc', remoteId);
         });
     });
 
@@ -207,6 +208,7 @@ NM.views.renderSwitch = function(switchId) {
             const remoteType = row.dataset.remoteType;
             if (remoteType === 'switch') NM.state.ViewManager.navigateTo('switch', remoteId);
             else if (remoteType === 'host') NM.state.ViewManager.navigateTo('host', remoteId);
+            else if (remoteType === 'bmc') NM.state.ViewManager.navigateTo('bmc', remoteId);
         });
     });
 
@@ -222,6 +224,7 @@ NM.views.renderSwitch = function(switchId) {
             var devId = chip.dataset.deviceId;
             var devType = chip.dataset.deviceType;
             if (devType === 'host') NM.state.ViewManager.navigateTo('host', devId);
+            else if (devType === 'bmc') NM.state.ViewManager.navigateTo('bmc', devId);
             else if (devType === 'switch') NM.state.ViewManager.navigateTo('switch', devId);
         });
     });
@@ -442,6 +445,14 @@ function buildVLANVisualization(swDev, portMap, esc) {
     for (var k = 0; k < vlanIds.length; k++) {
         var vid = vlanIds[k];
         var members = vlanMembers[vid];
+        // Sort members: by host name alphabetically
+        members.sort(function(a, b) {
+            var na = (a.host || '').toLowerCase();
+            var nb = (b.host || '').toLowerCase();
+            if (na < nb) return -1;
+            if (na > nb) return 1;
+            return 0;
+        });
         var color = colors[k % colors.length];
 
         html += '<div class="vlan-set" style="border-color:' + color + '">';

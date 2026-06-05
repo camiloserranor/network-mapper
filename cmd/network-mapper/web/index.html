@@ -33,6 +33,7 @@
         <div class="toolbar-right">
             <div class="btn-group">
                 <button class="btn" id="refresh-btn" title="Refresh topology data"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: -3px;"><path d="M11.534 7h3.932a.25.25 0 01.192.41l-1.966 2.36a.25.25 0 01-.384 0l-1.966-2.36A.25.25 0 0111.534 7zm-7.068 2H.534a.25.25 0 00-.192.41l1.966 2.36a.25.25 0 00.384 0l1.966-2.36A.25.25 0 004.466 9z"/><path d="M8 3a5 5 0 014.546 2.914.5.5 0 00.908-.418A6 6 0 002 8a6 6 0 00.442 2.27.5.5 0 10.936-.35A5 5 0 018 3zm0 10a5 5 0 01-4.546-2.914.5.5 0 00-.908.418A6 6 0 0014 8a6 6 0 00-.442-2.27.5.5 0 10-.936.35A5 5 0 018 13z"/></svg> Refresh</button>
+                <button class="btn" id="health-btn" title="Network health checks">&hearts; Health</button>
                 <button class="btn" id="fit-btn" title="Scroll to top">⤢ Top</button>
                 <button class="btn" id="export-json-btn" title="Export topology as JSON">{ } JSON</button>
             </div>
@@ -160,7 +161,9 @@
     <script src="/js/views/fabric.js"></script>
     <script src="/js/views/switch.js"></script>
     <script src="/js/views/host.js"></script>
+    <script src="/js/views/bmc.js"></script>
     <script src="/js/views/vm.js"></script>
+    <script src="/js/views/health.js"></script>
 
     <!-- Entry point (last) -->
     <script src="/js/app.js"></script>

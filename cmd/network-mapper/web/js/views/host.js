@@ -75,29 +75,33 @@ NM.views.renderHost = function(hostId) {
         var switchPort = nic.switchPort;
 
         html += '<div class="nic-card" data-remote-id="' + esc(switchId) + '" data-remote-type="switch">';
+
+        // Row 1: connection identity
+        html += '<div class="nic-card-header">';
         html += '<div class="nic-card-status ' + (nic.isUp ? 'up' : 'down') + '"></div>';
         html += '<div class="nic-card-port">' + esc(switchPort || '?') + '</div>';
-
         html += '<div class="nic-card-remote">\u2192 ' + esc(nic.name) + '</div>';
-        html += '<div class="nic-card-type switch">switch</div>';
+        html += '</div>';
+
+        // Row 2: badges (speed, MTU, type)
+        html += '<div class="nic-card-badges">';
         if (nic.speed) html += '<div class="nic-card-speed">' + esc(nic.speed) + '</div>';
-
-        // Counters from telemetry
-        var c = null;
-        if (switchId && switchPort) {
-            c = NM.data.getInterfaceCounters(switchId, switchPort);
-        }
-
-        // MTU / Jumbo frame indicator
         var mtu = 0;
         if (switchId && switchPort) mtu = NM.data.getInterfaceMTU(switchId, switchPort);
         if (!mtu && nic.mtu) mtu = parseInt(nic.mtu) || 0;
         if (mtu > 0) {
-            var mtuLabel = mtu >= 9000 ? 'Jumbo (' + mtu + ')' : mtu.toString();
+            var mtuLabel = mtu >= 9000 ? 'Jumbo (' + mtu + ')' : 'MTU ' + mtu;
             var mtuClass = mtu >= 9000 ? 'nic-card-mtu jumbo' : 'nic-card-mtu';
-            html += '<div class="' + mtuClass + '" title="Maximum Transmission Unit — 9000+ indicates jumbo frames for RDMA/storage traffic">MTU ' + mtuLabel + '</div>';
+            html += '<div class="' + mtuClass + '" title="Maximum Transmission Unit — 9000+ indicates jumbo frames for RDMA/storage traffic">' + mtuLabel + '</div>';
         } else {
             html += '<div class="nic-card-mtu unavailable" title="MTU data not available from this switch">MTU —</div>';
+        }
+        html += '</div>';
+
+        // Row 3: counters from telemetry
+        var c = null;
+        if (switchId && switchPort) {
+            c = NM.data.getInterfaceCounters(switchId, switchPort);
         }
 
         if (c) {

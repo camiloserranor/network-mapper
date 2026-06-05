@@ -43,25 +43,16 @@ NM.state.ViewManager = (function() {
             html += ' <span class="crumb-sep">\u203A</span> ';
             html += '<span class="crumb current">Switch: ' + esc(name) + '</span>';
         } else if (currentView.view === 'host') {
-            const switches = NM.data.getConnectedSwitches(topology, currentView.deviceId);
-            if (switches.length > 0) {
-                const sw = switches[0];
-                const swName = sw.system_name || sw.id;
-                html += ' <span class="crumb-sep">\u203A</span> ';
-                html += '<span class="crumb clickable" data-view="switch" data-id="' + esc(sw.id) + '">Switch: ' + esc(swName) + '</span>';
-            }
-            html += ' <span class="crumb-sep">\u203A</span> ';
             const name = getDeviceName(currentView.deviceId);
+            html += ' <span class="crumb-sep">\u203A</span> ';
             html += '<span class="crumb current">Host: ' + esc(name) + '</span>';
+        } else if (currentView.view === 'bmc') {
+            const name = getDeviceName(currentView.deviceId);
+            html += ' <span class="crumb-sep">\u203A</span> ';
+            html += '<span class="crumb current">BMC: ' + esc(name) + '</span>';
         } else if (currentView.view === 'vm') {
             const vmData = NM.data.getVMData(currentView.deviceId);
             if (vmData && vmData.host_device) {
-                const hostSwitches = NM.data.getConnectedSwitches(topology, vmData.host_device);
-                if (hostSwitches.length > 0) {
-                    const sw = hostSwitches[0];
-                    html += ' <span class="crumb-sep">\u203A</span> ';
-                    html += '<span class="crumb clickable" data-view="switch" data-id="' + esc(sw.id) + '">Switch: ' + esc(sw.system_name || sw.id) + '</span>';
-                }
                 const hostDev = (topology.devices || []).find(d => d.id === vmData.host_device);
                 if (hostDev) {
                     html += ' <span class="crumb-sep">\u203A</span> ';
@@ -71,6 +62,9 @@ NM.state.ViewManager = (function() {
             html += ' <span class="crumb-sep">\u203A</span> ';
             const vmLabel = vmData ? ((vmData.ips && vmData.ips.length > 0) ? vmData.ips[0] : vmData.mac) : currentView.deviceId;
             html += '<span class="crumb current">VM: ' + esc(vmLabel) + '</span>';
+        } else if (currentView.view === 'health') {
+            html += ' <span class="crumb-sep">\u203A</span> ';
+            html += '<span class="crumb current">\u2665 Network Health</span>';
         }
 
         trail.innerHTML = html;
@@ -117,7 +111,9 @@ NM.state.ViewManager = (function() {
             switch (currentView.view) {
                 case 'switch': NM.views.renderSwitch(currentView.deviceId); break;
                 case 'host':   NM.views.renderHost(currentView.deviceId); break;
+                case 'bmc':    NM.views.renderBMC(currentView.deviceId); break;
                 case 'vm':     NM.views.renderVM(currentView.deviceId); break;
+                case 'health': NM.views.renderHealth(); break;
             }
         }
     }

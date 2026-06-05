@@ -37,6 +37,7 @@ NM.ui.Popup = (() => {
                     hide();
                     if (type === 'switch') NM.state.ViewManager.navigateTo('switch', id);
                     else if (type === 'host') NM.state.ViewManager.navigateTo('host', id);
+                    else if (type === 'bmc') NM.state.ViewManager.navigateTo('bmc', id);
                 }
             });
         }
