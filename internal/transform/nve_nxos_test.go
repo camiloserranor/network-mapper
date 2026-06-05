@@ -111,6 +111,62 @@ func TestParseNVEPeersNXOS_Empty(t *testing.T) {
 	}
 }
 
+// TestParseNVEPeersNXOS_RealStructure tests with the actual NX-OS structure
+// where peers are under peers-items → dy_peer-items → DyPeer-list
+func TestParseNVEPeersNXOS_RealStructure(t *testing.T) {
+	notifs := []gnmi.Notification{
+		{
+			Updates: []gnmi.Update{
+				{
+					Path: "/System/eps-items",
+					Value: map[string]interface{}{
+						"epId-items": map[string]interface{}{
+							"Ep-list": []interface{}{
+								map[string]interface{}{
+									"epId":      float64(1),
+									"primaryIp": "100.71.36.18",
+									"mac":       "F8:39:18:E8:DC:1F",
+									"peers-items": map[string]interface{}{
+										"dy_peer-items": map[string]interface{}{
+											"DyPeer-list": []interface{}{
+												map[string]interface{}{
+													"ip":    "100.71.93.158",
+													"mac":   "B0:8B:CF:BF:A0:E9",
+													"state": "Up",
+												},
+												map[string]interface{}{
+													"ip":    "100.71.94.26",
+													"mac":   "48:74:10:09:05:8B",
+													"state": "Up",
+												},
+											},
+										},
+										"dyn_ir_peer-items": map[string]interface{}{},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	peers := ParseNVEPeersNXOS(notifs)
+	if len(peers) != 2 {
+		t.Fatalf("expected 2 peers, got %d", len(peers))
+	}
+	if peers[0].PeerIP != "100.71.93.158" {
+		t.Errorf("peer[0].PeerIP = %q, want %q", peers[0].PeerIP, "100.71.93.158")
+	}
+	if peers[0].PeerMAC != "b0:8b:cf:bf:a0:e9" {
+		t.Errorf("peer[0].PeerMAC = %q, want %q", peers[0].PeerMAC, "b0:8b:cf:bf:a0:e9")
+	}
+	if peers[1].PeerIP != "100.71.94.26" {
+		t.Errorf("peer[1].PeerIP = %q, want %q", peers[1].PeerIP, "100.71.94.26")
+	}
+}
+
 func TestParseL2RIBNXOS(t *testing.T) {
 	notifs := []gnmi.Notification{
 		{

@@ -298,8 +298,14 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 				} else if len(l2ribMacs) > 0 {
 					result.L2RIBMacs = l2ribMacs
 					log.Printf("  %s: %d L2RIB MAC entries", sw.Name, len(l2ribMacs))
+				} else {
+					log.Printf("  %s: L2RIB query returned 0 entries", sw.Name)
 				}
+			} else {
+				log.Printf("  %s: %d NVE peers found but no MACs on NVE ports, skipping L2RIB", sw.Name, len(nvePeers))
 			}
+		} else {
+			log.Printf("  %s: NVE path returned no peers (VXLAN may not be configured)", sw.Name)
 		}
 	}
 

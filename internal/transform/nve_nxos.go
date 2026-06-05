@@ -41,12 +41,23 @@ func ParseNVEPeersNXOS(notifs []gnmi.Notification) []NVEPeer {
 					continue
 				}
 
-				// Navigate: peers-items → DyPeer-list
+				// Navigate: peers-items → dy_peer-items → DyPeer-list
+				// Real NX-OS uses peers-items containing dy_peer-items (with underscore)
 				peersItems := GetMap(ep, "peers-items")
 				if peersItems == nil {
 					continue
 				}
-				dyPeerList := GetSlice(peersItems, "DyPeer-list")
+
+				// Try dy_peer-items (real NX-OS structure)
+				dyPeerItems := GetMap(peersItems, "dy_peer-items")
+				var dyPeerList []interface{}
+				if dyPeerItems != nil {
+					dyPeerList = GetSlice(dyPeerItems, "DyPeer-list")
+				}
+				// Fallback: DyPeer-list directly in peers-items
+				if dyPeerList == nil {
+					dyPeerList = GetSlice(peersItems, "DyPeer-list")
+				}
 				if dyPeerList == nil {
 					continue
 				}
