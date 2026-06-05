@@ -350,6 +350,17 @@ NM.data.getHostVMs = function(topology, hostId) {
     return (topology.endpoints || []).filter(ep => ep.host_device === hostId);
 };
 
+// Get the v2 host object (with connections array) by host ID
+NM.data.getV2Host = function(hostId) {
+    var topology = NM.state.topology;
+    if (!topology || !topology._v2 || !topology._v2.compute) return null;
+    var hosts = topology._v2.compute.hosts || [];
+    for (var i = 0; i < hosts.length; i++) {
+        if (hosts[i].id === hostId) return hosts[i];
+    }
+    return null;
+};
+
 // Get VM data by vmId (format: "vm-<mac_no_colons>")
 NM.data.getVMData = function(vmId) {
     const topology = NM.state.topology;

@@ -8,15 +8,24 @@ NM.views.renderHost = function(hostId) {
     if (!hostDev) return;
 
     const container = document.getElementById('detail-view');
-    const portMap = NM.data.buildPortMap(topology, hostId);
     const esc = NM.core.escapeHtml;
 
-    // NICs are derived from LLDP links (host has no gNMI agent)
-    const nics = Object.entries(portMap).map(([portName, conn]) => ({
-        name: portName,
-        conn: conn,
-        isUp: (conn.operStatus || '').toUpperCase() === 'UP' || !!conn.remoteId,
-    }));
+    // Build NICs from v2 connections (each connection = one physical link to a switch port)
+    const v2Host = NM.data.getV2Host(hostId);
+    const conns = v2Host ? (v2Host.connections || []) : [];
+    const nics = conns.map(function(conn) {
+        var switchName = conn.switch_name || conn.switch_id || '';
+        var label = switchName + ':' + (conn.switch_port || '?');
+        return {
+            name: label,
+            switchId: conn.switch_id || '',
+            switchPort: conn.switch_port || '',
+            operStatus: conn.oper_status || '',
+            speed: conn.speed || '',
+            mtu: conn.mtu || '',
+            isUp: (conn.oper_status || '').toUpperCase() === 'UP'
+        };
+    });
     const vms = NM.data.getHostVMs(topology, hostId);
 
     // Gather VLAN info for this host
@@ -29,11 +38,6 @@ NM.views.renderHost = function(hostId) {
     }
     const allVlanIds = new Set([...hostVlanIds, ...endpointVlans]);
     const allVlanDetails = (topology.vlans || []).filter(v => allVlanIds.has(v.id));
-
-    // Find link counters for this host's connections
-    const linkData = (topology.links || []).filter(
-        l => l.local_device === hostId || l.remote_device === hostId
-    );
 
     let html = '';
 
@@ -67,40 +71,27 @@ NM.views.renderHost = function(hostId) {
     html += '<div class="nic-list">';
 
     for (const nic of nics) {
-        const conn = nic.conn;
-        const typeClass = conn ? conn.remoteType : '';
-        // Find matching link for counters
-        const link = linkData.find(l =>
-            (l.local_device === hostId && l.remote_port === nic.name) ||
-            (l.remote_device === hostId && l.remote_port === nic.name)
-        );
+        var switchId = nic.switchId;
+        var switchPort = nic.switchPort;
 
-        html += '<div class="nic-card" data-remote-id="' + (conn ? esc(conn.remoteId) : '') + '" data-remote-type="' + (conn ? esc(conn.remoteType) : '') + '">';
+        html += '<div class="nic-card" data-remote-id="' + esc(switchId) + '" data-remote-type="switch">';
         html += '<div class="nic-card-status ' + (nic.isUp ? 'up' : 'down') + '"></div>';
-        html += '<div class="nic-card-port">' + esc(nic.name) + '</div>';
+        html += '<div class="nic-card-port">' + esc(switchPort || '?') + '</div>';
 
-        if (conn) {
-            html += '<div class="nic-card-remote">\u2192 ' + esc(conn.remoteName) + ' (' + esc(conn.remotePort) + ')</div>';
-            html += '<div class="nic-card-type ' + esc(typeClass) + '">' + esc(conn.remoteType) + '</div>';
-            if (conn.speed) html += '<div class="nic-card-speed">' + esc(conn.speed) + '</div>';
-        }
+        html += '<div class="nic-card-remote">\u2192 ' + esc(nic.name) + '</div>';
+        html += '<div class="nic-card-type switch">switch</div>';
+        if (nic.speed) html += '<div class="nic-card-speed">' + esc(nic.speed) + '</div>';
 
-        // Show counters from telemetry or link data
+        // Counters from telemetry
         var c = null;
-        var switchId = '';
-        var switchPort = '';
-        if (link) {
-            // Counters belong to the switch port connected to this host
-            switchId = link.local_device === hostId ? link.remote_device : link.local_device;
-            switchPort = link.local_device === hostId ? link.remote_port : link.local_port;
+        if (switchId && switchPort) {
             c = NM.data.getInterfaceCounters(switchId, switchPort);
-            if (!c && link.counters) c = link.counters;
         }
 
         // MTU / Jumbo frame indicator
         var mtu = 0;
         if (switchId && switchPort) mtu = NM.data.getInterfaceMTU(switchId, switchPort);
-        if (!mtu && link && link.mtu) mtu = parseInt(link.mtu) || 0;
+        if (!mtu && nic.mtu) mtu = parseInt(nic.mtu) || 0;
         if (mtu > 0) {
             var mtuLabel = mtu >= 9000 ? 'Jumbo (' + mtu + ')' : mtu.toString();
             var mtuClass = mtu >= 9000 ? 'nic-card-mtu jumbo' : 'nic-card-mtu';
