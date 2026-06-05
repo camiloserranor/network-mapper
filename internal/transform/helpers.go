@@ -250,3 +250,19 @@ func GetBool(m map[string]interface{}, key string) bool {
 	}
 	return false
 }
+
+// SanitizeIdentifier strips non-printable control characters (< 0x20 and 0x7F)
+// from a string. Some NX-OS gNMI responses include stray TLV type bytes
+// (e.g., STX 0x02) in LLDP system-name or port-id fields.
+func SanitizeIdentifier(s string) string {
+	clean := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] >= 0x20 && s[i] != 0x7F {
+			clean = append(clean, s[i])
+		}
+	}
+	if len(clean) == len(s) {
+		return s // no change, avoid allocation
+	}
+	return string(clean)
+}

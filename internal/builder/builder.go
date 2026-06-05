@@ -228,9 +228,9 @@ func (b *buildState) ingestLLDPNeighbors() {
 
 	for _, sw := range b.cr.Switches {
 		for _, nbr := range sw.Neighbors {
-			remoteID := nbr.SystemName
+			remoteID := transform.SanitizeIdentifier(nbr.SystemName)
 			if remoteID == "" {
-				remoteID = nbr.ChassisID
+				remoteID = transform.SanitizeIdentifier(nbr.ChassisID)
 			}
 			if remoteID == "" {
 				continue
@@ -240,7 +240,7 @@ func (b *buildState) ingestLLDPNeighbors() {
 			// Merge or create remote device
 			if existing, ok := b.deviceMap[remoteID]; ok {
 				if existing.device.ChassisID == "" {
-					existing.device.ChassisID = nbr.ChassisID
+					existing.device.ChassisID = transform.SanitizeIdentifier(nbr.ChassisID)
 				}
 				if existing.device.ManagementAddress == "" {
 					existing.device.ManagementAddress = nbr.ManagementAddress
@@ -261,8 +261,8 @@ func (b *buildState) ingestLLDPNeighbors() {
 						device: topology.Device{
 							ID:                remoteID,
 							Type:              devType,
-							ChassisID:         nbr.ChassisID,
-							SystemName:        nbr.SystemName,
+								ChassisID:         transform.SanitizeIdentifier(nbr.ChassisID),
+								SystemName:        transform.SanitizeIdentifier(nbr.SystemName),
 							SystemDescription: nbr.SystemDescription,
 							ManagementAddress: nbr.ManagementAddress,
 							Annotations:       annotations,
@@ -276,8 +276,8 @@ func (b *buildState) ingestLLDPNeighbors() {
 				localDevice:  sw.SwitchID,
 				localPort:    nbr.LocalPort,
 				remoteDevice: remoteID,
-				remotePort:   nbr.PortID,
-				chassisID:    nbr.ChassisID,
+				remotePort:   transform.SanitizeIdentifier(nbr.PortID),
+				chassisID:    transform.SanitizeIdentifier(nbr.ChassisID),
 			}
 			for _, iface := range sw.Interfaces {
 				if iface.Name == nbr.LocalPort {

@@ -124,21 +124,17 @@ hosts on ports X-Y" rather than a single named device.
 
 ## W-006: \u0002 Control Character in Host IDs
 
-**Status:** 🔴 Open  
-**Impact:** Low — cosmetic, IDs display with invisible prefix  
+**Status:** 🟢 Fixed  
+**Impact:** Medium — caused duplicate host entries in Env2  
 **Affected stage:** `ingestLLDPNeighbors()` (LLDP system-name parsing)
 
-**Problem:** Some host device IDs contain a `\u0002` (STX, Start-of-Text)
-control character prefix. This likely originates from the gNMI LLDP response
-where NX-OS encodes the system-name TLV with a leading type byte that our
-parser doesn't strip.
+**Problem:** One TOR appends a `\x02` (STX) control character to LLDP
+system-name values. This creates two deviceMap keys for the same host
+(e.g., `asrr1n22r04u12` vs `asrr1n22r04u12\x02`), bypassing dedup.
 
-**Consequence:** Device IDs appear correct in the UI (control chars are
-invisible) but can cause deduplication failures if the same host appears with
-and without the prefix from different sources.
-
-**Fix approach:** Strip non-printable characters (< 0x20) from system-name,
-chassis-id, and port-id values during LLDP parsing in `transform/lldp.go`.
+**Fix:** Added `SanitizeIdentifier()` to strip bytes < 0x20 and 0x7F from
+SystemName, PortID in all three LLDP parser paths (OpenConfig, flat-leaf,
+NX-OS). Committed in transform/helpers.go and transform/lldp.go.
 
 ---
 
