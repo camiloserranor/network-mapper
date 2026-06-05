@@ -77,11 +77,13 @@ NM.views.renderSwitch = function(switchId) {
     var ifaceVlanData = buildInterfaceVLANSummary(swDev);
     if (vlans.length > 0 || ifaceVlanData.length > 0) {
         html += '<div class="info-panel wide collapsible">';
-        html += '<div class="info-panel-title">VLAN Assignments <span class="panel-chevron">▾</span></div>';
+        html += '<div class="info-panel-title">Port VLAN Configuration ';
+        html += '<span class="help-btn" title="Per-port VLAN settings from the switch running config. Mode=trunk allows multiple VLANs; mode=access allows a single VLAN. The \'Traffic Observed\' column shows VLANs where we actually detected MAC address activity — empty means no traffic was seen (the port may still be correctly configured).">?</span>';
+        html += '<span class="panel-chevron">▾</span></div>';
         html += '<div class="panel-body">';
 
         if (ifaceVlanData.length > 0) {
-            html += '<table class="conn-table"><thead><tr><th>Port</th><th>Mode</th><th>Access</th><th>Native</th><th>Active VLANs</th></tr></thead><tbody>';
+            html += '<table class="conn-table"><thead><tr><th>Port</th><th>Mode</th><th title="The VLAN used when the port is in access mode">Access</th><th title="The default VLAN for untagged frames on a trunk port">Native</th><th title="VLANs where MAC address table entries were observed on this port — empty does NOT mean misconfiguration, just no detected traffic">Traffic Observed</th></tr></thead><tbody>';
             for (var vi = 0; vi < ifaceVlanData.length; vi++) {
                 var vd = ifaceVlanData[vi];
                 html += '<tr>';
@@ -432,7 +434,9 @@ function buildVLANVisualization(swDev, portMap, esc) {
     var colors = ['#0078d4', '#44b700', '#f7630c', '#a36efd', '#d13438', '#00b7c3', '#8764b8', '#ca5010', '#57a300', '#4f6bed'];
 
     var html = '<div class="info-panel wide collapsible">';
-    html += '<div class="info-panel-title">VLAN Membership <span class="vlan-viz-count">' + vlanIds.length + ' VLANs</span><span class="panel-chevron">▾</span></div>';
+    html += '<div class="info-panel-title">VLANs Allowed per Port ';
+    html += '<span class="help-btn" title="This shows which VLANs each port is configured to carry, based on trunk/access VLAN settings. A port appears under a VLAN if it is allowed to forward traffic for that VLAN — this does NOT mean traffic is actively flowing.">?</span>';
+    html += '<span class="vlan-viz-count">' + vlanIds.length + ' VLANs</span><span class="panel-chevron">▾</span></div>';
     html += '<div class="panel-body"><div class="vlan-sets-container">';
 
     for (var k = 0; k < vlanIds.length; k++) {
@@ -689,9 +693,14 @@ function buildQoSPanel(switchId, topology, esc) {
 
         html += '<table class="conn-table qos-table"><thead><tr>';
         html += '<th>Interface</th><th>Queue</th><th>Dir</th>';
-        html += '<th>TX Bytes</th><th>TX Pkts</th>';
-        html += '<th>PFC Rx</th><th>PFC Tx</th><th>PFC WD</th>';
-        html += '<th>ECN Marked</th><th>Drops</th><th>Q Depth</th>';
+        html += '<th title="Total bytes transmitted on this queue">TX Bytes</th>';
+        html += '<th title="Total packets transmitted on this queue">TX Pkts</th>';
+        html += '<th title="PFC Pause Frames Received — the switch received requests from a neighbor to stop sending on this priority. High values indicate downstream congestion.">PFC Rx</th>';
+        html += '<th title="PFC Pause Frames Transmitted — the switch asked its neighbor to stop sending on this priority. High values indicate local buffer pressure.">PFC Tx</th>';
+        html += '<th title="PFC Watchdog Drops — packets dropped because a priority queue was stuck in paused state too long (PFC storm). Critical issue for RDMA traffic.">PFC WD</th>';
+        html += '<th title="ECN Marked Packets — packets marked with Explicit Congestion Notification, warning the sender to reduce its rate before drops occur. Early congestion signal.">ECN Marked</th>';
+        html += '<th title="Queue Drops — packets dropped because the queue overflowed. Indicates sustained congestion that exceeded the available buffer.">Drops</th>';
+        html += '<th title="Current Queue Depth — how full the queue buffer is right now. High values relative to buffer size indicate risk of drops.">Q Depth</th>';
         html += '</tr></thead><tbody>';
 
         for (var fi = 0; fi < ifaceNames.length; fi++) {

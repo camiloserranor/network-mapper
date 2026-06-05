@@ -85,16 +85,92 @@ NM.views.renderHost = function(hostId) {
             if (conn.speed) html += '<div class="nic-card-speed">' + esc(conn.speed) + '</div>';
         }
 
-        // Show counters if available
-        if (link && link.counters) {
-            const c = link.counters;
+        // Show counters from telemetry or link data
+        var c = null;
+        var switchId = '';
+        var switchPort = '';
+        if (link) {
+            // Counters belong to the switch port connected to this host
+            switchId = link.local_device === hostId ? link.remote_device : link.local_device;
+            switchPort = link.local_device === hostId ? link.remote_port : link.local_port;
+            c = NM.data.getInterfaceCounters(switchId, switchPort);
+            if (!c && link.counters) c = link.counters;
+        }
+
+        // MTU / Jumbo frame indicator
+        var mtu = 0;
+        if (switchId && switchPort) mtu = NM.data.getInterfaceMTU(switchId, switchPort);
+        if (!mtu && link && link.mtu) mtu = parseInt(link.mtu) || 0;
+        if (mtu > 0) {
+            var mtuLabel = mtu >= 9000 ? 'Jumbo (' + mtu + ')' : mtu.toString();
+            var mtuClass = mtu >= 9000 ? 'nic-card-mtu jumbo' : 'nic-card-mtu';
+            html += '<div class="' + mtuClass + '" title="Maximum Transmission Unit — 9000+ indicates jumbo frames for RDMA/storage traffic">MTU ' + mtuLabel + '</div>';
+        } else {
+            html += '<div class="nic-card-mtu unavailable" title="MTU data not available from this switch">MTU —</div>';
+        }
+
+        if (c) {
             html += '<div class="nic-card-counters">';
-            html += '<span>\u2193 ' + formatBytes(c.in_octets) + '</span>';
-            html += '<span>\u2191 ' + formatBytes(c.out_octets) + '</span>';
+            html += '<span title="Received bytes">\u2193 Rx ' + formatBytes(c.in_octets) + '</span>';
+            html += '<span title="Transmitted bytes">\u2191 Tx ' + formatBytes(c.out_octets) + '</span>';
+            if (c.in_pkts || c.out_pkts) {
+                html += '<span title="Packets (in/out)">\u2194 ' + formatNumber(c.in_pkts || 0) + ' / ' + formatNumber(c.out_pkts || 0) + ' pkts</span>';
+            }
             if (c.in_errors > 0 || c.out_errors > 0) {
-                html += '<span class="counter-errors">\u26a0 ' + (c.in_errors + c.out_errors) + ' errors</span>';
+                html += '<span class="counter-errors" title="Interface errors">\u26a0 ' + (c.in_errors + c.out_errors) + ' errors</span>';
+            }
+            if (c.in_discards > 0 || c.out_discards > 0) {
+                html += '<span class="counter-errors" title="Dropped packets">\u2717 ' + (c.in_discards + c.out_discards) + ' drops</span>';
+            }
+            if (c.pause_frames_in > 0 || c.pause_frames_out > 0) {
+                html += '<span class="counter-pfc" title="PFC pause frames (congestion indicator)">\u23f8 PFC ' + ((c.pause_frames_in || 0) + (c.pause_frames_out || 0)) + '</span>';
+            }
+            if (c.crc_errors > 0) {
+                html += '<span class="counter-errors" title="CRC errors (physical layer issue)">\u26a0 CRC ' + c.crc_errors + '</span>';
             }
             html += '</div>';
+        }
+
+        // Per-queue QoS stats (ECN, PFC watchdog, drops) for this port
+        if (switchId && switchPort) {
+            var qosStats = NM.data.getQoSStatsForPort(switchId, switchPort);
+            var hasQoSIssues = false;
+            for (var qi = 0; qi < qosStats.length; qi++) {
+                var qs = qosStats[qi];
+                if (qs.pfc_pause_frames_rx || qs.pfc_pause_frames_tx || qs.pfc_watchdog_drops || qs.ecn_marked_packets || qs.drop_packets) {
+                    hasQoSIssues = true;
+                    break;
+                }
+            }
+            if (qosStats.length > 0) {
+                html += '<div class="nic-card-qos">';
+                html += '<div class="nic-card-qos-title" title="Per-queue QoS metrics from the switch port — critical for RDMA lossless traffic">QoS Queues';
+                if (hasQoSIssues) html += ' <span class="qos-badge qos-badge-warning">\u26a0</span>';
+                else html += ' <span class="qos-badge qos-badge-ok">\u2713</span>';
+                html += '</div>';
+                for (var qi2 = 0; qi2 < qosStats.length; qi2++) {
+                    var q = qosStats[qi2];
+                    var qClass = '';
+                    if (q.pfc_watchdog_drops || q.drop_packets) qClass = ' qos-critical';
+                    else if (q.pfc_pause_frames_rx || q.pfc_pause_frames_tx || q.ecn_marked_packets) qClass = ' qos-warning';
+                    html += '<div class="nic-card-qos-row' + qClass + '">';
+                    html += '<span class="qos-queue-name" title="Queue name / traffic class">' + esc(q.queue_name || '') + '</span>';
+                    if (q.pfc_pause_frames_rx || q.pfc_pause_frames_tx) {
+                        html += '<span title="PFC Pause Frames — switch asked the sender to slow down (Rx) or was asked to slow down (Tx). High values indicate congestion.">\u23f8 PFC ' + formatNumber(q.pfc_pause_frames_rx || 0) + '/' + formatNumber(q.pfc_pause_frames_tx || 0) + '</span>';
+                    }
+                    if (q.ecn_marked_packets) {
+                        html += '<span title="ECN Marked Packets — packets marked with Explicit Congestion Notification, warning the sender to reduce rate before drops occur">\u26a0 ECN ' + formatNumber(q.ecn_marked_packets) + '</span>';
+                    }
+                    if (q.pfc_watchdog_drops) {
+                        html += '<span class="counter-errors" title="PFC Watchdog Drops — packets dropped because a PFC storm was detected (queue stuck in paused state too long). Critical RDMA issue.">\u2717 WD ' + formatNumber(q.pfc_watchdog_drops) + '</span>';
+                    }
+                    if (q.drop_packets) {
+                        html += '<span class="counter-errors" title="Queue Drops — packets dropped due to queue overflow. Indicates sustained congestion exceeding buffer capacity.">\u2717 Drops ' + formatNumber(q.drop_packets) + '</span>';
+                    }
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
         }
 
         html += '</div>';
@@ -187,6 +263,14 @@ function formatBytes(bytes) {
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
     return (bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0) + ' ' + units[i];
+}
+
+function formatNumber(n) {
+    if (!n) return '0';
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return String(n);
 }
 
 // Helper: info row (reused from switch view pattern)

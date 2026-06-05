@@ -1162,6 +1162,70 @@ select.btn {
     color: var(--text-muted);
     font-family: var(--fontFamilyMonospace);
 }
+.nic-card-mtu {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--fontFamilyMonospace);
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: var(--bg-tertiary);
+    display: inline-block;
+    margin-top: 4px;
+}
+.nic-card-mtu.jumbo {
+    color: #44b700;
+    background: rgba(68, 183, 0, 0.1);
+}
+.nic-card-mtu.unavailable {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+.nic-card-qos {
+    margin-top: 6px;
+    padding: 6px 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    font-size: 10px;
+}
+.nic-card-qos-title {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+.nic-card-qos-row {
+    display: flex;
+    gap: 8px;
+    padding: 2px 0;
+    color: var(--text-muted);
+    font-family: var(--fontFamilyMonospace);
+}
+.nic-card-qos-row.qos-warning {
+    color: #f0883e;
+}
+.nic-card-qos-row.qos-critical {
+    color: var(--danger);
+}
+.nic-card-qos-row .qos-queue-name {
+    min-width: 60px;
+    color: var(--text-secondary);
+}
+.help-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 700;
+    cursor: help;
+    border: 1px solid var(--border-subtle);
+    vertical-align: middle;
+    margin-left: 4px;
+}
 
 /* ---- Host VLAN Membership ---- */
 .host-vlans {

@@ -409,6 +409,43 @@ NM.data.getInterfaceCounters = function(deviceId, interfaceName) {
     return null;
 };
 
+// Get QoS stats for a specific interface on a switch.
+// Returns an array of QoS stat entries or empty array.
+NM.data.getQoSStatsForPort = function(switchId, interfaceName) {
+    var topology = NM.state.topology;
+    if (!topology || !topology._v2 || !topology._v2.fabric) return [];
+    var switches = topology._v2.fabric.switches || [];
+    for (var i = 0; i < switches.length; i++) {
+        if (switches[i].id !== switchId) continue;
+        var qosStats = switches[i].qos_stats || [];
+        var results = [];
+        for (var q = 0; q < qosStats.length; q++) {
+            if (qosStats[q].interface_name === interfaceName) {
+                results.push(qosStats[q]);
+            }
+        }
+        return results;
+    }
+    return [];
+};
+
+// Get MTU for a specific interface on a switch from the topology data.
+// Returns the MTU integer or 0 if not available.
+NM.data.getInterfaceMTU = function(switchId, interfaceName) {
+    var topology = NM.state.topology;
+    if (!topology || !topology.devices) return 0;
+    for (var i = 0; i < topology.devices.length; i++) {
+        var dev = topology.devices[i];
+        if (dev.id !== switchId || !dev.interfaces) continue;
+        for (var j = 0; j < dev.interfaces.length; j++) {
+            if (dev.interfaces[j].name === interfaceName) {
+                return dev.interfaces[j].mtu || 0;
+            }
+        }
+    }
+    return 0;
+};
+
 // Get device health metrics from telemetry.
 NM.data.getDeviceHealth = function(deviceId) {
     var telemetry = NM.state.telemetry;
