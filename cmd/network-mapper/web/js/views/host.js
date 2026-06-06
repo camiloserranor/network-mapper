@@ -88,7 +88,7 @@ NM.views.renderHost = function(hostId) {
         // Row 2: NIC identity (MAC + IP from LLDP)
         if (nic.remotePortId || nic.managementAddress) {
             html += '<div class="nic-card-identity">';
-            if (nic.remotePortId) html += '<span title="NIC MAC address (LLDP Port ID)">\u2318 ' + esc(nic.remotePortId) + '</span>';
+            if (nic.remotePortId) html += '<span title="NIC MAC address (LLDP Port ID)">MAC ' + esc(nic.remotePortId) + '</span>';
             if (nic.managementAddress) html += '<span title="Management IP address (LLDP)">\u2316 ' + esc(nic.managementAddress) + '</span>';
             html += '</div>';
         }
