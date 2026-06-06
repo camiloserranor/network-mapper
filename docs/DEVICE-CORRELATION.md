@@ -29,17 +29,40 @@ This document describes how network-mapper identifies, classifies, and correlate
 └──────────────────────┬───────────────────────────────────────────────┘
                        ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                      TOPOLOGY ASSEMBLY                                │
-│  1. Add each queried switch as a device (config name as ID)          │
-│  2. Build system-name index (FQDN → config ID)                      │
-│  3. For each LLDP neighbor:                                          │
-│     a. Pick device ID (system-name preferred, chassis-id fallback)   │
-│     b. Resolve against system-name index (switch dedup)              │
-│     c. Classify device type (capabilities → description → name)      │
-│     d. Create/merge device, create link                              │
-│  4. Deduplicate VLANs                                                │
-│  5. **ARP-Port Correlation** (host enrichment from switch data)      │
-│  6. Correlate VM endpoints (MAC table − LLDP chassis IDs)            │
+│                      TOPOLOGY ASSEMBLY (builder.Build)                │
+│                                                                      │
+│  1. ingestSwitches()                                                 │
+│     → Add each queried switch as a device (config name as ID)        │
+│     → Build system-name index (FQDN → config ID)                    │
+│                                                                      │
+│  2. ingestLLDPNeighbors()                                            │
+│     → For each LLDP neighbor:                                        │
+│       a. Pick device ID (system-name preferred, chassis-id fallback) │
+│       b. SanitizeIdentifier() — strip control chars (0x02 etc.)      │
+│       c. Resolve against system-name index (switch dedup)            │
+│       d. Classify device type (capabilities → description → name)    │
+│       e. Create/merge device, create link with MAC/IP data           │
+│                                                                      │
+│  3. discoverHostsFromDescriptions()                                  │
+│     → UP ports with no LLDP → infer host from port description      │
+│                                                                      │
+│  4. enrichHosts()                                                    │
+│     → ARP-Port Correlation: assign management IPs from ARP table     │
+│                                                                      │
+│  5. mergeDualHomedHosts()                                            │
+│     → MAC adjacency (±2) + port-number confirmation → merge NICs     │
+│                                                                      │
+│  6. promoteUnknownOnPhysicalPorts()                                  │
+│     → Last resort: unknown on UP Ethernet port → "host"              │
+│                                                                      │
+│  7. correlateEndpoints()                                             │
+│     → VM discovery: MAC table − LLDP chassis IDs = VM MACs           │
+│                                                                      │
+│  8. buildVLANs()                                                     │
+│     → VLAN membership from MAC table observed VLANs                  │
+│                                                                      │
+│  9. assemble()                                                       │
+│     → Build final TopologyV2 JSON output                             │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -70,7 +93,8 @@ A physical switch can appear twice in the topology: once as a queried device (wi
 
 **Assumption:** A switch's gNMI-reported SystemName matches the system-name it advertises via LLDP to its peers.
 
-**Code:** `collector.go` → `buildSystemNameIndex()`, `resolveDeviceID()`
+**Code:** `builder/builder.go` → `buildSystemNameIndex()`, `resolveDeviceID()`  
+(Legacy path also exists in `collector/collector.go`)
 
 ---
 
@@ -135,7 +159,7 @@ The web UI further classifies switches to determine their position in the visual
 
 This classification is computed **client-side** from the topology link data by `classifySwitches()` in `app.js`. It is **not** stored in the topology JSON output and is used only for layout positioning in the web UI.
 
-**Code:** `cmd/network-mapper/web/js/app.js` → `classifySwitches()`
+**Code:** `data/topology.js` → `NM.data.classifySwitches()`
 
 ---
 

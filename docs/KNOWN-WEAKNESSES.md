@@ -132,9 +132,15 @@ hosts on ports X-Y" rather than a single named device.
 system-name values. This creates two deviceMap keys for the same host
 (e.g., `asrr1n22r04u12` vs `asrr1n22r04u12\x02`), bypassing dedup.
 
-**Fix:** Added `SanitizeIdentifier()` to strip bytes < 0x20 and 0x7F from
-SystemName, PortID in all three LLDP parser paths (OpenConfig, flat-leaf,
-NX-OS). Committed in transform/helpers.go and transform/lldp.go.
+**Fix:** Added `SanitizeIdentifier()` to strip bytes < 0x20 and 0x7F.
+Applied at:
+- Parser level: all three LLDP parser paths (OpenConfig, flat-leaf, NX-OS)
+  sanitize SystemName and PortID (`transform/lldp.go`)
+- Builder level: sanitizes `remoteID` (system-name), ChassisID fallback,
+  device struct fields, and linkInfo fields (`builder/builder.go` lines
+  231-280). This was the critical fix — the parser-level sanitization alone
+  was insufficient because when SystemName is empty, the builder falls back
+  to unsanitized ChassisID.
 
 ---
 
@@ -196,3 +202,98 @@ For context, the build pipeline runs these stages in order:
 7. `correlateEndpoints()` — VM discovery from MAC table
 8. `buildVLANs()` — VLAN membership from MAC entries
 9. `assemble()` — build final TopologyV2 output
+
+---
+
+## Architectural Exploration: NIC-Centric vs. Host-Centric Model
+
+### Current model: Host-centric
+
+The current algorithm groups multiple LLDP neighbors into a single "host" device.
+This grouping relies on `mergeDualHomedHosts()` which uses MAC adjacency (±2) and
+port-number confirmation to decide that two separate LLDP entries represent the
+same physical server.
+
+**The host construct is our invention** — LLDP only tells us about individual NICs.
+We *infer* that NIC `58:a2:e1:9d:8a:86` on TOR-A port 15 and NIC `58:a2:e1:9d:8a:87`
+on TOR-B port 15 belong to the same server because:
+1. Their MACs differ by 1 (adjacent Mellanox ports on the same card)
+2. They're on the same port number across two different TORs
+3. Both NICs advertise the same LLDP system-name (when available)
+
+### Alternative model: NIC-centric (flat)
+
+Instead of merging, we could treat **each LLDP neighbor as a separate NIC entity**:
+
+```
+Current (host-centric):
+  Host "asrr1n22r04u15" → 4 connections (2 NICs × 2 TORs)
+    ├── NIC A port 1 → TOR-A Eth1/15
+    ├── NIC A port 2 → TOR-A Eth1/35
+    ├── NIC B port 1 → TOR-B Eth1/15
+    └── NIC B port 2 → TOR-B Eth1/35
+
+Alternative (NIC-centric):
+  NIC "58:a2:e1:9d:8a:86" → TOR-A Eth1/15
+  NIC "58:a2:e1:9d:8a:87" → TOR-A Eth1/35
+  NIC "a0:88:c2:9a:a6:ba" → TOR-B Eth1/15
+  NIC "a0:88:c2:9a:a6:bb" → TOR-B Eth1/35
+```
+
+### Tradeoff Analysis
+
+| Dimension | Host-centric (current) | NIC-centric (alternative) |
+|-----------|----------------------|--------------------------|
+| **Accuracy** | Can produce false merges (W-004) or false splits. Relies on vendor-specific MAC patterns. | 100% accurate — what LLDP reports is what we show. Zero inference. |
+| **Human readability** | Operators think in servers, not NICs. "Host X has 4 links" is intuitive. | Operators must mentally group NICs → servers. 56 NICs is harder to scan than 14 hosts. |
+| **VM attribution** | VMs are attributed to a host (the server running them). Port-channel → member port resolution needed once. | VMs would be attributed to a specific NIC (or port). More accurate per-path visibility. |
+| **Dual-homed visibility** | Explicitly shows all paths. A host with <4 connections signals a cabling issue. | Dual-homing is implicit — operator must notice matching port numbers across TORs. |
+| **Scalability** | 14 entities in Env2 (14 hosts). | 56 entities in Env2 (56 NICs). Quadruples inventory list. |
+| **Correctness under edge cases** | Breaks when MAC adjacency assumption fails, when NICs are from different vendors, or when cabling is asymmetric (W-004). | Never breaks — no assumptions about hardware. |
+| **Host identity for ops** | Can label "asrr1n22r04u15" from LLDP system-name. Useful for rack operations. | Still shows system-name per NIC (all NICs of the same host share it). Could be grouped client-side. |
+
+### Impact on specific weaknesses
+
+| Weakness | Effect of NIC-centric model |
+|----------|---------------------------|
+| **W-001** (Port-channel mismatch) | Unchanged — still need LAG→member mapping for VM attribution. |
+| **W-004** (Dual-homed fragility) | **Eliminated entirely** — no merging, no fragility. |
+| **W-005** (Switched-Compute grouping) | **Eliminated** — each port is its own NIC entity. No over-grouping. |
+| **W-008** (Over-promotion) | Reduced — NICs don't need classification, they just exist as LLDP neighbors. |
+
+### Recommendation: Hybrid approach
+
+A purely NIC-centric model sacrifices operator usability for correctness. A better
+path may be a **two-layer model**:
+
+1. **Data layer (NIC-centric):** Every LLDP neighbor is stored as an individual NIC
+   entity with its MAC, IP, switch port, and system-name. No merging, no inference.
+   This is the ground truth.
+
+2. **Presentation layer (host grouping):** NICs are grouped into hosts **client-side**
+   using the most reliable signal available:
+   - LLDP system-name match (deterministic, hardware-independent)
+   - Manual override via annotations when system-name is absent
+
+   If system-name is empty and no manual grouping is provided, the NIC stays
+   ungrouped — displayed as an individual entity rather than incorrectly merged.
+
+This approach eliminates W-004 and W-005 entirely, preserves the operator-friendly
+host view for the common case (LLDP system-name is present in most Azure Local
+deployments), and degrades gracefully (ungrouped NICs) rather than incorrectly
+(false merges).
+
+### Implementation complexity
+
+Moving to the hybrid model would require:
+- Removing `mergeDualHomedHosts()` from the build pipeline
+- Changing `ComputeHost.Connections` to be the primary data (each NIC = one connection)
+- Adding a `system_name` field to each connection for client-side grouping
+- UI change: group NIC cards by system-name header when system-name is non-empty
+- Backward-compatible JSON: hosts array becomes NICs array, grouped by system-name
+
+**Risk:** Low — the current `HostConnection` already carries per-NIC data (MAC,
+switch port, speed, MTU). The merge step is purely a builder-level aggregation
+that could be moved to the UI layer without data loss.
+
+**Effort:** Medium — mostly UI refactoring. Backend change is removing code (simpler).
