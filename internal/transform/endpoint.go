@@ -14,11 +14,16 @@ type CorrelationInput struct {
 	Neighbors  []LLDPNeighbor
 	MACEntries []MACEntry
 	ARPEntries []ARPEntry
+	NVEPeers   []NVEPeer    // optional: VTEP peers for VXLAN correlation
+	L2RIBMacs  []L2RIBEntry // optional: MAC→VTEP mappings from L2RIB
 }
 
 // CorrelateEndpoints discovers VM endpoints by comparing MAC table entries
 // against known LLDP neighbors. MACs on a port that don't match the LLDP
 // chassis ID are classified as VMs behind that host.
+//
+// For VXLAN environments, a second pass correlates MACs learned on NVE ports
+// using L2RIB data (MAC→next-hop VTEP IP mapping).
 func CorrelateEndpoints(inputs []CorrelationInput) []topology.Endpoint {
 	// Build lookup: port → LLDP chassis IDs (normalized)
 	portToChassisIDs := make(map[string]map[string]bool) // "switchID:port" → set of chassis MACs
@@ -53,6 +58,24 @@ func CorrelateEndpoints(inputs []CorrelationInput) []topology.Endpoint {
 		for _, arp := range input.ARPEntries {
 			mac := normalizeMACAddress(arp.MAC)
 			macToIPs[mac] = appendUnique(macToIPs[mac], arp.IP)
+		}
+	}
+
+	// Build L2RIB lookup: MAC → (NextHopIP, VNI) from all switches' L2RIB data
+	type l2ribInfo struct {
+		NextHopIP string
+		VNI       int
+	}
+	macToVTEP := make(map[string]l2ribInfo) // MAC → first consistent VTEP mapping
+	for _, input := range inputs {
+		for _, entry := range input.L2RIBMacs {
+			mac := normalizeMACAddress(entry.MAC)
+			if mac == "" || entry.NextHopIP == "" {
+				continue
+			}
+			if _, exists := macToVTEP[mac]; !exists {
+				macToVTEP[mac] = l2ribInfo{NextHopIP: entry.NextHopIP, VNI: entry.VNI}
+			}
 		}
 	}
 
@@ -105,6 +128,22 @@ func CorrelateEndpoints(inputs []CorrelationInput) []topology.Endpoint {
 				}
 				endpointMap[entryMAC] = ep
 			}
+		}
+	}
+
+	// Second pass: VTEP-based correlation for NVE-learned MACs
+	for _, ep := range endpointMap {
+		if ep.HostDevice != "" {
+			continue // already attributed via port-based correlation
+		}
+		if !IsNVEInterface(ep.HostPort) {
+			continue // not an NVE port, skip
+		}
+
+		// Look up this MAC in L2RIB for VTEP attribution
+		if info, ok := macToVTEP[ep.MAC]; ok {
+			ep.VTEPIP = info.NextHopIP
+			ep.VNI = info.VNI
 		}
 	}
 

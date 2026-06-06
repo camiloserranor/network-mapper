@@ -185,6 +185,84 @@ func TestBuild_HostClassification(t *testing.T) {
 	}
 }
 
+func TestBuild_HostFromPortDescription(t *testing.T) {
+	// Simulate environment where hosts don't run LLDP, but switch ports
+	// have descriptions identifying the connected device.
+	cr := &collector.CollectionResult{
+		CollectedAt: time.Now(),
+		Switches: []collector.SwitchData{
+			{
+				SwitchName: "TOR-1",
+				SwitchID:   "TOR-1",
+				Device:     topology.Device{ID: "TOR-1", Type: "switch"},
+				Neighbors: []transform.LLDPNeighbor{
+					// Only spine neighbor via LLDP
+					{LocalPort: "Eth1/1", SystemName: "Spine1", PortID: "Eth1/1", Capabilities: "Bridge,Router"},
+				},
+				Interfaces: []topology.Interface{
+					{Name: "Eth1/1", OperStatus: "UP", Speed: "10G", Description: "To-Spine1"},
+					{Name: "Eth1/2", OperStatus: "DOWN", Speed: ""},
+					{Name: "Eth1/3", OperStatus: "UP", Speed: "1G", Description: "Server-Compute-01"},
+					{Name: "Eth1/4", OperStatus: "UP", Speed: "1G", Description: "Jumpbox-desktop0"},
+					{Name: "Eth1/5", OperStatus: "UP", Speed: "1G", Description: ""},  // UP but no description
+					{Name: "Eth1/6", OperStatus: "DOWN", Speed: "", Description: "Storage-Node-01"}, // has desc but DOWN
+				},
+			},
+		},
+	}
+
+	v2 := Build(cr)
+
+	// Spine1 should be a switch (description contains "Spine")
+	// Server-Compute-01 and Jumpbox-desktop0 should be hosts
+	if v2.Metadata.Summary.HostCount != 2 {
+		t.Errorf("host_count = %d, want 2", v2.Metadata.Summary.HostCount)
+	}
+
+	hostIDs := make(map[string]bool)
+	for _, h := range v2.Compute.Hosts {
+		hostIDs[h.ID] = true
+	}
+	if !hostIDs["Server-Compute-01"] {
+		t.Error("expected host Server-Compute-01 to be discovered from port description")
+	}
+	if !hostIDs["Jumpbox-desktop0"] {
+		t.Error("expected host Jumpbox-desktop0 to be discovered from port description")
+	}
+
+	// Verify connection details
+	for _, h := range v2.Compute.Hosts {
+		if h.ID == "Server-Compute-01" {
+			if len(h.Connections) != 1 {
+				t.Fatalf("Server-Compute-01 connections = %d, want 1", len(h.Connections))
+			}
+			conn := h.Connections[0]
+			if conn.SwitchID != "TOR-1" {
+				t.Errorf("connection switch_id = %q, want TOR-1", conn.SwitchID)
+			}
+			if conn.SwitchPort != "Eth1/3" {
+				t.Errorf("connection switch_port = %q, want Eth1/3", conn.SwitchPort)
+			}
+			if conn.OperStatus != "UP" {
+				t.Errorf("connection oper_status = %q, want UP", conn.OperStatus)
+			}
+			if conn.Speed != "1G" {
+				t.Errorf("connection speed = %q, want 1G", conn.Speed)
+			}
+		}
+	}
+
+	// Spine link should NOT create a host (description contains "spine")
+	if hostIDs["To-Spine1"] {
+		t.Error("To-Spine1 should NOT be created as a host (switch keyword in description)")
+	}
+
+	// Eth1/5 (UP, no description) should not create a host
+	if hostIDs[""] {
+		t.Error("empty description should not create a host")
+	}
+}
+
 func TestBuild_VLANs(t *testing.T) {
 	cr := &collector.CollectionResult{
 		CollectedAt: time.Now(),

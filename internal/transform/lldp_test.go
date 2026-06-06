@@ -93,3 +93,67 @@ func TestParseLLDPFlatLeaf_SkipsEmptyNotifications(t *testing.T) {
 		t.Errorf("expected LocalPort 'Eth20', got %q", neighbors[0].LocalPort)
 	}
 }
+
+func TestSanitizeIdentifier(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"clean-hostname", "clean-hostname"},
+		{"host\x02", "host"},               // trailing STX (real NX-OS bug)
+		{"\x01\x02prefix", "prefix"},        // leading control chars
+		{"mid\x00dle", "middle"},            // embedded NUL
+		{"tabs\ttoo", "tabstoo"},            // tab stripped
+		{"", ""},                            // empty stays empty
+		{"all\x7Fprintable", "allprintable"}, // DEL stripped
+	}
+	for _, tt := range tests {
+		got := SanitizeIdentifier(tt.input)
+		if got != tt.want {
+			t.Errorf("SanitizeIdentifier(%q) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}
+
+func TestParseLLDPNXOS_SanitizesControlChars(t *testing.T) {
+	// Simulates the real NX-OS bug: sysName has trailing \x02 (STX byte).
+	notifs := []gnmi.Notification{
+		{
+			Prefix: "/System/lldp-items/inst-items/if-items/If-list",
+			Updates: []gnmi.Update{
+				{
+					Path: "",
+					Value: []interface{}{
+						map[string]interface{}{
+							"id": "Eth1/1",
+							"adj-items": map[string]interface{}{
+								"AdjEp-list": []interface{}{
+									map[string]interface{}{
+										"chassisIdV": "aa:bb:cc:dd:ee:ff",
+										"portIdV":    "port1\x02",
+										"sysName":    "myhost\x02",
+										"sysDesc":    "Linux host",
+										"portDesc":   "eth0",
+										"mgmtIp":     "10.0.0.1",
+										"sysCap":     "station-only",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	neighbors := ParseLLDPNXOS(notifs)
+	if len(neighbors) != 1 {
+		t.Fatalf("expected 1 neighbor, got %d", len(neighbors))
+	}
+	if neighbors[0].SystemName != "myhost" {
+		t.Errorf("expected SystemName 'myhost', got %q", neighbors[0].SystemName)
+	}
+	if neighbors[0].PortID != "port1" {
+		t.Errorf("expected PortID 'port1', got %q", neighbors[0].PortID)
+	}
+}

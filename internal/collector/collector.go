@@ -4,6 +4,7 @@ package collector
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -28,6 +29,10 @@ type switchResult struct {
 	ARPEntries   []transform.ARPEntry
 	VLANs        []topology.VLAN
 	BGPNeighbors []transform.BGPNeighbor
+	NVEPeers     []transform.NVEPeer
+	L2RIBMacs    []transform.L2RIBEntry
+	QoSStats     []transform.QoSStats
+	PFCConfig    []transform.PFCConfig
 	Errors       []topology.PartialError
 }
 
@@ -73,6 +78,10 @@ func CollectRaw(ctx context.Context, cfg *config.Config) (*CollectionResult, err
 			ARPEntries:   r.ARPEntries,
 			VLANs:        r.VLANs,
 			BGPNeighbors: r.BGPNeighbors,
+			NVEPeers:     r.NVEPeers,
+			L2RIBMacs:    r.L2RIBMacs,
+			QoSStats:     r.QoSStats,
+			PFCConfig:    r.PFCConfig,
 			Errors:       r.Errors,
 		}
 	}
@@ -258,6 +267,83 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 	} else {
 		result.BGPNeighbors = bgpNeighbors
 		log.Printf("  %s: %d BGP neighbors", sw.Name, len(bgpNeighbors))
+	}
+
+	// 10. Collect NVE peers (VXLAN/EVPN — optional capability)
+	if vc, ok := p.(platform.VXLANCollector); ok {
+		nvePeers, nveErr := vc.CollectNVEPeers(ctx, client)
+		if nveErr != nil {
+			// Classify the error for better diagnostics
+			var errPath *gnmi.ErrPathNotSupported
+			var errAuth *gnmi.ErrAuth
+			switch {
+			case errors.As(nveErr, &errPath):
+				log.Printf("  %s: NVE/VXLAN not configured (path not supported)", sw.Name)
+			case errors.As(nveErr, &errAuth):
+				log.Printf("  %s: NVE path access denied (auth/permission error)", sw.Name)
+			default:
+				log.Printf("  %s: NVE peers unavailable: %v", sw.Name, nveErr)
+			}
+			result.Errors = append(result.Errors, topology.PartialError{
+				Switch: sw.Name, Phase: "nve-peers", Message: nveErr.Error(),
+			})
+		} else if len(nvePeers) > 0 {
+			result.NVEPeers = nvePeers
+			log.Printf("  %s: %d NVE peers", sw.Name, len(nvePeers))
+
+			// 11. Only collect L2RIB if we have NVE peers AND MACs on NVE ports
+			hasNVEMacs := false
+			for _, mac := range result.MACEntries {
+				if transform.IsNVEInterface(mac.Port) {
+					hasNVEMacs = true
+					break
+				}
+			}
+			if hasNVEMacs {
+				l2ribMacs, l2ribErr := vc.CollectL2RIB(ctx, client)
+				if l2ribErr != nil {
+					log.Printf("  %s: L2RIB unavailable: %v", sw.Name, l2ribErr)
+					result.Errors = append(result.Errors, topology.PartialError{
+						Switch: sw.Name, Phase: "l2rib", Message: l2ribErr.Error(),
+					})
+				} else if len(l2ribMacs) > 0 {
+					result.L2RIBMacs = l2ribMacs
+					log.Printf("  %s: %d L2RIB MAC entries", sw.Name, len(l2ribMacs))
+				} else {
+					log.Printf("  %s: L2RIB query returned 0 entries", sw.Name)
+				}
+			} else {
+				log.Printf("  %s: %d NVE peers found but no MACs on NVE ports, skipping L2RIB", sw.Name, len(nvePeers))
+			}
+		} else {
+			log.Printf("  %s: NVE path returned no peers (VXLAN may not be configured)", sw.Name)
+		}
+	}
+
+	// 12. Collect QoS stats (RDMA monitoring — optional capability)
+	if qc, ok := p.(platform.QoSCollector); ok {
+		qosStats, qosErr := qc.CollectQoSStats(ctx, client)
+		if qosErr != nil {
+			log.Printf("  %s: QoS stats unavailable: %v", sw.Name, qosErr)
+			result.Errors = append(result.Errors, topology.PartialError{
+				Switch: sw.Name, Phase: "qos-stats", Message: qosErr.Error(),
+			})
+		} else if len(qosStats) > 0 {
+			result.QoSStats = qosStats
+			log.Printf("  %s: %d interfaces with QoS stats", sw.Name, len(qosStats))
+		}
+
+		// 13. Collect PFC config
+		pfcConfig, pfcErr := qc.CollectPFCConfig(ctx, client)
+		if pfcErr != nil {
+			log.Printf("  %s: PFC config unavailable: %v", sw.Name, pfcErr)
+			result.Errors = append(result.Errors, topology.PartialError{
+				Switch: sw.Name, Phase: "pfc-config", Message: pfcErr.Error(),
+			})
+		} else if len(pfcConfig) > 0 {
+			result.PFCConfig = pfcConfig
+			log.Printf("  %s: %d interfaces with PFC config", sw.Name, len(pfcConfig))
+		}
 	}
 
 	log.Printf("  %s: collection completed in %s", sw.Name, time.Since(start))

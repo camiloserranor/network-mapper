@@ -8,15 +8,26 @@ NM.views.renderHost = function(hostId) {
     if (!hostDev) return;
 
     const container = document.getElementById('detail-view');
-    const portMap = NM.data.buildPortMap(topology, hostId);
     const esc = NM.core.escapeHtml;
 
-    // NICs are derived from LLDP links (host has no gNMI agent)
-    const nics = Object.entries(portMap).map(([portName, conn]) => ({
-        name: portName,
-        conn: conn,
-        isUp: (conn.operStatus || '').toUpperCase() === 'UP' || !!conn.remoteId,
-    }));
+    // Build NICs from v2 connections (each connection = one physical link to a switch port)
+    const v2Host = NM.data.getV2Host(hostId);
+    const conns = v2Host ? (v2Host.connections || []) : [];
+    const nics = conns.map(function(conn) {
+        var switchName = conn.switch_name || conn.switch_id || '';
+        var label = switchName + ':' + (conn.switch_port || '?');
+        return {
+            name: label,
+            switchId: conn.switch_id || '',
+            switchPort: conn.switch_port || '',
+            remotePortId: conn.remote_port_id || '',
+            managementAddress: conn.management_address || '',
+            operStatus: conn.oper_status || '',
+            speed: conn.speed || '',
+            mtu: conn.mtu || '',
+            isUp: (conn.oper_status || '').toUpperCase() === 'UP'
+        };
+    });
     const vms = NM.data.getHostVMs(topology, hostId);
 
     // Gather VLAN info for this host
@@ -29,11 +40,6 @@ NM.views.renderHost = function(hostId) {
     }
     const allVlanIds = new Set([...hostVlanIds, ...endpointVlans]);
     const allVlanDetails = (topology.vlans || []).filter(v => allVlanIds.has(v.id));
-
-    // Find link counters for this host's connections
-    const linkData = (topology.links || []).filter(
-        l => l.local_device === hostId || l.remote_device === hostId
-    );
 
     let html = '';
 
@@ -67,34 +73,109 @@ NM.views.renderHost = function(hostId) {
     html += '<div class="nic-list">';
 
     for (const nic of nics) {
-        const conn = nic.conn;
-        const typeClass = conn ? conn.remoteType : '';
-        // Find matching link for counters
-        const link = linkData.find(l =>
-            (l.local_device === hostId && l.remote_port === nic.name) ||
-            (l.remote_device === hostId && l.remote_port === nic.name)
-        );
+        var switchId = nic.switchId;
+        var switchPort = nic.switchPort;
 
-        html += '<div class="nic-card" data-remote-id="' + (conn ? esc(conn.remoteId) : '') + '" data-remote-type="' + (conn ? esc(conn.remoteType) : '') + '">';
+        html += '<div class="nic-card" data-remote-id="' + esc(switchId) + '" data-remote-type="switch">';
+
+        // Row 1: connection identity
+        html += '<div class="nic-card-header">';
         html += '<div class="nic-card-status ' + (nic.isUp ? 'up' : 'down') + '"></div>';
-        html += '<div class="nic-card-port">' + esc(nic.name) + '</div>';
+        html += '<div class="nic-card-port">' + esc(switchPort || '?') + '</div>';
+        html += '<div class="nic-card-remote">\u2192 ' + esc(nic.name) + '</div>';
+        html += '</div>';
 
-        if (conn) {
-            html += '<div class="nic-card-remote">\u2192 ' + esc(conn.remoteName) + ' (' + esc(conn.remotePort) + ')</div>';
-            html += '<div class="nic-card-type ' + esc(typeClass) + '">' + esc(conn.remoteType) + '</div>';
-            if (conn.speed) html += '<div class="nic-card-speed">' + esc(conn.speed) + '</div>';
+        // Row 2: NIC identity (MAC + IP from LLDP)
+        if (nic.remotePortId || nic.managementAddress) {
+            html += '<div class="nic-card-identity">';
+            if (nic.remotePortId) html += '<span title="NIC MAC address (LLDP Port ID)">MAC ' + esc(nic.remotePortId) + '</span>';
+            if (nic.managementAddress) html += '<span title="Management IP address (LLDP)">\u2316 ' + esc(nic.managementAddress) + '</span>';
+            html += '</div>';
         }
 
-        // Show counters if available
-        if (link && link.counters) {
-            const c = link.counters;
+        // Row 3: badges (speed, MTU)
+        html += '<div class="nic-card-badges">';
+        if (nic.speed) html += '<div class="nic-card-speed">' + esc(nic.speed) + '</div>';
+        var mtu = 0;
+        if (switchId && switchPort) mtu = NM.data.getInterfaceMTU(switchId, switchPort);
+        if (!mtu && nic.mtu) mtu = parseInt(nic.mtu) || 0;
+        if (mtu > 0) {
+            var mtuLabel = mtu >= 9000 ? 'Jumbo (' + mtu + ')' : 'MTU ' + mtu;
+            var mtuClass = mtu >= 9000 ? 'nic-card-mtu jumbo' : 'nic-card-mtu';
+            html += '<div class="' + mtuClass + '" title="Maximum Transmission Unit — 9000+ indicates jumbo frames for RDMA/storage traffic">' + mtuLabel + '</div>';
+        } else {
+            html += '<div class="nic-card-mtu unavailable" title="MTU data not available from this switch">MTU —</div>';
+        }
+        html += '</div>';
+
+        // Row 3: counters from telemetry
+        var c = null;
+        if (switchId && switchPort) {
+            c = NM.data.getInterfaceCounters(switchId, switchPort);
+        }
+
+        if (c) {
             html += '<div class="nic-card-counters">';
-            html += '<span>\u2193 ' + formatBytes(c.in_octets) + '</span>';
-            html += '<span>\u2191 ' + formatBytes(c.out_octets) + '</span>';
+            html += '<span title="Received bytes">\u2193 Rx ' + formatBytes(c.in_octets) + '</span>';
+            html += '<span title="Transmitted bytes">\u2191 Tx ' + formatBytes(c.out_octets) + '</span>';
+            if (c.in_pkts || c.out_pkts) {
+                html += '<span title="Packets (in/out)">\u2194 ' + formatNumber(c.in_pkts || 0) + ' / ' + formatNumber(c.out_pkts || 0) + ' pkts</span>';
+            }
             if (c.in_errors > 0 || c.out_errors > 0) {
-                html += '<span class="counter-errors">\u26a0 ' + (c.in_errors + c.out_errors) + ' errors</span>';
+                html += '<span class="counter-errors" title="Interface errors">\u26a0 ' + (c.in_errors + c.out_errors) + ' errors</span>';
+            }
+            if (c.in_discards > 0 || c.out_discards > 0) {
+                html += '<span class="counter-errors" title="Dropped packets">\u2717 ' + (c.in_discards + c.out_discards) + ' drops</span>';
+            }
+            if (c.pause_frames_in > 0 || c.pause_frames_out > 0) {
+                html += '<span class="counter-pfc" title="PFC pause frames (congestion indicator)">\u23f8 PFC ' + ((c.pause_frames_in || 0) + (c.pause_frames_out || 0)) + '</span>';
+            }
+            if (c.crc_errors > 0) {
+                html += '<span class="counter-errors" title="CRC errors (physical layer issue)">\u26a0 CRC ' + c.crc_errors + '</span>';
             }
             html += '</div>';
+        }
+
+        // Per-queue QoS stats (ECN, PFC watchdog, drops) for this port
+        if (switchId && switchPort) {
+            var qosStats = NM.data.getQoSStatsForPort(switchId, switchPort);
+            var hasQoSIssues = false;
+            for (var qi = 0; qi < qosStats.length; qi++) {
+                var qs = qosStats[qi];
+                if (qs.pfc_pause_frames_rx || qs.pfc_pause_frames_tx || qs.pfc_watchdog_drops || qs.ecn_marked_packets || qs.drop_packets) {
+                    hasQoSIssues = true;
+                    break;
+                }
+            }
+            if (qosStats.length > 0) {
+                html += '<div class="nic-card-qos">';
+                html += '<div class="nic-card-qos-title" title="Per-queue QoS metrics from the switch port — critical for RDMA lossless traffic">QoS Queues';
+                if (hasQoSIssues) html += ' <span class="qos-badge qos-badge-warning">\u26a0</span>';
+                else html += ' <span class="qos-badge qos-badge-ok">\u2713</span>';
+                html += '</div>';
+                for (var qi2 = 0; qi2 < qosStats.length; qi2++) {
+                    var q = qosStats[qi2];
+                    var qClass = '';
+                    if (q.pfc_watchdog_drops || q.drop_packets) qClass = ' qos-critical';
+                    else if (q.pfc_pause_frames_rx || q.pfc_pause_frames_tx || q.ecn_marked_packets) qClass = ' qos-warning';
+                    html += '<div class="nic-card-qos-row' + qClass + '">';
+                    html += '<span class="qos-queue-name" title="Queue name / traffic class">' + esc(q.queue_name || '') + '</span>';
+                    if (q.pfc_pause_frames_rx || q.pfc_pause_frames_tx) {
+                        html += '<span title="PFC Pause Frames — switch asked the sender to slow down (Rx) or was asked to slow down (Tx). High values indicate congestion.">\u23f8 PFC ' + formatNumber(q.pfc_pause_frames_rx || 0) + '/' + formatNumber(q.pfc_pause_frames_tx || 0) + '</span>';
+                    }
+                    if (q.ecn_marked_packets) {
+                        html += '<span title="ECN Marked Packets — packets marked with Explicit Congestion Notification, warning the sender to reduce rate before drops occur">\u26a0 ECN ' + formatNumber(q.ecn_marked_packets) + '</span>';
+                    }
+                    if (q.pfc_watchdog_drops) {
+                        html += '<span class="counter-errors" title="PFC Watchdog Drops — packets dropped because a PFC storm was detected (queue stuck in paused state too long). Critical RDMA issue.">\u2717 WD ' + formatNumber(q.pfc_watchdog_drops) + '</span>';
+                    }
+                    if (q.drop_packets) {
+                        html += '<span class="counter-errors" title="Queue Drops — packets dropped due to queue overflow. Indicates sustained congestion exceeding buffer capacity.">\u2717 Drops ' + formatNumber(q.drop_packets) + '</span>';
+                    }
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
         }
 
         html += '</div>';
@@ -187,6 +268,14 @@ function formatBytes(bytes) {
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
     return (bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0) + ' ' + units[i];
+}
+
+function formatNumber(n) {
+    if (!n) return '0';
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return String(n);
 }
 
 // Helper: info row (reused from switch view pattern)

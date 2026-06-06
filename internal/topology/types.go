@@ -55,6 +55,7 @@ type BGPSession struct {
 // Interface represents a network interface on a device.
 type Interface struct {
 	Name          string          `json:"name"`
+	Description   string          `json:"description,omitempty"`   // port description (often identifies connected device)
 	OperStatus    string          `json:"oper_status,omitempty"`    // UP, DOWN
 	Speed         string          `json:"speed,omitempty"`          // 1G, 10G, 25G, 100G
 	MTU           int             `json:"mtu,omitempty"`
@@ -68,14 +69,21 @@ type Interface struct {
 
 // IfaceCounters holds interface traffic counters.
 type IfaceCounters struct {
-	InOctets    uint64 `json:"in_octets"`
-	OutOctets   uint64 `json:"out_octets"`
-	InPkts      uint64 `json:"in_pkts"`
-	OutPkts     uint64 `json:"out_pkts"`
-	InErrors    uint64 `json:"in_errors"`
-	OutErrors   uint64 `json:"out_errors"`
-	InDiscards  uint64 `json:"in_discards"`
-	OutDiscards uint64 `json:"out_discards"`
+	InOctets         uint64 `json:"in_octets"`
+	OutOctets        uint64 `json:"out_octets"`
+	InPkts           uint64 `json:"in_pkts"`
+	OutPkts          uint64 `json:"out_pkts"`
+	InErrors         uint64 `json:"in_errors"`
+	OutErrors        uint64 `json:"out_errors"`
+	InDiscards       uint64 `json:"in_discards"`
+	OutDiscards      uint64 `json:"out_discards"`
+	InMulticastPkts  uint64 `json:"in_multicast_pkts,omitempty"`
+	OutMulticastPkts uint64 `json:"out_multicast_pkts,omitempty"`
+	InBroadcastPkts  uint64 `json:"in_broadcast_pkts,omitempty"`
+	OutBroadcastPkts uint64 `json:"out_broadcast_pkts,omitempty"`
+	CRCErrors        uint64 `json:"crc_errors,omitempty"`
+	PauseFramesIn    uint64 `json:"pause_frames_in,omitempty"`
+	PauseFramesOut   uint64 `json:"pause_frames_out,omitempty"`
 }
 
 // Link represents a discovered connection between two devices.
@@ -119,4 +127,6 @@ type Endpoint struct {
 	HostDevice string   `json:"host_device,omitempty"`  // parent host device ID (from LLDP)
 	SwitchID   string   `json:"switch_id"`              // switch that reported this MAC
 	Type       string   `json:"type"`                   // vm, container, floating, unknown
+	VTEPIP     string   `json:"vtep_ip,omitempty"`      // VTEP peer IP (from L2RIB, VXLAN only)
+	VNI        int      `json:"vni,omitempty"`          // VNI where MAC was learned (VXLAN only)
 }

@@ -19,6 +19,7 @@ NM.ui.Toolbar = (() => {
                 if (match) {
                     if (match.type === 'switch') NM.state.ViewManager.navigateTo('switch', match.id);
                     else if (match.type === 'host') NM.state.ViewManager.navigateTo('host', match.id);
+                    else if (match.type === 'bmc') NM.state.ViewManager.navigateTo('bmc', match.id);
                 }
             }
         });
@@ -59,6 +60,12 @@ NM.ui.Toolbar = (() => {
         // Export JSON
         document.getElementById('export-json-btn').addEventListener('click', () => {
             NM.graph.exportJSON();
+        });
+
+        // Health check view
+        var healthBtn = document.getElementById('health-btn');
+        if (healthBtn) healthBtn.addEventListener('click', () => {
+            NM.state.ViewManager.navigateTo('health', null);
         });
 
         // Theme toggle

@@ -77,11 +77,13 @@ NM.views.renderSwitch = function(switchId) {
     var ifaceVlanData = buildInterfaceVLANSummary(swDev);
     if (vlans.length > 0 || ifaceVlanData.length > 0) {
         html += '<div class="info-panel wide collapsible">';
-        html += '<div class="info-panel-title">VLAN Assignments <span class="panel-chevron">▾</span></div>';
+        html += '<div class="info-panel-title">Port VLAN Configuration ';
+        html += '<span class="help-btn" title="Per-port VLAN settings from the switch running config. Mode=trunk allows multiple VLANs; mode=access allows a single VLAN. The \'Traffic Observed\' column shows VLANs where we actually detected MAC address activity — empty means no traffic was seen (the port may still be correctly configured).">?</span>';
+        html += '<span class="panel-chevron">▾</span></div>';
         html += '<div class="panel-body">';
 
         if (ifaceVlanData.length > 0) {
-            html += '<table class="conn-table"><thead><tr><th>Port</th><th>Mode</th><th>Access</th><th>Native</th><th>Active VLANs</th></tr></thead><tbody>';
+            html += '<table class="conn-table"><thead><tr><th>Port</th><th>Mode</th><th title="The VLAN used when the port is in access mode">Access</th><th title="The default VLAN for untagged frames on a trunk port">Native</th><th title="VLANs where MAC address table entries were observed on this port — empty does NOT mean misconfiguration, just no detected traffic">Traffic Observed</th></tr></thead><tbody>';
             for (var vi = 0; vi < ifaceVlanData.length; vi++) {
                 var vd = ifaceVlanData[vi];
                 html += '<tr>';
@@ -123,6 +125,9 @@ NM.views.renderSwitch = function(switchId) {
         html += '</tbody></table>';
         html += '</div></div>';
     }
+
+    // QoS / RDMA Health panel
+    html += buildQoSPanel(switchId, topology, esc);
 
     // Annotations
     const annotations = swDev.annotations || {};
@@ -192,6 +197,7 @@ NM.views.renderSwitch = function(switchId) {
             if (!remoteId) return;
             if (remoteType === 'switch') NM.state.ViewManager.navigateTo('switch', remoteId);
             else if (remoteType === 'host') NM.state.ViewManager.navigateTo('host', remoteId);
+            else if (remoteType === 'bmc') NM.state.ViewManager.navigateTo('bmc', remoteId);
         });
     });
 
@@ -202,6 +208,7 @@ NM.views.renderSwitch = function(switchId) {
             const remoteType = row.dataset.remoteType;
             if (remoteType === 'switch') NM.state.ViewManager.navigateTo('switch', remoteId);
             else if (remoteType === 'host') NM.state.ViewManager.navigateTo('host', remoteId);
+            else if (remoteType === 'bmc') NM.state.ViewManager.navigateTo('bmc', remoteId);
         });
     });
 
@@ -217,6 +224,7 @@ NM.views.renderSwitch = function(switchId) {
             var devId = chip.dataset.deviceId;
             var devType = chip.dataset.deviceType;
             if (devType === 'host') NM.state.ViewManager.navigateTo('host', devId);
+            else if (devType === 'bmc') NM.state.ViewManager.navigateTo('bmc', devId);
             else if (devType === 'switch') NM.state.ViewManager.navigateTo('switch', devId);
         });
     });
@@ -328,7 +336,7 @@ function buildFrontPanelSVG(swDev, ifaces, portMap, role, ifacesUp, hostCount, e
         const borderCol = conn ? (colors[conn.remoteType] || '#605e5c') : (isUp ? '#605e5c' : '#3a3a3a');
         const opacity = isUp ? '1' : '0.4';
 
-        svg += '<g class="svg-port" data-port="' + esc(portName) + '"';
+        svg += '<g class="svg-port" data-port="' + esc(portName) + '" data-device-id="' + esc(swDev.id) + '"';
         if (conn) {
             svg += ' data-remote-id="' + esc(conn.remoteId) + '"';
             svg += ' data-remote-type="' + esc(conn.remoteType) + '"';
@@ -429,12 +437,22 @@ function buildVLANVisualization(swDev, portMap, esc) {
     var colors = ['#0078d4', '#44b700', '#f7630c', '#a36efd', '#d13438', '#00b7c3', '#8764b8', '#ca5010', '#57a300', '#4f6bed'];
 
     var html = '<div class="info-panel wide collapsible">';
-    html += '<div class="info-panel-title">VLAN Membership <span class="vlan-viz-count">' + vlanIds.length + ' VLANs</span><span class="panel-chevron">▾</span></div>';
+    html += '<div class="info-panel-title">VLANs Allowed per Port ';
+    html += '<span class="help-btn" title="This shows which VLANs each port is configured to carry, based on trunk/access VLAN settings. A port appears under a VLAN if it is allowed to forward traffic for that VLAN — this does NOT mean traffic is actively flowing.">?</span>';
+    html += '<span class="vlan-viz-count">' + vlanIds.length + ' VLANs</span><span class="panel-chevron">▾</span></div>';
     html += '<div class="panel-body"><div class="vlan-sets-container">';
 
     for (var k = 0; k < vlanIds.length; k++) {
         var vid = vlanIds[k];
         var members = vlanMembers[vid];
+        // Sort members: by host name alphabetically
+        members.sort(function(a, b) {
+            var na = (a.host || '').toLowerCase();
+            var nb = (b.host || '').toLowerCase();
+            if (na < nb) return -1;
+            if (na > nb) return 1;
+            return 0;
+        });
         var color = colors[k % colors.length];
 
         html += '<div class="vlan-set" style="border-color:' + color + '">';
@@ -555,6 +573,28 @@ function showSvgTooltip(e, port) {
         }
     }
 
+    // Link health from telemetry counters
+    var deviceId = port.dataset.deviceId || '';
+    if (deviceId && portName) {
+        var c = NM.data.getInterfaceCounters(deviceId, portName);
+        if (c) {
+            html += '<div class="port-tooltip-row" style="border-top:1px solid #333;margin-top:4px;padding-top:4px"><span class="port-tooltip-label">Rx:</span><span class="port-tooltip-value">' + fmtBytes(c.in_octets) + ' (' + fmtNum(c.in_pkts) + ' pkts)</span></div>';
+            html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Tx:</span><span class="port-tooltip-value">' + fmtBytes(c.out_octets) + ' (' + fmtNum(c.out_pkts) + ' pkts)</span></div>';
+            if (c.in_errors > 0 || c.out_errors > 0) {
+                html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Errors:</span><span class="port-tooltip-value" style="color:#f85149">' + (c.in_errors + c.out_errors) + '</span></div>';
+            }
+            if (c.in_discards > 0 || c.out_discards > 0) {
+                html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Drops:</span><span class="port-tooltip-value" style="color:#f0883e">' + (c.in_discards + c.out_discards) + '</span></div>';
+            }
+            if (c.crc_errors > 0) {
+                html += '<div class="port-tooltip-row"><span class="port-tooltip-label">CRC Errors:</span><span class="port-tooltip-value" style="color:#f85149">' + c.crc_errors + '</span></div>';
+            }
+            if (c.pause_frames_in > 0 || c.pause_frames_out > 0) {
+                html += '<div class="port-tooltip-row"><span class="port-tooltip-label">PFC Pause:</span><span class="port-tooltip-value" style="color:#f0883e">' + (c.pause_frames_in || 0) + ' in / ' + (c.pause_frames_out || 0) + ' out</span></div>';
+            }
+        }
+    }
+
     tooltip.innerHTML = html;
     tooltip.style.display = 'block';
 
@@ -571,4 +611,135 @@ function hideSvgTooltip() {
 function infoRow(label, value) {
     const esc = NM.core.escapeHtml;
     return '<div class="info-row"><span class="info-row-label">' + esc(String(label)) + '</span><span class="info-row-value">' + esc(String(value)) + '</span></div>';
+}
+
+function fmtBytes(bytes) {
+    if (!bytes) return '0 B';
+    var sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    var i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return parseFloat((bytes / Math.pow(1024, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function fmtNum(n) {
+    if (!n) return '0';
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return String(n);
+}
+
+function buildQoSPanel(switchId, topology, esc) {
+    var v2 = topology._v2;
+    if (!v2 || !v2.fabric || !v2.fabric.switches) return '';
+
+    var sw = null;
+    var switches = v2.fabric.switches;
+    for (var i = 0; i < switches.length; i++) {
+        if (switches[i].id === switchId) { sw = switches[i]; break; }
+    }
+    if (!sw) return '';
+
+    var qosStats = sw.qos_stats || [];
+    var pfcConfig = sw.pfc_config || [];
+
+    if (qosStats.length === 0 && pfcConfig.length === 0) return '';
+
+    var html = '';
+    html += '<div class="info-panel wide collapsible">';
+    html += '<div class="info-panel-title">QoS / RDMA Health';
+
+    // Summary badge
+    var hasIssues = false;
+    for (var q = 0; q < qosStats.length; q++) {
+        var s = qosStats[q];
+        if (s.pfc_pause_frames_tx || s.pfc_pause_frames_rx ||
+            s.pfc_watchdog_drops || s.ecn_marked_packets || s.drop_packets) {
+            hasIssues = true;
+            break;
+        }
+    }
+    if (hasIssues) {
+        html += ' <span class="qos-badge qos-badge-warning">\u26a0 Issues</span>';
+    } else if (qosStats.length > 0) {
+        html += ' <span class="qos-badge qos-badge-ok">\u2713 Healthy</span>';
+    }
+    html += ' <span class="panel-chevron">\u25be</span></div>';
+    html += '<div class="panel-body">';
+
+    // PFC Configuration summary
+    if (pfcConfig.length > 0) {
+        html += '<h4 class="qos-section-title">PFC Configuration</h4>';
+        html += '<table class="conn-table"><thead><tr>';
+        html += '<th>Interface</th><th>Mode</th><th>Lossless CoS</th><th>DCBX TLV</th>';
+        html += '</tr></thead><tbody>';
+        for (var p = 0; p < pfcConfig.length; p++) {
+            var pfc = pfcConfig[p];
+            var modeClass = pfc.mode === 'on' ? 'pfc-on' : (pfc.mode === 'auto' ? 'pfc-auto' : 'pfc-off');
+            html += '<tr>';
+            html += '<td>' + esc(pfc.interface_name) + '</td>';
+            html += '<td><span class="pfc-mode ' + modeClass + '">' + esc(pfc.mode || 'unknown') + '</span></td>';
+            html += '<td>' + (pfc.lossless_cos && pfc.lossless_cos.length ? pfc.lossless_cos.join(', ') : '\u2014') + '</td>';
+            html += '<td>' + (pfc.send_tlv ? '\u2713' : '\u2717') + '</td>';
+            html += '</tr>';
+        }
+        html += '</tbody></table>';
+    }
+
+    // QoS per-queue stats
+    if (qosStats.length > 0) {
+        html += '<h4 class="qos-section-title">Per-Queue Counters</h4>';
+
+        // Group by interface
+        var byIface = {};
+        for (var qi = 0; qi < qosStats.length; qi++) {
+            var stat = qosStats[qi];
+            var ifName = stat.interface_name || 'unknown';
+            if (!byIface[ifName]) byIface[ifName] = [];
+            byIface[ifName].push(stat);
+        }
+
+        var ifaceNames = Object.keys(byIface).sort(function(a, b) {
+            return a.localeCompare(b, undefined, { numeric: true });
+        });
+
+        html += '<table class="conn-table qos-table"><thead><tr>';
+        html += '<th>Interface</th><th>Queue</th><th>Dir</th>';
+        html += '<th title="Total bytes transmitted on this queue">TX Bytes</th>';
+        html += '<th title="Total packets transmitted on this queue">TX Pkts</th>';
+        html += '<th title="PFC Pause Frames Received — the switch received requests from a neighbor to stop sending on this priority. High values indicate downstream congestion.">PFC Rx</th>';
+        html += '<th title="PFC Pause Frames Transmitted — the switch asked its neighbor to stop sending on this priority. High values indicate local buffer pressure.">PFC Tx</th>';
+        html += '<th title="PFC Watchdog Drops — packets dropped because a priority queue was stuck in paused state too long (PFC storm). Critical issue for RDMA traffic.">PFC WD</th>';
+        html += '<th title="ECN Marked Packets — packets marked with Explicit Congestion Notification, warning the sender to reduce its rate before drops occur. Early congestion signal.">ECN Marked</th>';
+        html += '<th title="Queue Drops — packets dropped because the queue overflowed. Indicates sustained congestion that exceeded the available buffer.">Drops</th>';
+        html += '<th title="Current Queue Depth — how full the queue buffer is right now. High values relative to buffer size indicate risk of drops.">Q Depth</th>';
+        html += '</tr></thead><tbody>';
+
+        for (var fi = 0; fi < ifaceNames.length; fi++) {
+            var ifStats = byIface[ifaceNames[fi]];
+            for (var si = 0; si < ifStats.length; si++) {
+                var qs = ifStats[si];
+                var rowClass = '';
+                if (qs.pfc_watchdog_drops || qs.drop_packets) rowClass = 'qos-row-critical';
+                else if (qs.pfc_pause_frames_tx || qs.pfc_pause_frames_rx || qs.ecn_marked_packets) rowClass = 'qos-row-warning';
+
+                html += '<tr class="' + rowClass + '">';
+                html += '<td>' + esc(qs.interface_name) + '</td>';
+                html += '<td>' + esc(qs.queue_name) + '</td>';
+                html += '<td>' + esc(qs.direction || '') + '</td>';
+                html += '<td>' + fmtBytes(qs.tx_bytes || 0) + '</td>';
+                html += '<td>' + fmtNum(qs.tx_packets || 0) + '</td>';
+                html += '<td>' + fmtNum(qs.pfc_pause_frames_rx || 0) + '</td>';
+                html += '<td>' + fmtNum(qs.pfc_pause_frames_tx || 0) + '</td>';
+                html += '<td>' + fmtNum(qs.pfc_watchdog_drops || 0) + '</td>';
+                html += '<td>' + fmtNum(qs.ecn_marked_packets || 0) + '</td>';
+                html += '<td>' + fmtNum(qs.drop_packets || 0) + '</td>';
+                html += '<td>' + fmtBytes(qs.current_queue_depth_bytes || 0) + '</td>';
+                html += '</tr>';
+            }
+        }
+        html += '</tbody></table>';
+    }
+
+    html += '</div></div>';
+    return html;
 }

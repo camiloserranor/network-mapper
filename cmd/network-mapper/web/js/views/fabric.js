@@ -341,6 +341,7 @@ function wireInteractions(cy) {
         if (!remoteId) return;
         if (remoteType === 'switch') NM.state.ViewManager.navigateTo('switch', remoteId);
         else if (remoteType === 'host') NM.state.ViewManager.navigateTo('host', remoteId);
+        else if (remoteType === 'bmc') NM.state.ViewManager.navigateTo('bmc', remoteId);
     });
     cy.on('tap', 'node[type="switch-parent"]', (evt) => {
         NM.state.ViewManager.navigateTo('switch', evt.target.data('id'));
@@ -412,6 +413,27 @@ function showLinkDetail(edge) {
     if (data.sourceType) html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Discovery:</span><span class="port-tooltip-value">' + esc(data.sourceType) + '</span></div>';
     if (data.discoveredAt) html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Discovered:</span><span class="port-tooltip-value">' + esc(data.discoveredAt) + '</span></div>';
 
+    // Telemetry counters for this link
+    var c = NM.data.getInterfaceCounters(data.localDevice, data.localPort);
+    if (c) {
+        html += '<div class="port-tooltip-row" style="border-top:1px solid #333;margin-top:4px;padding-top:4px"><span class="port-tooltip-label">Rx Bytes:</span><span class="port-tooltip-value">' + formatLinkBytes(c.in_octets) + '</span></div>';
+        html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Tx Bytes:</span><span class="port-tooltip-value">' + formatLinkBytes(c.out_octets) + '</span></div>';
+        if (c.in_pkts) html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Rx Pkts:</span><span class="port-tooltip-value">' + formatLinkNumber(c.in_pkts) + '</span></div>';
+        if (c.out_pkts) html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Tx Pkts:</span><span class="port-tooltip-value">' + formatLinkNumber(c.out_pkts) + '</span></div>';
+        if (c.in_errors > 0 || c.out_errors > 0) {
+            html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Errors:</span><span class="port-tooltip-value" style="color:#f85149">' + (c.in_errors + c.out_errors) + '</span></div>';
+        }
+        if (c.in_discards > 0 || c.out_discards > 0) {
+            html += '<div class="port-tooltip-row"><span class="port-tooltip-label">Drops:</span><span class="port-tooltip-value" style="color:#f0883e">' + (c.in_discards + c.out_discards) + '</span></div>';
+        }
+        if (c.crc_errors > 0) {
+            html += '<div class="port-tooltip-row"><span class="port-tooltip-label">CRC Errors:</span><span class="port-tooltip-value" style="color:#f85149">' + c.crc_errors + '</span></div>';
+        }
+        if (c.pause_frames_in > 0 || c.pause_frames_out > 0) {
+            html += '<div class="port-tooltip-row"><span class="port-tooltip-label">PFC Pause:</span><span class="port-tooltip-value" style="color:#f0883e">' + (c.pause_frames_in || 0) + ' in / ' + (c.pause_frames_out || 0) + ' out</span></div>';
+        }
+    }
+
     tooltip.innerHTML = html;
     tooltip.style.display = 'block';
 
@@ -426,4 +448,19 @@ function showLinkDetail(edge) {
         const dismiss = () => { hideFabricTooltip(); document.removeEventListener('click', dismiss); };
         document.addEventListener('click', dismiss, { once: true });
     }, 100);
+}
+
+function formatLinkBytes(bytes) {
+    if (!bytes) return '0 B';
+    var sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    var i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return parseFloat((bytes / Math.pow(1024, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function formatLinkNumber(n) {
+    if (!n) return '0';
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return String(n);
 }

@@ -75,9 +75,9 @@ func ParseLLDPOpenConfig(notifs []gnmi.Notification) []LLDPNeighbor {
 				neighbor := LLDPNeighbor{
 					LocalPort:         NormalizeInterfaceName(localPort),
 					ChassisID:         normalizeMACAddress(GetFirstString(state, "chassis-id", "chassis_id")),
-					PortID:            GetFirstString(state, "port-id", "port_id"),
+						PortID:            SanitizeIdentifier(GetFirstString(state, "port-id", "port_id")),
 					PortDescription:   GetFirstString(state, "port-description", "port_description"),
-					SystemName:        GetFirstString(state, "system-name", "system_name"),
+						SystemName:        SanitizeIdentifier(GetFirstString(state, "system-name", "system_name")),
 					SystemDescription: GetFirstString(state, "system-description", "system_description"),
 					ManagementAddress: GetFirstString(state, "management-address", "management_address", "mgmt-ip"),
 				}
@@ -129,9 +129,9 @@ func parseLLDPFlatLeaf(notifs []gnmi.Notification) []LLDPNeighbor {
 		neighbor := LLDPNeighbor{
 			LocalPort:         NormalizeInterfaceName(localPort),
 			ChassisID:         normalizeMACAddress(chassisID),
-			PortID:            portID,
+				PortID:            SanitizeIdentifier(portID),
 			PortDescription:   getLeafBySuffix(leafMap, "/state/port-description"),
-			SystemName:        getLeafBySuffix(leafMap, "/state/system-name"),
+				SystemName:        SanitizeIdentifier(getLeafBySuffix(leafMap, "/state/system-name")),
 			SystemDescription: getLeafBySuffix(leafMap, "/state/system-description"),
 			ManagementAddress: getLeafBySuffix(leafMap, "/state/management-address"),
 		}
@@ -195,9 +195,9 @@ func ParseLLDPNXOS(notifs []gnmi.Notification) []LLDPNeighbor {
 					neighbor := LLDPNeighbor{
 						LocalPort:         NormalizeInterfaceName(localPort),
 						ChassisID:         normalizeMACAddress(GetString(adj, "chassisIdV")),
-						PortID:            GetString(adj, "portIdV"),
+							PortID:            SanitizeIdentifier(GetString(adj, "portIdV")),
 						PortDescription:   GetString(adj, "portDesc"),
-						SystemName:        GetString(adj, "sysName"),
+							SystemName:        SanitizeIdentifier(GetString(adj, "sysName")),
 						SystemDescription: GetString(adj, "sysDesc"),
 						ManagementAddress: mgmtIP,
 						Capabilities:      GetString(adj, "sysCap"),

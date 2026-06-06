@@ -22,33 +22,59 @@ type Platform interface {
 	Encoding() string
 
 	// CollectSystem fetches and parses system info (hostname, version, uptime).
-	CollectSystem(ctx context.Context, client *gnmi.Client) (transform.SystemInfo, error)
+	CollectSystem(ctx context.Context, client gnmi.GNMIClient) (transform.SystemInfo, error)
 
 	// CollectLLDP fetches and parses LLDP neighbor data.
-	CollectLLDP(ctx context.Context, client *gnmi.Client) ([]transform.LLDPNeighbor, error)
+	CollectLLDP(ctx context.Context, client gnmi.GNMIClient) ([]transform.LLDPNeighbor, error)
 
 	// CollectInterfaces fetches and parses interface state and counters.
-	CollectInterfaces(ctx context.Context, client *gnmi.Client) ([]topology.Interface, error)
+	CollectInterfaces(ctx context.Context, client gnmi.GNMIClient) ([]topology.Interface, error)
 
 	// CollectResources fetches and parses CPU/memory utilization.
-	CollectResources(ctx context.Context, client *gnmi.Client) (transform.ResourceStats, error)
+	CollectResources(ctx context.Context, client gnmi.GNMIClient) (transform.ResourceStats, error)
 
 	// CollectMACTable fetches and parses the MAC/FDB table.
-	CollectMACTable(ctx context.Context, client *gnmi.Client, switchName string) ([]transform.MACEntry, error)
+	CollectMACTable(ctx context.Context, client gnmi.GNMIClient, switchName string) ([]transform.MACEntry, error)
 
 	// CollectARPTable fetches and parses the ARP/neighbor table.
-	CollectARPTable(ctx context.Context, client *gnmi.Client, switchName string) ([]transform.ARPEntry, error)
+	CollectARPTable(ctx context.Context, client gnmi.GNMIClient, switchName string) ([]transform.ARPEntry, error)
 
 	// CollectVLANs fetches and parses VLAN configuration.
-	CollectVLANs(ctx context.Context, client *gnmi.Client, switchName string) ([]topology.VLAN, error)
+	CollectVLANs(ctx context.Context, client gnmi.GNMIClient, switchName string) ([]topology.VLAN, error)
 
 	// CollectBGP fetches and parses BGP neighbor state.
-	CollectBGP(ctx context.Context, client *gnmi.Client) ([]transform.BGPNeighbor, error)
+	CollectBGP(ctx context.Context, client gnmi.GNMIClient) ([]transform.BGPNeighbor, error)
 
 	// EnrichInterfaces returns true if VLAN data should be cross-referenced
 	// into interface VLAN fields (used by OpenConfig platforms where per-port
 	// VLAN config isn't available from a separate path).
 	EnrichInterfacesFromVLANs() bool
+}
+
+// VXLANCollector is an optional capability interface for platforms that support
+// VXLAN/EVPN data collection. The collector uses type assertion to check whether
+// a Platform supports this, enabling VM-to-VTEP correlation in overlay environments.
+type VXLANCollector interface {
+	// CollectNVEPeers fetches VTEP peer information.
+	// Returns nil, nil if no NVE is configured on the switch.
+	CollectNVEPeers(ctx context.Context, client gnmi.GNMIClient) ([]transform.NVEPeer, error)
+
+	// CollectL2RIB fetches L2RIB MAC routes with next-hop VTEP IPs.
+	// Returns nil, nil if L2RIB is empty or not available.
+	CollectL2RIB(ctx context.Context, client gnmi.GNMIClient) ([]transform.L2RIBEntry, error)
+}
+
+// QoSCollector is an optional capability interface for platforms that support
+// per-queue QoS and PFC telemetry. This enables RDMA health monitoring by
+// exposing per-priority pause frames, ECN marking, and queue drops.
+type QoSCollector interface {
+	// CollectQoSStats fetches per-queue counters (PFC, ECN, drops, depth).
+	// Returns nil, nil if QoS stats are not available.
+	CollectQoSStats(ctx context.Context, client gnmi.GNMIClient) ([]transform.QoSStats, error)
+
+	// CollectPFCConfig fetches PFC configuration per interface.
+	// Returns nil, nil if PFC config is not available.
+	CollectPFCConfig(ctx context.Context, client gnmi.GNMIClient) ([]transform.PFCConfig, error)
 }
 
 // ForPlatform returns the Platform implementation for the given platform name.
