@@ -9,8 +9,9 @@ import (
 
 // Interface gNMI paths.
 const (
-	InterfacesPathOpenConfig      = "/openconfig-interfaces:interfaces/interface/state"
+	InterfacesPathOpenConfig        = "/openconfig-interfaces:interfaces/interface/state"
 	InterfacesCountersPathOpenConfig = "/openconfig-interfaces:interfaces/interface/state/counters"
+	InterfacesPathNXOS              = "/System/intf-items/phys-items/PhysIf-list"
 )
 
 // ParseInterfacesOpenConfig extracts interface state from OpenConfig gNMI responses.

@@ -16,7 +16,7 @@ func (p *OpenConfigPlatform) Name() string     { return "openconfig" }
 func (p *OpenConfigPlatform) Encoding() string  { return "JSON_IETF" }
 func (p *OpenConfigPlatform) EnrichInterfacesFromVLANs() bool { return true }
 
-func (p *OpenConfigPlatform) CollectSystem(ctx context.Context, client *gnmi.Client) (transform.SystemInfo, error) {
+func (p *OpenConfigPlatform) CollectSystem(ctx context.Context, client gnmi.GNMIClient) (transform.SystemInfo, error) {
 	notifs, err := client.Get(ctx, transform.SystemPathOpenConfig)
 	if err != nil {
 		return transform.SystemInfo{}, err
@@ -24,7 +24,7 @@ func (p *OpenConfigPlatform) CollectSystem(ctx context.Context, client *gnmi.Cli
 	return transform.ParseSystemOpenConfig(notifs), nil
 }
 
-func (p *OpenConfigPlatform) CollectLLDP(ctx context.Context, client *gnmi.Client) ([]transform.LLDPNeighbor, error) {
+func (p *OpenConfigPlatform) CollectLLDP(ctx context.Context, client gnmi.GNMIClient) ([]transform.LLDPNeighbor, error) {
 	notifs, err := client.GetWithFallback(ctx, transform.LLDPPathOpenConfig)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func (p *OpenConfigPlatform) CollectLLDP(ctx context.Context, client *gnmi.Clien
 	return transform.ParseLLDPOpenConfig(notifs), nil
 }
 
-func (p *OpenConfigPlatform) CollectInterfaces(ctx context.Context, client *gnmi.Client) ([]topology.Interface, error) {
+func (p *OpenConfigPlatform) CollectInterfaces(ctx context.Context, client gnmi.GNMIClient) ([]topology.Interface, error) {
 	notifs, err := client.GetWithFallback(ctx, transform.InterfacesPathOpenConfig)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (p *OpenConfigPlatform) CollectInterfaces(ctx context.Context, client *gnmi
 	return ifaces, nil
 }
 
-func (p *OpenConfigPlatform) CollectResources(ctx context.Context, client *gnmi.Client) (transform.ResourceStats, error) {
+func (p *OpenConfigPlatform) CollectResources(ctx context.Context, client gnmi.GNMIClient) (transform.ResourceStats, error) {
 	cpuNotifs, cpuErr := client.GetWithFallback(ctx, transform.CPUPathOpenConfig)
 	memNotifs, memErr := client.GetWithFallback(ctx, transform.MemoryPathOpenConfig)
 	if cpuErr != nil && memErr != nil {
@@ -57,7 +57,7 @@ func (p *OpenConfigPlatform) CollectResources(ctx context.Context, client *gnmi.
 	return transform.ParseResourceStatsOpenConfig(cpuNotifs, memNotifs), nil
 }
 
-func (p *OpenConfigPlatform) CollectMACTable(ctx context.Context, client *gnmi.Client, switchName string) ([]transform.MACEntry, error) {
+func (p *OpenConfigPlatform) CollectMACTable(ctx context.Context, client gnmi.GNMIClient, switchName string) ([]transform.MACEntry, error) {
 	notifs, err := client.GetWithFallback(ctx, transform.MACTablePathOpenConfig)
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func (p *OpenConfigPlatform) CollectMACTable(ctx context.Context, client *gnmi.C
 	return transform.ParseMACTableOpenConfig(notifs, switchName), nil
 }
 
-func (p *OpenConfigPlatform) CollectARPTable(ctx context.Context, client *gnmi.Client, switchName string) ([]transform.ARPEntry, error) {
+func (p *OpenConfigPlatform) CollectARPTable(ctx context.Context, client gnmi.GNMIClient, switchName string) ([]transform.ARPEntry, error) {
 	notifs, err := client.GetWithFallback(ctx, transform.ARPPathOpenConfig)
 	if err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func (p *OpenConfigPlatform) CollectARPTable(ctx context.Context, client *gnmi.C
 	return transform.ParseARPTableOpenConfig(notifs, switchName), nil
 }
 
-func (p *OpenConfigPlatform) CollectVLANs(ctx context.Context, client *gnmi.Client, switchName string) ([]topology.VLAN, error) {
+func (p *OpenConfigPlatform) CollectVLANs(ctx context.Context, client gnmi.GNMIClient, switchName string) ([]topology.VLAN, error) {
 	notifs, err := client.GetWithFallback(ctx, transform.VLANPathOpenConfig)
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func (p *OpenConfigPlatform) CollectVLANs(ctx context.Context, client *gnmi.Clie
 	return transform.ParseVLANsOpenConfig(notifs, switchName), nil
 }
 
-func (p *OpenConfigPlatform) CollectBGP(ctx context.Context, client *gnmi.Client) ([]transform.BGPNeighbor, error) {
+func (p *OpenConfigPlatform) CollectBGP(ctx context.Context, client gnmi.GNMIClient) ([]transform.BGPNeighbor, error) {
 	notifs, err := client.GetWithFallback(ctx, transform.BGPNeighborsPathOpenConfig)
 	if err != nil {
 		return nil, err
