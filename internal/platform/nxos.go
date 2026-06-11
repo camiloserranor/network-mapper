@@ -12,7 +12,22 @@ import (
 // Prefers OpenConfig paths for operational data (oper-status, counters, system info)
 // and supplements with NX-OS native /System/ paths for platform-specific data
 // (VLAN config, LLDP, MAC table, ARP, BGP, VXLAN, QoS).
-type NXOSPlatform struct{}
+type NXOSPlatform struct {
+	// notes collects informational messages about fallback behavior during collection.
+	notes []string
+}
+
+// CollectionNotes returns informational messages about the last collection run
+// (e.g., when OpenConfig paths failed and native paths were used as fallback).
+// Implements the FallbackReporter interface.
+func (p *NXOSPlatform) CollectionNotes() []string {
+	return p.notes
+}
+
+// ResetNotes clears any accumulated collection notes for a fresh run.
+func (p *NXOSPlatform) ResetNotes() {
+	p.notes = nil
+}
 
 func (p *NXOSPlatform) Name() string     { return "nxos" }
 func (p *NXOSPlatform) Encoding() string  { return "JSON" }
@@ -32,6 +47,7 @@ func (p *NXOSPlatform) CollectSystem(ctx context.Context, client gnmi.GNMIClient
 	if err != nil {
 		return transform.SystemInfo{}, err
 	}
+	p.notes = append(p.notes, "OpenConfig system path unavailable; using NX-OS native path")
 	return transform.ParseSystemNXOS(notifs), nil
 }
 
@@ -63,9 +79,7 @@ func (p *NXOSPlatform) CollectInterfaces(ctx context.Context, client gnmi.GNMICl
 			return nil, nxErr
 		}
 		ifaces = transform.ParseInterfacesNXOS(nxNotifs)
-
-		// Since NX-OS native path lacks oper-status, attempt OpenConfig one more
-		// time with the counter path to get at least some operational data.
+		p.notes = append(p.notes, "OpenConfig interface path unavailable; using NX-OS native path (oper-status may be limited)")
 	}
 
 	// Collect counters separately (OpenConfig counter path)
