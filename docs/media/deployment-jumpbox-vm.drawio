@@ -1,0 +1,133 @@
+<mxGraphModel>
+  <root>
+    <mxCell id="0"/>
+    <mxCell id="1" parent="0"/>
+    
+    <!-- Rack boundary -->
+    <mxCell id="2" value="Azure Local Rack" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;dashed=1;fontSize=14;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=5;" vertex="1" parent="1">
+      <mxGeometry x="40" y="30" width="720" height="550" as="geometry"/>
+    </mxCell>
+    
+    <!-- TOR Switch A -->
+    <mxCell id="3" value="TOR Switch A&#xa;gNMI :50051&#xa;(mgmt VRF)" style="shape=mxgraph.cisco.switches.workgroup_switch;sketch=0;fillColor=#036897;fontColor=#ffffff;strokeColor=#006EAF;fontSize=11;fontStyle=1;align=center;verticalAlign=bottom;spacingBottom=5;" vertex="1" parent="1">
+      <mxGeometry x="160" y="70" width="180" height="70" as="geometry"/>
+    </mxCell>
+    
+    <!-- TOR Switch B -->
+    <mxCell id="4" value="TOR Switch B&#xa;gNMI :50051&#xa;(mgmt VRF)" style="shape=mxgraph.cisco.switches.workgroup_switch;sketch=0;fillColor=#036897;fontColor=#ffffff;strokeColor=#006EAF;fontSize=11;fontStyle=1;align=center;verticalAlign=bottom;spacingBottom=5;" vertex="1" parent="1">
+      <mxGeometry x="440" y="70" width="180" height="70" as="geometry"/>
+    </mxCell>
+    
+    <!-- Management Network -->
+    <mxCell id="5" value="Management Network (Isolated — mgmt VRF)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFECEC;strokeColor=#CC4444;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="100" y="190" width="600" height="30" as="geometry"/>
+    </mxCell>
+    
+    <!-- Data Network -->
+    <mxCell id="6" value="Data Network (Default VRF)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6F3FF;strokeColor=#4A90D9;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="100" y="270" width="600" height="30" as="geometry"/>
+    </mxCell>
+    
+    <!-- Jumpbox VM -->
+    <mxCell id="7" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="100" y="350" width="220" height="200" as="geometry"/>
+    </mxCell>
+    <mxCell id="8" value="Jumpbox VM" style="text;html=1;align=center;verticalAlign=middle;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="150" y="355" width="120" height="25" as="geometry"/>
+    </mxCell>
+    
+    <!-- Network Mapper process -->
+    <mxCell id="9" value="Network Mapper" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="125" y="395" width="170" height="40" as="geometry"/>
+    </mxCell>
+    
+    <!-- Web UI -->
+    <mxCell id="10" value="Web UI :8080" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="145" y="450" width="130" height="30" as="geometry"/>
+    </mxCell>
+    
+    <!-- NIC labels on jumpbox -->
+    <mxCell id="11" value="NIC 1: mgmt network" style="text;html=1;align=left;fontSize=9;fontColor=#CC4444;" vertex="1" parent="1">
+      <mxGeometry x="120" y="495" width="130" height="15" as="geometry"/>
+    </mxCell>
+    <mxCell id="12" value="NIC 2: corporate/RDP" style="text;html=1;align=left;fontSize=9;fontColor=#666666;" vertex="1" parent="1">
+      <mxGeometry x="120" y="515" width="130" height="15" as="geometry"/>
+    </mxCell>
+    
+    <!-- Host Nodes (on data network only) -->
+    <mxCell id="13" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="370" y="350" width="140" height="110" as="geometry"/>
+    </mxCell>
+    <mxCell id="14" value="Host Node 1" style="text;html=1;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="380" y="355" width="120" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="15" value="Workload VMs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="385" y="385" width="110" height="35" as="geometry"/>
+    </mxCell>
+    
+    <mxCell id="16" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="550" y="350" width="140" height="110" as="geometry"/>
+    </mxCell>
+    <mxCell id="17" value="Host Node 2" style="text;html=1;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="560" y="355" width="120" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="18" value="Workload VMs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="565" y="385" width="110" height="35" as="geometry"/>
+    </mxCell>
+    
+    <!-- Switches to mgmt network -->
+    <mxCell id="19" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#CC4444;strokeWidth=1;exitX=0.5;exitY=1;entryX=0.25;entryY=0;endArrow=none;" edge="1" parent="1" source="3" target="5">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="20" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#CC4444;strokeWidth=1;exitX=0.5;exitY=1;entryX=0.75;entryY=0;endArrow=none;" edge="1" parent="1" source="4" target="5">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    
+    <!-- Switches to data network -->
+    <mxCell id="21" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#4A90D9;strokeWidth=1;exitX=0.5;exitY=1;entryX=0.25;entryY=0;endArrow=none;" edge="1" parent="1" source="3" target="6">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="250" y="250"/>
+          <mxPoint x="250" y="250"/>
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="22" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#4A90D9;strokeWidth=1;exitX=0.5;exitY=1;entryX=0.75;entryY=0;endArrow=none;" edge="1" parent="1" source="4" target="6">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="530" y="250"/>
+          <mxPoint x="550" y="250"/>
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    
+    <!-- Jumpbox to mgmt network -->
+    <mxCell id="23" value="gNMI" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#E94560;strokeWidth=2;fontSize=10;fontStyle=1;fontColor=#E94560;exitX=0.5;exitY=0;entryX=0.2;entryY=1;endArrow=classic;" edge="1" parent="1" source="7" target="5">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    
+    <!-- Hosts to data network -->
+    <mxCell id="24" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#4A90D9;strokeWidth=1;exitX=0.5;exitY=0;entryX=0.55;entryY=1;endArrow=none;" edge="1" parent="1" source="13" target="6">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="25" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#4A90D9;strokeWidth=1;exitX=0.5;exitY=0;entryX=0.8;entryY=1;endArrow=none;" edge="1" parent="1" source="16" target="6">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    
+    <!-- No connection indicator between hosts and mgmt -->
+    <mxCell id="26" value="✗ No access" style="text;html=1;align=center;fontSize=9;fontColor=#CC4444;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="430" y="230" width="80" height="15" as="geometry"/>
+    </mxCell>
+    
+    <!-- Operator -->
+    <mxCell id="27" value="Operator" style="shape=mxgraph.cisco.computers_and_peripherals.laptop;sketch=0;fillColor=#333333;fontColor=#333333;strokeColor=none;fontSize=10;fontStyle=1;verticalAlign=bottom;spacingBottom=2;" vertex="1" parent="1">
+      <mxGeometry x="170" y="575" width="55" height="45" as="geometry"/>
+    </mxCell>
+    
+    <!-- RDP/SSH arrow -->
+    <mxCell id="28" value="RDP / SSH tunnel&#xa;→ localhost:8080" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#D4A843;strokeWidth=2;fontSize=9;fontStyle=1;fontColor=#D4A843;exitX=0.5;exitY=0;entryX=0.5;entryY=1;endArrow=classic;" edge="1" parent="1" source="27" target="7">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    
+  </root>
+</mxGraphModel>

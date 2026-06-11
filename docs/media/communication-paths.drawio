@@ -1,0 +1,90 @@
+<mxGraphModel>
+  <root>
+    <mxCell id="0"/>
+    <mxCell id="1" parent="0"/>
+    
+    <!-- Title -->
+    <mxCell id="2" value="Network Mapper Communication Paths" style="text;html=1;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="200" y="10" width="300" height="25" as="geometry"/>
+    </mxCell>
+    
+    <!-- TOR Switch A -->
+    <mxCell id="3" value="TOR Switch A&#xa;172.16.x.x:50051" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#036897;fontColor=#ffffff;strokeColor=#006EAF;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="60" width="160" height="60" as="geometry"/>
+    </mxCell>
+    
+    <!-- TOR Switch B -->
+    <mxCell id="4" value="TOR Switch B&#xa;172.16.x.x:50051" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#036897;fontColor=#ffffff;strokeColor=#006EAF;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="150" width="160" height="60" as="geometry"/>
+    </mxCell>
+    
+    <!-- Network Mapper -->
+    <mxCell id="5" value="Network Mapper&#xa;(single binary)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="310" y="80" width="180" height="120" as="geometry"/>
+    </mxCell>
+    
+    <!-- Collector module -->
+    <mxCell id="6" value="gNMI Collector" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="325" y="110" width="110" height="30" as="geometry"/>
+    </mxCell>
+    
+    <!-- HTTP Server module -->
+    <mxCell id="7" value="HTTP Server :8080" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="325" y="155" width="150" height="30" as="geometry"/>
+    </mxCell>
+    
+    <!-- Browser -->
+    <mxCell id="8" value="Browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="600" y="90" width="120" height="50" as="geometry"/>
+    </mxCell>
+    
+    <!-- Topology JSON -->
+    <mxCell id="9" value="topology.json" style="shape=document;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="600" y="170" width="100" height="50" as="geometry"/>
+    </mxCell>
+    
+    <!-- Azure Key Vault -->
+    <mxCell id="10" value="Azure Key Vault" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0078D4;fontColor=#ffffff;strokeColor=none;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="340" y="240" width="130" height="35" as="geometry"/>
+    </mxCell>
+    
+    <!-- gNMI arrows -->
+    <mxCell id="11" value="gNMI Get/Subscribe&#xa;(gRPC + TLS)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#E94560;strokeWidth=2;fontSize=9;fontStyle=1;fontColor=#E94560;exitX=1;exitY=0.5;entryX=0;entryY=0.3;endArrow=classic;startArrow=classic;" edge="1" parent="1" source="3" target="5">
+      <mxGeometry x="0.2" relative="1" as="geometry">
+        <mxPoint as="offset"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="12" value="gNMI Get/Subscribe&#xa;(gRPC + TLS)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#E94560;strokeWidth=2;fontSize=9;fontStyle=1;fontColor=#E94560;exitX=1;exitY=0.5;entryX=0;entryY=0.7;endArrow=classic;startArrow=classic;" edge="1" parent="1" source="4" target="5">
+      <mxGeometry x="0.2" relative="1" as="geometry">
+        <mxPoint as="offset"/>
+      </mxGeometry>
+    </mxCell>
+    
+    <!-- HTTP + WebSocket arrow -->
+    <mxCell id="13" value="HTTP + WebSocket" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#D4A843;strokeWidth=2;fontSize=10;fontStyle=1;fontColor=#D4A843;exitX=1;exitY=0.3;entryX=0;entryY=0.5;endArrow=classic;startArrow=classic;" edge="1" parent="1" source="5" target="8">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    
+    <!-- JSON output arrow -->
+    <mxCell id="14" value="JSON output" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#999999;strokeWidth=1;fontSize=9;fontColor=#666666;exitX=1;exitY=0.8;entryX=0;entryY=0.5;endArrow=classic;dashed=1;" edge="1" parent="1" source="5" target="9">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    
+    <!-- Key Vault arrow -->
+    <mxCell id="15" value="Managed Identity&#xa;/ az login" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0078D4;strokeWidth=1;fontSize=9;fontStyle=0;fontColor=#0078D4;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endArrow=classic;dashed=1;" edge="1" parent="1" source="5" target="10">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    
+    <!-- Protocol details box -->
+    <mxCell id="16" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#CCCCCC;dashed=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="290" width="680" height="100" as="geometry"/>
+    </mxCell>
+    <mxCell id="17" value="Protocol Details" style="text;html=1;align=left;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="55" y="295" width="120" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="18" value="gNMI (port 50051): gRPC over HTTP/2 with TLS. Auth via username/password in gRPC metadata.&#xa;Web UI (port 8080): HTTP with WebSocket upgrade for live updates. No auth (restrict via network).&#xa;Key Vault: HTTPS via Azure SDK DefaultAzureCredential chain." style="text;html=1;align=left;fontSize=10;spacingLeft=5;" vertex="1" parent="1">
+      <mxGeometry x="55" y="320" width="650" height="55" as="geometry"/>
+    </mxCell>
+    
+  </root>
+</mxGraphModel>

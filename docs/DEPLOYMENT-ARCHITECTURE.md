@@ -45,8 +45,6 @@ An Azure Local rack typically includes:
 
 Each host node is **dual-homed** — physically cabled to both TOR switches for redundancy. The TOR switches expose gNMI on a configurable VRF (see [SWITCH-SETUP.md](SWITCH-SETUP.md#2-enable-gnmi) for VRF selection).
 
-<!-- TODO: Add physical topology diagram showing rack layout with dual-homed hosts -->
-
 ---
 
 ## Deployment Scenarios
@@ -55,33 +53,7 @@ Each host node is **dual-homed** — physically cabled to both TOR switches for 
 
 **When to use:** Standard Azure Local deployments where the data network provides reachability between VMs and TOR switch management interfaces.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ Azure Local Rack                                                │
-│                                                                 │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │ TOR Switch A                    TOR Switch B              │  │
-│  │ gNMI :50051                     gNMI :50051              │  │
-│  └───────┬───────────────────────────────┬───────────────────┘  │
-│          │ data network (default VRF)    │                      │
-│          │                               │                      │
-│  ┌───────┴───────────────────────────────┴───────────────────┐  │
-│  │                                                           │  │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐       │  │
-│  │  │  Host Node  │  │  Host Node  │  │  Host Node  │       │  │
-│  │  │             │  │             │  │             │       │  │
-│  │  │ ┌─────────┐ │  │             │  │             │       │  │
-│  │  │ │ Network │ │  │             │  │             │       │  │
-│  │  │ │ Mapper  │ │  │             │  │             │       │  │
-│  │  │ │ VM      │ │  │             │  │             │       │  │
-│  │  │ │ :8080   │ │  │             │  │             │       │  │
-│  │  │ └─────────┘ │  │             │  │             │       │  │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘       │  │
-│  │                                                           │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
+![Host Node VM Deployment](media/deployment-host-node-vm.png)
 
 **How it works:**
 
@@ -102,41 +74,7 @@ Each host node is **dual-homed** — physically cabled to both TOR switches for 
 
 **When to use:** Lab environments or deployments where the management network is **completely isolated** from the data plane. In this setup, gNMI is bound to the management VRF, and only machines with direct access to the management network can reach the switches.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ Azure Local Rack                                                │
-│                                                                 │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │ TOR Switch A                    TOR Switch B              │  │
-│  │ gNMI :50051 (mgmt VRF)         gNMI :50051 (mgmt VRF)   │  │
-│  └───┬───────────────────────────────────┬───────────────────┘  │
-│      │ management network (isolated)     │                      │
-│      │                                   │                      │
-│  ┌───┴───────────────────────────────────┴───────────────────┐  │
-│  │ Management Switch / VLAN                                  │  │
-│  └───────────────────────────┬───────────────────────────────┘  │
-│                              │                                  │
-│  ┌───────────────────────────┴───────────────────────────────┐  │
-│  │ Jumpbox VM                                                │  │
-│  │ (has NIC on management network)                           │  │
-│  │                                                           │  │
-│  │  ┌────────────────────────────────────┐                   │  │
-│  │  │ Network Mapper                     │                   │  │
-│  │  │ gNMI → TOR-A:50051, TOR-B:50051   │                   │  │
-│  │  │ Web UI → :8080                     │                   │  │
-│  │  └────────────────────────────────────┘                   │  │
-│  │                                                           │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-             │
-             │ RDP / SSH / HTTP :8080
-             ▼
-        ┌──────────┐
-        │ Operator │
-        │ laptop   │
-        └──────────┘
-```
+![Jumpbox VM Deployment](media/deployment-jumpbox-vm.png)
 
 **How it works:**
 
@@ -157,6 +95,8 @@ Each host node is **dual-homed** — physically cabled to both TOR switches for 
 
 ## Communication Paths
 
+![Communication Paths](media/communication-paths.png)
+
 ### gNMI Collection (Switch → Mapper)
 
 | Aspect | Detail |
@@ -172,8 +112,6 @@ The Network Mapper initiates gRPC connections to each configured switch. It perf
 
 For credential management details, see [README.md — Authentication & Credentials](../README.md#authentication--credentials).
 
-<!-- TODO: Add diagram showing gNMI request/response flow between mapper and switches -->
-
 ### Web UI Access (User → Mapper)
 
 | Aspect | Detail |
@@ -187,8 +125,6 @@ For credential management details, see [README.md — Authentication & Credentia
 The web UI is embedded in the binary — no external CDN or package manager required. It serves a single-page application that fetches topology data from the REST API.
 
 **Security note:** The HTTP server has no authentication. In production, restrict access via network segmentation or a reverse proxy with auth. Bind to `127.0.0.1` if only local access is needed.
-
-<!-- TODO: Add diagram showing browser-to-mapper communication and UI rendering -->
 
 ---
 
