@@ -366,6 +366,7 @@ This project builds on patterns from [arc-switch](../arc-switch), specifically:
 
 | Document | Description |
 |----------|-------------|
+| [DEPLOYMENT-ARCHITECTURE.md](docs/DEPLOYMENT-ARCHITECTURE.md) | Where to run the tool — host node VM vs. jumpbox deployment scenarios |
 | [topology-schema.md](docs/topology-schema.md) | V2 topology JSON schema — field-by-field reference |
 | [DATA-COLLECTION.md](docs/DATA-COLLECTION.md) | What data is collected, gNMI paths, how each category is used |
 | [DEVICE-CORRELATION.md](docs/DEVICE-CORRELATION.md) | Device deduplication, MAC offset handling, ARP enrichment |
