@@ -9,29 +9,46 @@ import (
 )
 
 // NXOSPlatform implements collection for Cisco NX-OS switches.
-// Uses native /System/ paths for maximum data fidelity, with OpenConfig fallback
-// for system info when native paths fail.
-type NXOSPlatform struct{}
+// Prefers OpenConfig paths for operational data (oper-status, counters, system info)
+// and supplements with NX-OS native /System/ paths for platform-specific data
+// (VLAN config, LLDP, MAC table, ARP, BGP, VXLAN, QoS).
+type NXOSPlatform struct {
+	// notes collects informational messages about fallback behavior during collection.
+	notes []string
+}
+
+// CollectionNotes returns informational messages about the last collection run
+// (e.g., when OpenConfig paths failed and native paths were used as fallback).
+// Implements the FallbackReporter interface.
+func (p *NXOSPlatform) CollectionNotes() []string {
+	return p.notes
+}
+
+// ResetNotes clears any accumulated collection notes for a fresh run.
+func (p *NXOSPlatform) ResetNotes() {
+	p.notes = nil
+}
 
 func (p *NXOSPlatform) Name() string     { return "nxos" }
 func (p *NXOSPlatform) Encoding() string  { return "JSON" }
 func (p *NXOSPlatform) EnrichInterfacesFromVLANs() bool { return false }
 
 func (p *NXOSPlatform) CollectSystem(ctx context.Context, client gnmi.GNMIClient) (transform.SystemInfo, error) {
-	// Try the richer native system path first
-	notifs, err := client.Get(ctx, transform.SystemPathNXOS)
+	// Prefer OpenConfig — well-tested, standardized fields (hostname, version).
+	notifs, err := client.Get(ctx, transform.SystemPathOpenConfig)
 	if err == nil {
-		info := transform.ParseSystemNXOS(notifs)
+		info := transform.ParseSystemOpenConfig(notifs)
 		if info.Hostname != "" || info.SoftwareVersion != "" {
 			return info, nil
 		}
 	}
-	// Fall through to OpenConfig if NX-OS path fails
-	notifs, err = client.Get(ctx, transform.SystemPathOpenConfig)
+	// Fall back to NX-OS native path
+	notifs, err = client.Get(ctx, transform.SystemPathNXOS)
 	if err != nil {
 		return transform.SystemInfo{}, err
 	}
-	return transform.ParseSystemOpenConfig(notifs), nil
+	p.notes = append(p.notes, "OpenConfig system path unavailable; using NX-OS native path")
+	return transform.ParseSystemNXOS(notifs), nil
 }
 
 func (p *NXOSPlatform) CollectLLDP(ctx context.Context, client gnmi.GNMIClient) ([]transform.LLDPNeighbor, error) {
@@ -43,29 +60,36 @@ func (p *NXOSPlatform) CollectLLDP(ctx context.Context, client gnmi.GNMIClient) 
 }
 
 func (p *NXOSPlatform) CollectInterfaces(ctx context.Context, client gnmi.GNMIClient) ([]topology.Interface, error) {
-	// Try native NX-OS path first — more reliable across NX-OS versions
-	notifs, err := client.GetWithFallback(ctx, transform.InterfacesPathNXOS)
-	if err == nil {
-		ifaces := transform.ParseInterfacesNXOS(notifs)
-		if len(ifaces) > 0 {
-			return ifaces, nil
+	// Prefer OpenConfig — provides oper-status, counters, and is well-tested.
+	// NX-OS native path is used as supplement for VLAN config that OpenConfig lacks.
+	var ifaces []topology.Interface
+
+	ocNotifs, ocErr := client.GetWithFallback(ctx, transform.InterfacesPathOpenConfig)
+	if ocErr == nil {
+		ifaces = transform.ParseInterfacesOpenConfig(ocNotifs)
+	}
+
+	if len(ifaces) == 0 {
+		// OpenConfig unavailable — fall back to NX-OS native path
+		nxNotifs, nxErr := client.GetWithFallback(ctx, transform.InterfacesPathNXOS)
+		if nxErr != nil {
+			if ocErr != nil {
+				return nil, ocErr
+			}
+			return nil, nxErr
 		}
+		ifaces = transform.ParseInterfacesNXOS(nxNotifs)
+		p.notes = append(p.notes, "OpenConfig interface path unavailable; using NX-OS native path (oper-status may be limited)")
 	}
 
-	// Fall back to OpenConfig path
-	notifs, err = client.GetWithFallback(ctx, transform.InterfacesPathOpenConfig)
-	if err != nil {
-		return nil, err
-	}
-	ifaces := transform.ParseInterfacesOpenConfig(notifs)
-
-	// Collect counters separately
+	// Collect counters separately (OpenConfig counter path)
 	counterNotifs, counterErr := client.GetWithFallback(ctx, transform.InterfacesCountersPathOpenConfig)
 	if counterErr == nil {
 		transform.MergeInterfaceCounters(ifaces, counterNotifs)
 	}
 
-	// Collect per-port VLAN configuration (NX-OS native path)
+	// Supplement with NX-OS native VLAN configuration (mode, trunk VLANs, native VLAN).
+	// OpenConfig does not expose per-port VLAN details on NX-OS.
 	vlanNotifs, vlanErr := client.GetWithFallback(ctx, transform.InterfaceVLANPathNXOS)
 	if vlanErr == nil {
 		vlanConfigs := transform.ParseInterfaceVLANsNXOS(vlanNotifs)

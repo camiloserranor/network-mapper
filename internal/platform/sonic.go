@@ -20,7 +20,7 @@ func (p *SONiCPlatform) Name() string     { return "sonic" }
 func (p *SONiCPlatform) Encoding() string  { return "JSON_IETF" }
 func (p *SONiCPlatform) EnrichInterfacesFromVLANs() bool { return true }
 
-func (p *SONiCPlatform) CollectSystem(ctx context.Context, client *gnmi.Client) (transform.SystemInfo, error) {
+func (p *SONiCPlatform) CollectSystem(ctx context.Context, client gnmi.GNMIClient) (transform.SystemInfo, error) {
 	notifs, err := client.Get(ctx, transform.SystemPathOpenConfig)
 	if err != nil {
 		return transform.SystemInfo{}, err
@@ -28,7 +28,7 @@ func (p *SONiCPlatform) CollectSystem(ctx context.Context, client *gnmi.Client) 
 	return transform.ParseSystemOpenConfig(notifs), nil
 }
 
-func (p *SONiCPlatform) CollectLLDP(ctx context.Context, client *gnmi.Client) ([]transform.LLDPNeighbor, error) {
+func (p *SONiCPlatform) CollectLLDP(ctx context.Context, client gnmi.GNMIClient) ([]transform.LLDPNeighbor, error) {
 	notifs, err := client.GetWithFallback(ctx, transform.LLDPPathOpenConfig)
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func (p *SONiCPlatform) CollectLLDP(ctx context.Context, client *gnmi.Client) ([
 	return transform.ParseLLDPOpenConfig(notifs), nil
 }
 
-func (p *SONiCPlatform) CollectInterfaces(ctx context.Context, client *gnmi.Client) ([]topology.Interface, error) {
+func (p *SONiCPlatform) CollectInterfaces(ctx context.Context, client gnmi.GNMIClient) ([]topology.Interface, error) {
 	notifs, err := client.GetWithFallback(ctx, transform.InterfacesPathOpenConfig)
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func (p *SONiCPlatform) CollectInterfaces(ctx context.Context, client *gnmi.Clie
 	return transform.ParseInterfacesOpenConfig(notifs), nil
 }
 
-func (p *SONiCPlatform) CollectResources(ctx context.Context, client *gnmi.Client) (transform.ResourceStats, error) {
+func (p *SONiCPlatform) CollectResources(ctx context.Context, client gnmi.GNMIClient) (transform.ResourceStats, error) {
 	cpuNotifs, cpuErr := client.GetWithFallback(ctx, transform.CPUPathOpenConfig)
 	memNotifs, memErr := client.GetWithFallback(ctx, transform.MemoryPathOpenConfig)
 	if cpuErr != nil && memErr != nil {
@@ -54,7 +54,7 @@ func (p *SONiCPlatform) CollectResources(ctx context.Context, client *gnmi.Clien
 	return transform.ParseResourceStatsOpenConfig(cpuNotifs, memNotifs), nil
 }
 
-func (p *SONiCPlatform) CollectMACTable(ctx context.Context, client *gnmi.Client, switchName string) ([]transform.MACEntry, error) {
+func (p *SONiCPlatform) CollectMACTable(ctx context.Context, client gnmi.GNMIClient, switchName string) ([]transform.MACEntry, error) {
 	notifs, err := client.GetWithFallback(ctx, transform.MACTablePathOpenConfig)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (p *SONiCPlatform) CollectMACTable(ctx context.Context, client *gnmi.Client
 	return transform.ParseMACTableOpenConfig(notifs, switchName), nil
 }
 
-func (p *SONiCPlatform) CollectARPTable(ctx context.Context, client *gnmi.Client, switchName string) ([]transform.ARPEntry, error) {
+func (p *SONiCPlatform) CollectARPTable(ctx context.Context, client gnmi.GNMIClient, switchName string) ([]transform.ARPEntry, error) {
 	notifs, err := client.GetWithFallback(ctx, transform.ARPPathOpenConfig)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (p *SONiCPlatform) CollectARPTable(ctx context.Context, client *gnmi.Client
 	return transform.ParseARPTableOpenConfig(notifs, switchName), nil
 }
 
-func (p *SONiCPlatform) CollectVLANs(ctx context.Context, client *gnmi.Client, switchName string) ([]topology.VLAN, error) {
+func (p *SONiCPlatform) CollectVLANs(ctx context.Context, client gnmi.GNMIClient, switchName string) ([]topology.VLAN, error) {
 	notifs, err := client.GetWithFallback(ctx, transform.VLANPathOpenConfig)
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func (p *SONiCPlatform) CollectVLANs(ctx context.Context, client *gnmi.Client, s
 	return transform.ParseVLANsOpenConfig(notifs, switchName), nil
 }
 
-func (p *SONiCPlatform) CollectBGP(ctx context.Context, client *gnmi.Client) ([]transform.BGPNeighbor, error) {
+func (p *SONiCPlatform) CollectBGP(ctx context.Context, client gnmi.GNMIClient) ([]transform.BGPNeighbor, error) {
 	// SONiC doesn't support wildcard paths in the protocol subtree.
 	// Use the SONiC-specific path that avoids wildcards.
 	notifs, err := client.GetWithFallback(ctx, transform.BGPNeighborsPathSONiC)

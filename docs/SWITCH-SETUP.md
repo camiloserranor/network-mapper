@@ -63,17 +63,18 @@ username gnmi-network-mapper password <strong-password> role network-admin
 
 ### 2. Enable gNMI
 
-gNMI must be enabled on the **default VRF**, not the management VRF. This is critical — the Network Mapper VM runs inside the Azure Local cluster on the data network, so it reaches the switch through the default VRF.
+gNMI must be enabled on the VRF that the Network Mapper VM can reach. The correct VRF depends on your deployment scenario — see [DEPLOYMENT-ARCHITECTURE.md](DEPLOYMENT-ARCHITECTURE.md) for details.
 
 ```
 ! Enable the gNMI feature
 feature grpc
 
-! Configure gNMI server on the default VRF
-grpc use-vrf default
+! Configure gNMI server — choose the VRF based on your deployment:
+grpc use-vrf default      ! Scenario 1: Host Node VM (data network)
+! grpc use-vrf management ! Scenario 2: Jumpbox VM (isolated mgmt network)
 ```
 
-> **Why default VRF?** In Azure Local deployments, the Network Mapper VM sits on the cluster data network — the same network that hosts and switches share. The management VRF is typically only accessible from out-of-band management networks. By binding gNMI to the default VRF, the tool can reach the switch over the data-plane interfaces.
+> **VRF selection:** In standard Azure Local deployments (Scenario 1), the Network Mapper VM sits on the cluster data network, so use `default` VRF. In lab environments with isolated management networks (Scenario 2), use `management` VRF since only the jumpbox can reach it. See [DEPLOYMENT-ARCHITECTURE.md](DEPLOYMENT-ARCHITECTURE.md#choosing-a-deployment-scenario) for guidance.
 
 #### TLS Certificate (Optional)
 

@@ -266,3 +266,9 @@ func SanitizeIdentifier(s string) string {
 	}
 	return string(clean)
 }
+
+// sanitizeCounter returns counter values as-is. NX-OS gNMI counters are
+// unsigned; this function provides a consistent sanitization point if needed.
+func sanitizeCounter(v uint64) uint64 {
+	return v
+}

@@ -198,13 +198,18 @@ func collectCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "collect",
 		Short: "Collect network topology from TOR switches via gNMI",
-		Long:  "Connect to configured TOR switches via gNMI, retrieve LLDP neighbor data, interface state, and system info, then output a topology JSON file.",
-		RunE:  runCollect,
+		Long: `Connect to configured TOR switches via gNMI, retrieve LLDP neighbor data,
+interface state, and system info, then output a topology JSON file.
+
+Use --dump to save raw gNMI responses instead of building a topology.
+The raw dump output is compatible with --from-raw for offline processing.`,
+		RunE: runCollect,
 	}
 
 	cmd.Flags().StringP("config", "c", "config.yaml", "Path to configuration file")
 	cmd.Flags().StringP("output", "o", "topology.json", "Path to write topology JSON output")
 	cmd.Flags().String("from-raw", "", "Load raw gNMI dump from directory instead of collecting from live switches")
+	cmd.Flags().Bool("dump", false, "Dump raw gNMI data to disk instead of building topology (output dir via --output, default: gnmi-raw-data)")
 
 	return cmd
 }
@@ -213,6 +218,7 @@ func runCollect(cmd *cobra.Command, args []string) error {
 	cfgPath, _ := cmd.Flags().GetString("config")
 	outputPath, _ := cmd.Flags().GetString("output")
 	fromRaw, _ := cmd.Flags().GetString("from-raw")
+	dump, _ := cmd.Flags().GetBool("dump")
 
 	// Mode 1: Load from raw gNMI dump directory (no live switches needed)
 	if fromRaw != "" {
@@ -239,7 +245,30 @@ func runCollect(cmd *cobra.Command, args []string) error {
 		})
 	}
 
-	// Mode 2: Live collection from switches
+	// Mode 2: Dump raw gNMI data to disk
+	if dump {
+		cfg, err := config.Load(cfgPath)
+		if err != nil {
+			return fmt.Errorf("loading config: %w", err)
+		}
+
+		// Use --output as the base directory; default to "gnmi-raw-data" if user
+		// didn't explicitly change it from the topology.json default.
+		outputDir := outputPath
+		if !cmd.Flags().Changed("output") {
+			outputDir = "gnmi-raw-data"
+		}
+
+		fmt.Printf("Dumping raw gNMI data from %d switch(es)...\n", len(cfg.Switches))
+		dir, err := collector.DumpRaw(context.Background(), cfg, outputDir)
+		if err != nil {
+			return fmt.Errorf("dump failed: %w", err)
+		}
+		fmt.Printf("Raw gNMI data saved to: %s\n", dir)
+		return nil
+	}
+
+	// Mode 3: Live collection from switches → topology JSON
 	cfg, err := config.Load(cfgPath)
 	if err != nil {
 		return fmt.Errorf("loading config: %w", err)

@@ -346,6 +346,17 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 		}
 	}
 
+	// Surface any fallback/informational notes from the platform as warnings
+	if fr, ok := p.(platform.FallbackReporter); ok {
+		for _, note := range fr.CollectionNotes() {
+			log.Printf("  %s: NOTE: %s", sw.Name, note)
+			result.Errors = append(result.Errors, topology.PartialError{
+				Switch: sw.Name, Phase: "fallback", Message: note,
+			})
+		}
+		fr.ResetNotes()
+	}
+
 	log.Printf("  %s: collection completed in %s", sw.Name, time.Since(start))
 
 	return result

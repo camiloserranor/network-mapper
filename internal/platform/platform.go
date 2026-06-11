@@ -77,6 +77,17 @@ type QoSCollector interface {
 	CollectPFCConfig(ctx context.Context, client gnmi.GNMIClient) ([]transform.PFCConfig, error)
 }
 
+// FallbackReporter is an optional interface for platforms that track when
+// fallback paths were used instead of preferred paths. The collector surfaces
+// these notes as informational warnings in the topology output.
+type FallbackReporter interface {
+	// CollectionNotes returns informational messages about fallback usage.
+	CollectionNotes() []string
+
+	// ResetNotes clears accumulated notes for a fresh collection cycle.
+	ResetNotes()
+}
+
 // ForPlatform returns the Platform implementation for the given platform name.
 // Unknown platforms fall back to the generic OpenConfig implementation.
 func ForPlatform(name string) Platform {

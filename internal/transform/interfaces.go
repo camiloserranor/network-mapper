@@ -9,8 +9,9 @@ import (
 
 // Interface gNMI paths.
 const (
-	InterfacesPathOpenConfig      = "/openconfig-interfaces:interfaces/interface/state"
+	InterfacesPathOpenConfig        = "/openconfig-interfaces:interfaces/interface/state"
 	InterfacesCountersPathOpenConfig = "/openconfig-interfaces:interfaces/interface/state/counters"
+	InterfacesPathNXOS              = "/System/intf-items/phys-items/PhysIf-list"
 )
 
 // ParseInterfacesOpenConfig extracts interface state from OpenConfig gNMI responses.
@@ -204,6 +205,25 @@ func parseInterfacesFlatLeaf(notifs []gnmi.Notification) []topology.Interface {
 		ifaces = append(ifaces, iface)
 	}
 	return ifaces
+}
+
+// MergeOperStatus enriches interfaces that lack oper-status with values from a
+// supplementary set (typically parsed from a different gNMI path). Existing non-empty
+// oper-status values are NOT overwritten.
+func MergeOperStatus(ifaces []topology.Interface, supplement []topology.Interface) {
+	supByName := make(map[string]string, len(supplement))
+	for _, s := range supplement {
+		if s.OperStatus != "" {
+			supByName[s.Name] = s.OperStatus
+		}
+	}
+	for i := range ifaces {
+		if ifaces[i].OperStatus == "" {
+			if status, ok := supByName[ifaces[i].Name]; ok {
+				ifaces[i].OperStatus = status
+			}
+		}
+	}
 }
 
 // MergeInterfaceCounters merges counter data from a separate gNMI response into
