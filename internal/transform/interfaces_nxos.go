@@ -58,29 +58,54 @@ func ParseInterfacesNXOS(notifs []gnmi.Notification) []topology.Interface {
 
 func parseNXOSInterface(m map[string]interface{}) topology.Interface {
 	id := GetString(m, "id")
-	adminSt := GetString(m, "adminSt")
+
+	// NX-OS nests configuration and operational fields under "phys-items".
+	source := m
+	if physItems, ok := m["phys-items"]; ok {
+		if pm, ok := physItems.(map[string]interface{}); ok {
+			source = pm
+		}
+	}
+
+	operSt := GetString(source, "operSt")
+	if operSt == "" {
+		operSt = GetString(source, "adminSt")
+	}
+
+	// Use operational values when available (more accurate than config values)
+	speed := GetString(source, "operSpeed")
+	if speed == "" {
+		speed = GetString(source, "speed")
+	}
+	mtu := GetInt(source, "operMtu")
+	if mtu == 0 {
+		mtu = GetInt(source, "mtu")
+	}
 
 	iface := topology.Interface{
 		Name:       NormalizeInterfaceName(id),
-		OperStatus: normalizeNXOSOperStatus(adminSt),
-		Speed:      normalizeSpeed(GetString(m, "speed")),
-		MTU:        GetInt(m, "mtu"),
+		OperStatus: normalizeNXOSOperStatus(operSt),
+		Speed:      normalizeSpeed(speed),
+		MTU:        mtu,
 	}
 
-	// Mode: "trunk", "access", or "fex-fabric" etc.
-	mode := strings.ToLower(GetString(m, "mode"))
+	// Mode: "trunk", "access", or "fex-fabric" etc. Prefer operational mode.
+	mode := strings.ToLower(GetString(source, "operMode"))
+	if mode == "" {
+		mode = strings.ToLower(GetString(source, "mode"))
+	}
 	if mode == "trunk" || mode == "access" {
 		iface.Mode = mode
 	}
 
 	// Native VLAN (format: "vlan-7" → 7)
-	nativeVlan := GetString(m, "nativeVlan")
+	nativeVlan := GetString(source, "nativeVlan")
 	if nativeVlan != "" {
 		iface.NativeVLAN = parseVlanNumber(nativeVlan)
 	}
 
 	// Access VLAN
-	accessVlan := GetString(m, "accessVlan")
+	accessVlan := GetString(source, "accessVlan")
 	if accessVlan != "" {
 		iface.AccessVLAN = parseVlanNumber(accessVlan)
 	}
@@ -88,7 +113,7 @@ func parseNXOSInterface(m map[string]interface{}) topology.Interface {
 	// Trunk VLANs — only relevant for trunk mode ports.
 	// Skip default "1-4094" range as it's not informative.
 	if mode == "trunk" {
-		trunkVlans := GetString(m, "trunkVlans")
+		trunkVlans := GetString(source, "trunkVlans")
 		if trunkVlans != "" && trunkVlans != "1-4094" {
 			iface.TrunkVLANs = parseVlanRange(trunkVlans)
 		}
@@ -97,7 +122,7 @@ func parseNXOSInterface(m map[string]interface{}) topology.Interface {
 	return iface
 }
 
-// normalizeNXOSOperStatus converts NX-OS adminSt to standard UP/DOWN.
+// normalizeNXOSOperStatus converts NX-OS operSt/adminSt to standard UP/DOWN.
 func normalizeNXOSOperStatus(s string) string {
 	switch strings.ToLower(s) {
 	case "up":
