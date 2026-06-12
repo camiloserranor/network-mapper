@@ -140,6 +140,34 @@ func (p *NXOSPlatform) CollectBGP(ctx context.Context, client gnmi.GNMIClient) (
 	return transform.ParseBGPNXOS(notifs), nil
 }
 
+// --- LAGCollector implementation ---
+
+func (p *NXOSPlatform) CollectLAGMembership(ctx context.Context, client gnmi.GNMIClient) (transform.LAGMembership, error) {
+	// Primary: try dedicated aggregate interface path
+	notifs, err := client.GetWithFallback(ctx, transform.LAGMembershipPathNXOS)
+	if err == nil {
+		membership := transform.ParseLAGMembershipNXOS(notifs)
+		if len(membership) > 0 {
+			return membership, nil
+		}
+	}
+
+	// Fallback: derive LAG membership from PhysIf data (pcId field on each physical interface)
+	// This works on NX-OS versions where aggr-items path returns empty.
+	physNotifs, physErr := client.GetWithFallback(ctx, transform.InterfacesPathNXOS)
+	if physErr != nil {
+		if err != nil && !gnmi.IsPathNotSupported(err) {
+			return nil, err
+		}
+		return nil, nil
+	}
+	membership := transform.ParseLAGMembershipFromPhysIf(physNotifs)
+	if len(membership) > 0 {
+		p.notes = append(p.notes, "LAG membership derived from PhysIf pcId fields (aggr-items path unavailable)")
+	}
+	return membership, nil
+}
+
 // --- VXLANCollector implementation ---
 
 func (p *NXOSPlatform) CollectNVEPeers(ctx context.Context, client gnmi.GNMIClient) ([]transform.NVEPeer, error) {

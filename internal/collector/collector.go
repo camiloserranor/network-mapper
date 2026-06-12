@@ -20,20 +20,21 @@ import (
 
 // switchResult holds all data collected from a single switch.
 type switchResult struct {
-	SwitchName   string
-	SwitchID     string
-	Device       topology.Device
-	Neighbors    []transform.LLDPNeighbor
-	Interfaces   []topology.Interface
-	MACEntries   []transform.MACEntry
-	ARPEntries   []transform.ARPEntry
-	VLANs        []topology.VLAN
-	BGPNeighbors []transform.BGPNeighbor
-	NVEPeers     []transform.NVEPeer
-	L2RIBMacs    []transform.L2RIBEntry
-	QoSStats     []transform.QoSStats
-	PFCConfig    []transform.PFCConfig
-	Errors       []topology.PartialError
+	SwitchName    string
+	SwitchID      string
+	Device        topology.Device
+	Neighbors     []transform.LLDPNeighbor
+	Interfaces    []topology.Interface
+	MACEntries    []transform.MACEntry
+	ARPEntries    []transform.ARPEntry
+	VLANs         []topology.VLAN
+	BGPNeighbors  []transform.BGPNeighbor
+	NVEPeers      []transform.NVEPeer
+	L2RIBMacs     []transform.L2RIBEntry
+	QoSStats      []transform.QoSStats
+	PFCConfig     []transform.PFCConfig
+	LAGMembership transform.LAGMembership
+	Errors        []topology.PartialError
 }
 
 // CollectRaw connects to all configured switches, queries gNMI for LLDP,
@@ -69,20 +70,21 @@ func CollectRaw(ctx context.Context, cfg *config.Config) (*CollectionResult, err
 	}
 	for i, r := range results {
 		cr.Switches[i] = SwitchData{
-			SwitchName:   r.SwitchName,
-			SwitchID:     r.SwitchID,
-			Device:       r.Device,
-			Neighbors:    r.Neighbors,
-			Interfaces:   r.Interfaces,
-			MACEntries:   r.MACEntries,
-			ARPEntries:   r.ARPEntries,
-			VLANs:        r.VLANs,
-			BGPNeighbors: r.BGPNeighbors,
-			NVEPeers:     r.NVEPeers,
-			L2RIBMacs:    r.L2RIBMacs,
-			QoSStats:     r.QoSStats,
-			PFCConfig:    r.PFCConfig,
-			Errors:       r.Errors,
+			SwitchName:    r.SwitchName,
+			SwitchID:      r.SwitchID,
+			Device:        r.Device,
+			Neighbors:     r.Neighbors,
+			Interfaces:    r.Interfaces,
+			MACEntries:    r.MACEntries,
+			ARPEntries:    r.ARPEntries,
+			VLANs:         r.VLANs,
+			BGPNeighbors:  r.BGPNeighbors,
+			NVEPeers:      r.NVEPeers,
+			L2RIBMacs:     r.L2RIBMacs,
+			QoSStats:      r.QoSStats,
+			PFCConfig:     r.PFCConfig,
+			LAGMembership: r.LAGMembership,
+			Errors:        r.Errors,
 		}
 	}
 
@@ -269,7 +271,23 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 		log.Printf("  %s: %d BGP neighbors", sw.Name, len(bgpNeighbors))
 	}
 
-	// 10. Collect NVE peers (VXLAN/EVPN — optional capability)
+	// 10. Collect LAG/port-channel membership (optional capability)
+	if lc, ok := p.(platform.LAGCollector); ok {
+		lagMembership, lagErr := lc.CollectLAGMembership(ctx, client)
+		if lagErr != nil {
+			log.Printf("  %s: LAG membership unavailable: %v", sw.Name, lagErr)
+			result.Errors = append(result.Errors, topology.PartialError{
+				Switch: sw.Name, Phase: "lag-membership", Message: lagErr.Error(),
+			})
+		} else if len(lagMembership) > 0 {
+			result.LAGMembership = lagMembership
+			log.Printf("  %s: %d port-channels with membership data", sw.Name, len(lagMembership))
+		} else {
+			log.Printf("  %s: no port-channel membership data found", sw.Name)
+		}
+	}
+
+	// 11. Collect NVE peers (VXLAN/EVPN — optional capability)
 	if vc, ok := p.(platform.VXLANCollector); ok {
 		nvePeers, nveErr := vc.CollectNVEPeers(ctx, client)
 		if nveErr != nil {
@@ -291,7 +309,7 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 			result.NVEPeers = nvePeers
 			log.Printf("  %s: %d NVE peers", sw.Name, len(nvePeers))
 
-			// 11. Only collect L2RIB if we have NVE peers AND MACs on NVE ports
+			// 12. Only collect L2RIB if we have NVE peers AND MACs on NVE ports
 			hasNVEMacs := false
 			for _, mac := range result.MACEntries {
 				if transform.IsNVEInterface(mac.Port) {
@@ -320,7 +338,7 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 		}
 	}
 
-	// 12. Collect QoS stats (RDMA monitoring — optional capability)
+	// 13. Collect QoS stats (RDMA monitoring — optional capability)
 	if qc, ok := p.(platform.QoSCollector); ok {
 		qosStats, qosErr := qc.CollectQoSStats(ctx, client)
 		if qosErr != nil {
@@ -333,7 +351,7 @@ func collectSwitch(ctx context.Context, sw config.SwitchConfig, cfg *config.Conf
 			log.Printf("  %s: %d interfaces with QoS stats", sw.Name, len(qosStats))
 		}
 
-		// 13. Collect PFC config
+		// 14. Collect PFC config
 		pfcConfig, pfcErr := qc.CollectPFCConfig(ctx, client)
 		if pfcErr != nil {
 			log.Printf("  %s: PFC config unavailable: %v", sw.Name, pfcErr)
@@ -493,10 +511,11 @@ func buildTopology(results []switchResult, now time.Time, reverseDNS bool) *topo
 	for _, r := range results {
 		if len(r.MACEntries) > 0 {
 			correlationInputs = append(correlationInputs, transform.CorrelationInput{
-				SwitchID:   r.SwitchID,
-				Neighbors:  r.Neighbors,
-				MACEntries: r.MACEntries,
-				ARPEntries: r.ARPEntries,
+				SwitchID:      r.SwitchID,
+				Neighbors:     r.Neighbors,
+				MACEntries:    r.MACEntries,
+				ARPEntries:    r.ARPEntries,
+				LAGMembership: r.LAGMembership,
 			})
 		}
 	}

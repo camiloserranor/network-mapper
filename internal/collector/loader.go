@@ -247,6 +247,12 @@ func loadSwitchFromDisk(dir, swName string) (SwitchData, error) {
 		log.Printf("  %s: %d BGP neighbors", swName, len(sd.BGPNeighbors))
 	}
 
+	// 9. LAG/port-channel membership
+	if raw, ok := categories["lag-membership-nxos"]; ok {
+		sd.LAGMembership = transform.ParseLAGMembershipNXOS(raw.Notifications)
+		log.Printf("  %s: %d port-channels with membership", swName, len(sd.LAGMembership))
+	}
+
 	return sd, nil
 }
 

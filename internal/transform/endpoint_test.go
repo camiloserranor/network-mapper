@@ -151,5 +151,159 @@ func TestCorrelateEndpoints_PeerLinkUpgradeReverseOrder(t *testing.T) {
 	}
 }
 
+func TestCorrelateEndpoints_PortChannelResolution(t *testing.T) {
+	// W-001 fix: MAC learned on port-channel should be resolved via LAG membership
+	// to the physical member port's LLDP neighbor.
+	inputs := []CorrelationInput{
+		{
+			SwitchID: "TOR-1",
+			Neighbors: []LLDPNeighbor{
+				{LocalPort: "Eth1/49", ChassisID: "94:6d:ae:aa:bb:01", SystemName: "HOST-01"},
+				{LocalPort: "Eth1/50", ChassisID: "94:6d:ae:aa:bb:01", SystemName: "HOST-01"},
+			},
+			MACEntries: []MACEntry{
+				// VM MAC learned on port-channel (the aggregate interface)
+				{MAC: "00:15:5d:11:22:33", VLAN: 100, Port: "po501", SwitchID: "TOR-1"},
+				// Host chassis MAC also on port-channel — should be filtered
+				{MAC: "94:6d:ae:aa:bb:01", VLAN: 100, Port: "po501", SwitchID: "TOR-1"},
+			},
+			ARPEntries: []ARPEntry{
+				{IP: "10.0.1.50", MAC: "00:15:5d:11:22:33", SwitchID: "TOR-1"},
+			},
+			LAGMembership: LAGMembership{
+				"po501": {"Eth1/49", "Eth1/50"},
+			},
+		},
+	}
 
+	endpoints := CorrelateEndpoints(inputs)
 
+	// The host MAC should NOT appear as an endpoint
+	for _, ep := range endpoints {
+		if ep.MAC == "94:6d:ae:aa:bb:01" {
+			t.Error("Host chassis MAC should have been filtered by LAG resolution")
+		}
+	}
+
+	// The VM MAC should be attributed to HOST-01 via port-channel → member port resolution
+	var vm *topology.Endpoint
+	for i := range endpoints {
+		if endpoints[i].MAC == "00:15:5d:11:22:33" {
+			vm = &endpoints[i]
+			break
+		}
+	}
+	if vm == nil {
+		t.Fatal("VM endpoint not found")
+	}
+	if vm.HostDevice != "HOST-01" {
+		t.Errorf("HostDevice = %q, want 'HOST-01'", vm.HostDevice)
+	}
+	if vm.HostPort != "Eth1/49" {
+		t.Errorf("HostPort = %q, want 'Eth1/49' (resolved from po501)", vm.HostPort)
+	}
+	if len(vm.IPs) != 1 || vm.IPs[0] != "10.0.1.50" {
+		t.Errorf("IPs = %v, want [10.0.1.50]", vm.IPs)
+	}
+}
+
+func TestCorrelateEndpoints_PortChannelWithoutLAGData(t *testing.T) {
+	// Without LAG membership data, port-channel MACs should still appear
+	// as endpoints (just without host attribution — same as before the fix).
+	inputs := []CorrelationInput{
+		{
+			SwitchID: "TOR-1",
+			Neighbors: []LLDPNeighbor{
+				{LocalPort: "Eth1/49", ChassisID: "94:6d:ae:aa:bb:01", SystemName: "HOST-01"},
+			},
+			MACEntries: []MACEntry{
+				{MAC: "00:15:5d:44:55:66", VLAN: 200, Port: "po501", SwitchID: "TOR-1"},
+			},
+			ARPEntries: []ARPEntry{},
+			// No LAGMembership — simulates switches that don't support the path
+		},
+	}
+
+	endpoints := CorrelateEndpoints(inputs)
+
+	var vm *topology.Endpoint
+	for i := range endpoints {
+		if endpoints[i].MAC == "00:15:5d:44:55:66" {
+			vm = &endpoints[i]
+			break
+		}
+	}
+	if vm == nil {
+		t.Fatal("VM endpoint not found")
+	}
+	// Without LAG data, the endpoint should exist but have no host attribution
+	if vm.HostDevice != "" {
+		t.Errorf("HostDevice = %q, want '' (no LAG data to resolve)", vm.HostDevice)
+	}
+}
+
+func TestCorrelateEndpoints_InfraPortFiltering(t *testing.T) {
+	// W-002 fix: MACs learned on infrastructure ports should be excluded.
+	inputs := []CorrelationInput{
+		{
+			SwitchID: "TOR-1",
+			Neighbors: []LLDPNeighbor{
+				{LocalPort: "Eth1/1", ChassisID: "94:6d:ae:aa:bb:01", SystemName: "HOST-01"},
+			},
+			MACEntries: []MACEntry{
+				// Valid VM on a physical port
+				{MAC: "00:15:5d:11:22:33", VLAN: 100, Port: "Eth1/1", SwitchID: "TOR-1"},
+				// Switch self-traffic on supervisor port (should be filtered)
+				{MAC: "aa:bb:cc:dd:ee:f0", VLAN: 100, Port: "sup-eth1", SwitchID: "TOR-1"},
+				// Same on mgmt port (should be filtered)
+				{MAC: "aa:bb:cc:dd:ee:f1", VLAN: 1, Port: "mgmt0", SwitchID: "TOR-1"},
+				// Same on loopback (should be filtered)
+				{MAC: "aa:bb:cc:dd:ee:f2", VLAN: 100, Port: "lo0", SwitchID: "TOR-1"},
+				// Same on SVI (should be filtered)
+				{MAC: "aa:bb:cc:dd:ee:f3", VLAN: 100, Port: "Vlan100", SwitchID: "TOR-1"},
+			},
+			ARPEntries: []ARPEntry{},
+		},
+	}
+
+	endpoints := CorrelateEndpoints(inputs)
+
+	// Only the valid VM MAC on Eth1/1 should appear
+	if len(endpoints) != 1 {
+		var macs []string
+		for _, ep := range endpoints {
+			macs = append(macs, ep.MAC+"@"+ep.HostPort)
+		}
+		t.Fatalf("expected 1 endpoint, got %d: %v", len(endpoints), macs)
+	}
+	if endpoints[0].MAC != "00:15:5d:11:22:33" {
+		t.Errorf("unexpected endpoint MAC = %q", endpoints[0].MAC)
+	}
+}
+
+func TestIsInfraPort(t *testing.T) {
+	tests := []struct {
+		port string
+		want bool
+	}{
+		{"sup-eth1", true},
+		{"supeth1", true},
+		{"Sup-Eth1", true},
+		{"mgmt0", true},
+		{"Mgmt0", true},
+		{"lo0", true},
+		{"Loopback0", true},  // "loopback" starts with "lo"
+		{"Vlan100", true},
+		{"vlan1", true},
+		{"Eth1/1", false},
+		{"po501", false},
+		{"nve1", false},
+	}
+
+	for _, tt := range tests {
+		got := isInfraPort(tt.port)
+		if got != tt.want {
+			t.Errorf("isInfraPort(%q) = %v, want %v", tt.port, got, tt.want)
+		}
+	}
+}

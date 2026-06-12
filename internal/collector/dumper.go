@@ -37,6 +37,7 @@ func categoriesForPlatform(p string) []dataCategory {
 			{"arp-nxos", transform.ARPPathNXOS},
 			{"vlan-nxos", transform.VLANPathNXOS},
 			{"bgp-nxos", transform.BGPNeighborsPathNXOS},
+			{"lag-membership-nxos", transform.LAGMembershipPathNXOS},
 			{"nve-peers-nxos", transform.NVEPeersPathNXOS},
 			{"l2rib-nxos", transform.L2RIBPathNXOS},
 			{"qos-stats-nxos", transform.QoSStatsPathNXOS},

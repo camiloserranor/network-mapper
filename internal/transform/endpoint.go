@@ -10,12 +10,13 @@ import (
 
 // CorrelationInput holds all the intermediate data needed to discover endpoints.
 type CorrelationInput struct {
-	SwitchID   string
-	Neighbors  []LLDPNeighbor
-	MACEntries []MACEntry
-	ARPEntries []ARPEntry
-	NVEPeers   []NVEPeer    // optional: VTEP peers for VXLAN correlation
-	L2RIBMacs  []L2RIBEntry // optional: MAC→VTEP mappings from L2RIB
+	SwitchID      string
+	Neighbors     []LLDPNeighbor
+	MACEntries    []MACEntry
+	ARPEntries    []ARPEntry
+	NVEPeers      []NVEPeer      // optional: VTEP peers for VXLAN correlation
+	L2RIBMacs     []L2RIBEntry   // optional: MAC→VTEP mappings from L2RIB
+	LAGMembership LAGMembership  // optional: port-channel → member ports mapping
 }
 
 // CorrelateEndpoints discovers VM endpoints by comparing MAC table entries
@@ -49,6 +50,14 @@ func CorrelateEndpoints(inputs []CorrelationInput) []topology.Endpoint {
 				hostID = nbr.ChassisID
 			}
 			portToHostDevice[key] = hostID
+		}
+	}
+
+	// Build merged LAG membership index: per-switch port-channel → member ports
+	switchLAG := make(map[string]LAGMembership) // switchID → LAGMembership
+	for _, input := range inputs {
+		if len(input.LAGMembership) > 0 {
+			switchLAG[input.SwitchID] = input.LAGMembership
 		}
 	}
 
@@ -88,8 +97,41 @@ func CorrelateEndpoints(inputs []CorrelationInput) []topology.Endpoint {
 				continue
 			}
 
+			// Skip MAC entries learned on infrastructure ports (W-002)
+			if isInfraPort(macEntry.Port) {
+				continue
+			}
+
 			portKey := input.SwitchID + ":" + macEntry.Port
 			chassisIDs := portToChassisIDs[portKey]
+			hostDevice := portToHostDevice[portKey]
+			resolvedPort := macEntry.Port
+
+			// If no LLDP data on this port and it's a port-channel, resolve
+			// to member ports and inherit LLDP data from a member.
+			if chassisIDs == nil && IsPortChannel(macEntry.Port) {
+				if lag, ok := switchLAG[input.SwitchID]; ok {
+					if members := ResolveLAGPort(macEntry.Port, lag); len(members) > 0 {
+						for _, member := range members {
+							memberKey := input.SwitchID + ":" + member
+							if mChassis := portToChassisIDs[memberKey]; mChassis != nil {
+								chassisIDs = mChassis
+								resolvedPort = member
+								break
+							}
+						}
+						if hostDevice == "" {
+							for _, member := range members {
+								memberKey := input.SwitchID + ":" + member
+								if h := portToHostDevice[memberKey]; h != "" {
+									hostDevice = h
+									break
+								}
+							}
+						}
+					}
+				}
+			}
 
 			entryMAC := normalizeMACAddress(macEntry.MAC)
 
@@ -111,9 +153,9 @@ func CorrelateEndpoints(inputs []CorrelationInput) []topology.Endpoint {
 				// Upgrade host association: prefer an entry learned on a physical
 				// port with an LLDP neighbor over one learned via a peer-link.
 				if existing.HostDevice == "" {
-					if newHost := portToHostDevice[portKey]; newHost != "" {
-						existing.HostDevice = newHost
-						existing.HostPort = macEntry.Port
+					if hostDevice != "" {
+						existing.HostDevice = hostDevice
+						existing.HostPort = resolvedPort
 						existing.SwitchID = input.SwitchID
 					}
 				}
@@ -121,8 +163,8 @@ func CorrelateEndpoints(inputs []CorrelationInput) []topology.Endpoint {
 				ep := &topology.Endpoint{
 					MAC:        entryMAC,
 					VLANs:      []int{macEntry.VLAN},
-					HostPort:   macEntry.Port,
-					HostDevice: portToHostDevice[portKey],
+					HostPort:   resolvedPort,
+					HostDevice: hostDevice,
 					SwitchID:   input.SwitchID,
 					Type:       "vm",
 				}
@@ -196,6 +238,24 @@ func hexVal(b byte) byte {
 		return b - 'a' + 10
 	}
 	return 0
+}
+
+// isInfraPort returns true for switch-internal infrastructure ports whose MAC
+// entries should not be treated as endpoints. These include the supervisor
+// control plane interface, management ports, and loopback interfaces.
+func isInfraPort(port string) bool {
+	lower := strings.ToLower(port)
+	for _, prefix := range []string{
+		"sup-eth", "supeth", "sup-e",   // NX-OS supervisor Ethernet
+		"mgmt",                          // Management port
+		"lo",                            // Loopback
+		"vlan",                          // SVI (switch virtual interface)
+	} {
+		if strings.HasPrefix(lower, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func appendUnique(slice []string, val string) []string {

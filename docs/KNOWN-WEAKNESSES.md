@@ -16,7 +16,7 @@ produce incorrect, incomplete, or misleading results.
 
 ## W-001: Port-Channel → LLDP Mismatch (VM Attribution)
 
-**Status:** 🔴 Open  
+**Status:** 🟢 Fixed  
 **Impact:** High — 31 VMs unattributed in Env2  
 **Affected stage:** `correlateEndpoints()`
 
@@ -28,16 +28,18 @@ returns empty because no LLDP neighbor was registered under the aggregate name.
 **Consequence:** All MACs learned on port-channel interfaces have no host
 attribution and land in unattributed endpoints.
 
-**Fix approach:** Query NX-OS port-channel membership data
-(`/System/intf-items/aggr-items`) to build a `port-channel → member ports`
-mapping. When a MAC is learned on a port-channel, resolve it to the member
-ports and inherit the LLDP neighbor from those members.
+**Fix:** Added `LAGCollector` optional interface to the platform layer. NX-OS
+implementation queries `/System/intf-items/aggr-items/AggrIf-list` for
+port-channel membership, with a fallback that derives membership from the
+`pcId` field on physical interfaces. `CorrelateEndpoints()` now resolves
+port-channel ports to their physical members before LLDP lookup.  
+See: `internal/transform/lag_nxos.go`, `internal/transform/endpoint.go`
 
 ---
 
 ## W-002: Switch Self-Traffic in Endpoint List (supeth1)
 
-**Status:** 🔴 Open  
+**Status:** 🟢 Fixed  
 **Impact:** Low — cosmetic, 1 false endpoint per switch  
 **Affected stage:** `correlateEndpoints()`
 
@@ -49,9 +51,9 @@ addresses) and no host.
 **Consequence:** A fake endpoint with 4+ IPs appears in unattributed, confusing
 operators who think it's a VM.
 
-**Fix approach:** Add `supeth` (and similar supervisor ports like `sup-eth1`,
-`mgmt0`) to an infrastructure port exclusion list in `correlateEndpoints()`.
-Skip any MAC entries learned on these ports.
+**Fix:** Added `isInfraPort()` check in `correlateEndpoints()` that skips MAC
+entries learned on infrastructure ports: `sup-eth*`, `supeth*`, `mgmt*`, `lo*`,
+`vlan*`. See: `internal/transform/endpoint.go`
 
 ---
 
