@@ -77,6 +77,16 @@ type QoSCollector interface {
 	CollectPFCConfig(ctx context.Context, client gnmi.GNMIClient) ([]transform.PFCConfig, error)
 }
 
+// LAGCollector is an optional capability interface for platforms that support
+// LAG/port-channel membership discovery. This enables resolving MAC table entries
+// learned on port-channel interfaces to their physical member ports, which is
+// critical for correct VM-to-host attribution via LLDP correlation.
+type LAGCollector interface {
+	// CollectLAGMembership fetches port-channel membership data.
+	// Returns nil, nil if no port-channels are configured.
+	CollectLAGMembership(ctx context.Context, client gnmi.GNMIClient) (transform.LAGMembership, error)
+}
+
 // FallbackReporter is an optional interface for platforms that track when
 // fallback paths were used instead of preferred paths. The collector surfaces
 // these notes as informational warnings in the topology output.

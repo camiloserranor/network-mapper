@@ -60,6 +60,9 @@ type SwitchData struct {
 	// PFCConfig is the PFC configuration per interface.
 	PFCConfig []transform.PFCConfig `json:"pfc_config,omitempty"`
 
+	// LAGMembership maps port-channel names to their physical member ports.
+	LAGMembership transform.LAGMembership `json:"lag_membership,omitempty"`
+
 	// Errors are non-fatal errors encountered during collection.
 	Errors []topology.PartialError `json:"errors,omitempty"`
 }

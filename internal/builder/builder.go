@@ -748,12 +748,13 @@ func (b *buildState) correlateEndpoints(cr *collector.CollectionResult) {
 	for _, sw := range cr.Switches {
 		if len(sw.MACEntries) > 0 {
 			inputs = append(inputs, transform.CorrelationInput{
-				SwitchID:   sw.SwitchID,
-				Neighbors:  sw.Neighbors,
-				MACEntries: sw.MACEntries,
-				ARPEntries: sw.ARPEntries,
-				NVEPeers:   sw.NVEPeers,
-				L2RIBMacs:  sw.L2RIBMacs,
+				SwitchID:      sw.SwitchID,
+				Neighbors:     sw.Neighbors,
+				MACEntries:    sw.MACEntries,
+				ARPEntries:    sw.ARPEntries,
+				NVEPeers:      sw.NVEPeers,
+				L2RIBMacs:     sw.L2RIBMacs,
+				LAGMembership: sw.LAGMembership,
 			})
 		}
 	}
